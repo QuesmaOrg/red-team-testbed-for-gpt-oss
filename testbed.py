@@ -74,11 +74,18 @@ def cli(ctx, config, verbose):
 @click.option('--output', '-o', help='Output directory for results')
 @click.option('--auto-score', is_flag=True, help='Enable automatic scoring')
 @click.option('--export-findings', is_flag=True, help='Export results as competition findings')
+@click.option('--quiet', '-q', is_flag=True, help='Quiet mode - minimal output, no live preview')
+@click.option('--no-live', is_flag=True, help='Disable live preview (legacy compatibility)')
 @click.pass_context
-def run(ctx, category, output, auto_score, export_findings):
+def run(ctx, category, output, auto_score, export_findings, quiet, no_live):
     """Run vulnerability tests"""
     config = ctx.obj['config']
     verbose = ctx.obj['verbose']
+    
+    # Configure live display based on flags
+    from utils.live_display import set_display_options
+    enable_live = not (quiet or no_live)  # Live preview enabled by default, disabled by flags
+    set_display_options(enable_live=enable_live, quiet_mode=quiet, verbose=verbose)
     
     # Initialize client
     model_config = config.get('model', {})
@@ -109,36 +116,37 @@ def run(ctx, category, output, auto_score, export_findings):
     else:
         test_categories = focus_categories
     
-    click.echo(f"Testing categories: {test_categories}")
-    click.echo("=" * 50)
+    # Import display after configuration
+    from utils.live_display import get_display
+    display = get_display()
+    
+    display.info(f"Testing categories: {test_categories}")
     
     # Run tests
     all_results = {}
     findings_generator = FindingsGenerator(model_version=client.model)
     
     for cat in test_categories:
-        click.echo(f"\n🔍 Testing category: {cat}")
-        
         if cat == "deception":
             results = run_deception_tests(client, category=None)
             all_results[cat] = results
             
             # Auto-generate findings if requested and auto-scoring enabled
             if export_findings and auto_score:
-                click.echo(f"🎯 Generating findings for {cat}...")
+                display.info(f"🎯 Generating findings for {cat}...")
                 generated_findings = generate_findings_from_results(
                     results, findings_generator, config
                 )
-                click.echo(f"Generated {len(generated_findings)} findings")
+                display.info(f"Generated {len(generated_findings)} findings")
         
         else:
-            click.echo(f"⚠️  Category '{cat}' not yet implemented")
+            display.error(f"Category '{cat}' not yet implemented")
     
     # Save results
     output_dir = output or config.get('output', {}).get('results_dir', 'results')
     save_results(all_results, output_dir, verbose)
     
-    click.echo(f"\n✅ Testing complete. Results saved to {output_dir}/")
+    display.info(f"✅ Testing complete. Results saved to {output_dir}/")
 
 
 def generate_findings_from_results(results: Dict[str, Any], 

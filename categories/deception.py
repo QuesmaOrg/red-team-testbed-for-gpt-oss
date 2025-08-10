@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from utils.model_client import OllamaClient, ModelResponse
 from utils.evaluator import ResponseEvaluator, VulnerabilityCategory, EvaluationResult
+from utils.live_display import get_display
 
 
 @dataclass 
@@ -140,56 +141,108 @@ class DeceptionTester:
             )
         ]
     
-    def run_single_test(self, test: DeceptionTest) -> Tuple[DeceptionTest, List[ModelResponse], EvaluationResult]:
-        """Run a single deception test"""
+    def run_single_test(self, test: DeceptionTest, current_num: int = 1, total_tests: int = 1) -> Tuple[DeceptionTest, List[ModelResponse], EvaluationResult]:
+        """Run a single deception test with live display"""
+        display = get_display()
+        
+        # Start test display
+        progress = display.start_test(test.name, test.test_id, test.category, current_num, total_tests)
+        
         responses = []
         
-        if test.multi_turn and test.follow_up_prompts:
-            # Multi-turn conversation test
-            conversation = [{"role": "user", "content": test.prompt}]
-            
-            # Initial response
-            response = self.client.generate(test.prompt, test.system_prompt)
-            responses.append(response)
-            conversation.append({"role": "assistant", "content": response.content})
-            
-            # Follow-up turns
-            for follow_up in test.follow_up_prompts:
-                conversation.append({"role": "user", "content": follow_up})
-                response = self.client.chat(conversation)
+        try:
+            if test.multi_turn and test.follow_up_prompts:
+                # Multi-turn conversation test
+                conversation = [{"role": "user", "content": test.prompt}]
+                
+                # Show initial prompt
+                display.show_prompt(progress, test.prompt, test.system_prompt)
+                display.show_thinking(progress)
+                
+                # Initial response
+                response = self.client.generate(test.prompt, test.system_prompt)
                 responses.append(response)
-                conversation.append({"role": "assistant", "content": response.content})
+                display.show_response(progress, response)
+                
+                if not response.error:
+                    conversation.append({"role": "assistant", "content": response.content})
+                    
+                    # Follow-up turns
+                    for i, follow_up in enumerate(test.follow_up_prompts):
+                        conversation.append({"role": "user", "content": follow_up})
+                        
+                        # Show follow-up prompt
+                        display.show_prompt(progress, f"Follow-up {i+1}: {follow_up}")
+                        display.show_thinking(progress)
+                        
+                        response = self.client.chat(conversation)
+                        responses.append(response)
+                        display.show_response(progress, response)
+                        
+                        if response.error:
+                            break
+                        
+                        conversation.append({"role": "assistant", "content": response.content})
+                
+                # Evaluate based on final response and conversation pattern
+                if responses and not responses[-1].error:
+                    evaluation = self.evaluator.evaluate_deception(
+                        test.prompt + " [Multi-turn context]", 
+                        responses[-1].content
+                    )
+                else:
+                    evaluation = EvaluationResult(
+                        False, VulnerabilityCategory.DECEPTION, 0.0, [], 
+                        "Test failed due to response error"
+                    )
+                
+            else:
+                # Single-turn test
+                display.show_prompt(progress, test.prompt, test.system_prompt)
+                display.show_thinking(progress)
+                
+                response = self.client.generate(test.prompt, test.system_prompt)
+                responses.append(response)
+                display.show_response(progress, response)
+                
+                if response.error:
+                    evaluation = EvaluationResult(
+                        False, VulnerabilityCategory.DECEPTION, 0.0, [], 
+                        f"Test failed: {response.error}"
+                    )
+                else:
+                    evaluation = self.evaluator.evaluate_deception(test.prompt, response.content)
             
-            # Evaluate based on final response and conversation pattern
-            evaluation = self.evaluator.evaluate_deception(
-                test.prompt + " [Multi-turn context]", 
-                responses[-1].content
+            # Show evaluation results
+            display.show_evaluation(progress, evaluation)
+            display.complete_test(progress, evaluation)
+            
+        except Exception as e:
+            display.error(f"Test failed: {e}")
+            evaluation = EvaluationResult(
+                False, VulnerabilityCategory.DECEPTION, 0.0, [], f"Test failed: {e}"
             )
-            
-        else:
-            # Single-turn test
-            response = self.client.generate(test.prompt, test.system_prompt)
-            responses.append(response)
-            
-            evaluation = self.evaluator.evaluate_deception(test.prompt, response.content)
         
         return test, responses, evaluation
     
     def run_category_tests(self, category: str = None) -> List[Tuple[DeceptionTest, List[ModelResponse], EvaluationResult]]:
         """Run all tests in a category or all tests"""
+        display = get_display()
         results = []
         
         test_cases = self.test_cases
         if category:
             test_cases = [t for t in self.test_cases if t.category == category]
         
-        for test in test_cases:
+        # Start category display
+        display.start_category("deception", len(test_cases))
+        
+        for i, test in enumerate(test_cases, 1):
             try:
-                result = self.run_single_test(test)
+                result = self.run_single_test(test, current_num=i, total_tests=len(test_cases))
                 results.append(result)
-                print(f"✓ Completed: {test.name}")
             except Exception as e:
-                print(f"✗ Failed: {test.name} - {e}")
+                display.error(f"Failed: {test.name} - {e}")
                 # Create error result
                 error_response = ModelResponse("", self.client.model, error=str(e))
                 error_evaluation = EvaluationResult(
@@ -261,26 +314,14 @@ class DeceptionTester:
 
 def run_deception_tests(client: OllamaClient, category: str = None) -> Dict[str, Any]:
     """Main function to run deception tests"""
+    display = get_display()
     tester = DeceptionTester(client)
-    
-    print(f"Running deception tests...")
-    if category:
-        print(f"Category: {category}")
-    print(f"Total tests: {len([t for t in tester.test_cases if not category or t.category == category])}")
-    print("=" * 50)
     
     results = tester.run_category_tests(category)
     analysis = tester.analyze_results(results)
     
-    print(f"\nResults Summary:")
-    print(f"Total tests: {analysis['total_tests']}")
-    print(f"Vulnerable: {analysis['vulnerable_tests']}")
-    print(f"High confidence: {analysis['high_confidence_vulnerabilities']}")
-    print(f"Average confidence: {analysis['average_confidence']:.2f}")
-    
-    print(f"\nCategory Breakdown:")
-    for cat, stats in analysis["category_breakdown"].items():
-        print(f"  {cat}: {stats['vulnerable']}/{stats['total']}")
+    # Display final summary
+    display.complete_category("deception", analysis)
     
     return {
         "results": results,
