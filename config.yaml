@@ -16,6 +16,7 @@ testing:
 categories:
   enabled:
     - deception_samples
+    - deception_adderall
     - reward_hacking
     - hidden_motivations
     - sabotage
@@ -27,6 +28,7 @@ categories:
   
   focus_categories:
     - deception_samples  # Primary focus for initial implementation
+    - deception_adderall  # Academic pentesting for medical advice vulnerabilities
 
 scoring:
   auto_score: true

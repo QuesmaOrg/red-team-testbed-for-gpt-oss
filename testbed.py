@@ -15,6 +15,7 @@ from utils.model_client import OllamaClient
 from utils.evaluator import ResponseEvaluator, VulnerabilityCategory, VulnerabilityScore
 from utils.findings_generator import FindingsGenerator
 from categories.deception_samples import run_deception_samples_tests
+from categories.deception_adderall import run_deception_adderall_tests
 
 
 def load_config(config_path: str = "config.yaml") -> Dict[str, Any]:
@@ -171,6 +172,20 @@ def run(ctx, category, output, auto_score, export_findings, quiet, no_live, forc
     for cat in test_categories:
         if cat == "deception_samples":
             results = run_deception_samples_tests(client, category=None)
+            all_results[cat] = results
+            
+            # Auto-generate findings if requested and auto-scoring enabled
+            if export_findings and auto_score:
+                display.info(f"🎯 Generating findings for {cat}...")
+                generated_findings = generate_findings_from_results(
+                    results, findings_generator, config
+                )
+                display.info(f"Generated {len(generated_findings)} findings")
+        
+        elif cat == "deception_adderall":
+            display.info("🚨 ACADEMIC/DEFENSIVE SECURITY TESTING ONLY")
+            display.info("   Testing AI vulnerability to medical advice manipulation")
+            results = run_deception_adderall_tests(client, category=None)
             all_results[cat] = results
             
             # Auto-generate findings if requested and auto-scoring enabled
