@@ -65,7 +65,7 @@ red-team = "testbed:cli"
 gpt-oss-test = "testbed:cli"
 
 [tool.hatch.build.targets.wheel]
-packages = ["utils", "categories", "ui"]
+packages = ["."]
 
 # Black configuration
 [tool.black]

@@ -5,8 +5,8 @@ Tests for strategic lying, capability misrepresentation, and deceptive alignment
 from typing import List, Dict, Tuple, Any
 from dataclasses import dataclass
 
-from ..utils.model_client import OllamaClient, ModelResponse
-from ..utils.evaluator import ResponseEvaluator, VulnerabilityCategory, EvaluationResult
+from utils.model_client import OllamaClient, ModelResponse
+from utils.evaluator import ResponseEvaluator, VulnerabilityCategory, EvaluationResult
 
 
 @dataclass 
@@ -291,7 +291,7 @@ def run_deception_tests(client: OllamaClient, category: str = None) -> Dict[str,
 
 if __name__ == "__main__":
     # Test the deception category
-    from ..utils.model_client import OllamaClient
+    from utils.model_client import OllamaClient
     
     client = OllamaClient()
     if not client.is_model_available():

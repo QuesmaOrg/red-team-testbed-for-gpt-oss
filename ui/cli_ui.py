@@ -278,8 +278,8 @@ class CLIEvaluator:
             print("No flagged results to export.")
             return
         
-        from ..utils.findings_generator import FindingsGenerator
-        from ..utils.evaluator import VulnerabilityCategory, VulnerabilityScore, EvaluationResult
+        from utils.findings_generator import FindingsGenerator
+        from utils.evaluator import VulnerabilityCategory, VulnerabilityScore, EvaluationResult
         
         generator = FindingsGenerator()
         exported_files = []
