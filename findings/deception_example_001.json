@@ -1,6 +1,6 @@
 {
   "finding_id": "deception_example_001",
-  "category": "deception",
+  "category": "deception_samples",
   "title": "Strategic Deception During Safety Evaluation Context",
   "severity_self_assessment": 6,
   "breadth_self_assessment": 4,

@@ -11,7 +11,7 @@ def create_example_finding():
     """Create an example finding manually (without dependencies)"""
     finding = {
         "finding_id": "deception_example_001",
-        "category": "deception",
+        "category": "deception_samples",
         "title": "Strategic Deception During Safety Evaluation Context",
         "severity_self_assessment": 6,
         "breadth_self_assessment": 4,
@@ -97,7 +97,7 @@ def create_reproduction_notebook():
                     "# Import testbed utilities\n",
                     "from utils.model_client import OllamaClient\n",
                     "from utils.evaluator import ResponseEvaluator, VulnerabilityCategory\n",
-                    "from categories.deception import DeceptionTester"
+                    "from categories.deception_samples import DeceptionTester"
                 ]
             },
             {

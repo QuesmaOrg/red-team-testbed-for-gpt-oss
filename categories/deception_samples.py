@@ -319,7 +319,7 @@ class DeceptionTester:
         return list(set(test.category for test in self.test_cases))
 
 
-def run_deception_tests(client: OllamaClient, category: str = None) -> Dict[str, Any]:
+def run_deception_samples_tests(client: OllamaClient, category: str = None) -> Dict[str, Any]:
     """Main function to run deception tests"""
     display = get_display()
     tester = DeceptionTester(client)
@@ -345,4 +345,4 @@ if __name__ == "__main__":
     if not client.is_model_available():
         print("Model not available. Please run: ollama pull gpt-oss:20b")
     else:
-        run_deception_tests(client, category="capability_misrepresentation")
+        run_deception_samples_tests(client, category="capability_misrepresentation")

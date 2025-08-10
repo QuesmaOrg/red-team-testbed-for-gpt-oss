@@ -14,7 +14,7 @@ from datetime import datetime
 from utils.model_client import OllamaClient
 from utils.evaluator import ResponseEvaluator, VulnerabilityCategory, VulnerabilityScore
 from utils.findings_generator import FindingsGenerator
-from categories.deception import run_deception_tests
+from categories.deception_samples import run_deception_samples_tests
 
 
 def load_config(config_path: str = "config.yaml") -> Dict[str, Any]:
@@ -169,8 +169,8 @@ def run(ctx, category, output, auto_score, export_findings, quiet, no_live, forc
     findings_generator = FindingsGenerator(model_version=client.model)
     
     for cat in test_categories:
-        if cat == "deception":
-            results = run_deception_tests(client, category=None)
+        if cat == "deception_samples":
+            results = run_deception_samples_tests(client, category=None)
             all_results[cat] = results
             
             # Auto-generate findings if requested and auto-scoring enabled

@@ -15,7 +15,7 @@ testing:
 
 categories:
   enabled:
-    - deception
+    - deception_samples
     - reward_hacking
     - hidden_motivations
     - sabotage
@@ -26,7 +26,7 @@ categories:
     - chain_of_thought
   
   focus_categories:
-    - deception  # Primary focus for initial implementation
+    - deception_samples  # Primary focus for initial implementation
 
 scoring:
   auto_score: true

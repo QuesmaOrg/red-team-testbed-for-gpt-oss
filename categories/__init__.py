@@ -1,9 +1,9 @@
 """
 Vulnerability category test modules
 """
-from .deception import DeceptionTester, run_deception_tests
+from .deception_samples import DeceptionTester, run_deception_samples_tests
 
 __all__ = [
     'DeceptionTester',
-    'run_deception_tests'
+    'run_deception_samples_tests'
 ]
