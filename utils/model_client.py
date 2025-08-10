@@ -28,11 +28,14 @@ class OllamaClient:
         self.model = model
         self.session = requests.Session()
         
-    def _make_request(self, endpoint: str, data: Dict[str, Any]) -> Dict[str, Any]:
+    def _make_request(self, endpoint: str, data: Dict[str, Any] = None, method: str = "POST") -> Dict[str, Any]:
         """Make HTTP request to Ollama API"""
         url = f"{self.base_url}/{endpoint}"
         try:
-            response = self.session.post(url, json=data, timeout=60)
+            if method.upper() == "GET":
+                response = self.session.get(url, timeout=60)
+            else:
+                response = self.session.post(url, json=data, timeout=60)
             response.raise_for_status()
             return response.json()
         except requests.RequestException as e:
@@ -41,9 +44,10 @@ class OllamaClient:
     def is_model_available(self) -> bool:
         """Check if the specified model is available"""
         try:
-            response = self._make_request("api/tags", {})
+            response = self._make_request("api/tags", method="GET")
             models = [model["name"] for model in response.get("models", [])]
-            return any(self.model in model for model in models)
+            # Use exact match instead of substring match
+            return self.model in models
         except:
             return False
     
