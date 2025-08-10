@@ -77,8 +77,9 @@ def cli(ctx, config, verbose):
 @click.option('--quiet', '-q', is_flag=True, help='Quiet mode - minimal output, no live preview')
 @click.option('--no-live', is_flag=True, help='Disable live preview (legacy compatibility)')
 @click.option('--force-interactive', is_flag=True, help='Force interactive mode (for testing)')
+@click.option('--skip-busy-check', is_flag=True, help='Skip busy check and proceed anyway')
 @click.pass_context
-def run(ctx, category, output, auto_score, export_findings, quiet, no_live, force_interactive):
+def run(ctx, category, output, auto_score, export_findings, quiet, no_live, force_interactive, skip_busy_check):
     """Run vulnerability tests"""
     config = ctx.obj['config']
     verbose = ctx.obj['verbose']
@@ -109,6 +110,41 @@ def run(ctx, category, output, auto_score, export_findings, quiet, no_live, forc
         return
     
     click.echo(f"✅ Model {client.model} ready")
+    
+    # Check if Ollama is busy before starting tests
+    if not skip_busy_check:
+        click.echo("🔍 Checking if Ollama is busy...")
+        try:
+            status = client.check_ollama_status()
+            
+            if status.is_busy:
+                click.echo(f"⚠️  WARNING: Ollama appears busy!")
+                click.echo(f"   GPU usage: {status.gpu_usage}")
+                click.echo(f"   Memory usage: {status.memory_usage}")
+                click.echo(f"   Model loaded: {'Yes' if status.model_loaded else 'No'}")
+                click.echo(f"   This may cause timeouts and test failures.")
+                
+                if not quiet:
+                    if click.confirm("\nDo you want to continue anyway? Tests may timeout."):
+                        click.echo("⚡ Proceeding with tests (this may take longer)...")
+                    else:
+                        click.echo("🚫 Aborted. Wait for current requests to complete or use --skip-busy-check")
+                        return
+                else:
+                    click.echo("🚫 Ollama is busy. Use --skip-busy-check to proceed anyway.")
+                    return
+            else:
+                click.echo(f"✅ Ollama status: Available")
+                if verbose and status.model_loaded:
+                    click.echo(f"   Memory usage: {status.memory_usage}")
+        except Exception as e:
+            click.echo(f"⚠️  Could not check Ollama status: {e}")
+            if not quiet and not skip_busy_check:
+                if click.confirm("\nCould not determine if Ollama is busy. Continue anyway?"):
+                    click.echo("⚡ Proceeding with tests...")
+                else:
+                    click.echo("🚫 Aborted. Use --skip-busy-check to proceed anyway.")
+                    return
     
     # Determine which categories to test
     available_categories = config.get('categories', {}).get('enabled', ['deception'])
@@ -152,7 +188,51 @@ def run(ctx, category, output, auto_score, export_findings, quiet, no_live, forc
     output_dir = output or config.get('output', {}).get('results_dir', 'results')
     save_results(all_results, output_dir, verbose)
     
+    # Report timeout statistics
+    timeout_stats = calculate_timeout_stats(all_results)
+    if timeout_stats['total_timeouts'] > 0:
+        click.echo(f"\n⏰ Timeout Report:")
+        click.echo(f"   Total requests: {timeout_stats['total_requests']}")
+        click.echo(f"   Timeouts: {timeout_stats['total_timeouts']} ({timeout_stats['timeout_percentage']:.1f}%)")
+        click.echo(f"   Average response time: {timeout_stats['avg_response_time']:.2f}s")
+        click.echo(f"   Slowest response: {timeout_stats['max_response_time']:.2f}s")
+        if timeout_stats['total_timeouts'] > timeout_stats['total_requests'] * 0.2:
+            click.echo(f"   \u26a0\ufe0f  High timeout rate - model may be overloaded")
+    
     display.info(f"✅ Testing complete. Results saved to {output_dir}/")
+
+
+def calculate_timeout_stats(all_results: Dict[str, Any]) -> Dict[str, Any]:
+    """Calculate timeout statistics from test results"""
+    total_requests = 0
+    total_timeouts = 0
+    response_times = []
+    
+    for category, cat_results in all_results.items():
+        for test, responses, evaluation in cat_results.get("results", []):
+            if responses:  # Check if we have responses
+                for response in responses:
+                    total_requests += 1
+                    response_times.append(response.response_time)
+                    if response.timed_out:
+                        total_timeouts += 1
+    
+    if total_requests == 0:
+        return {
+            'total_requests': 0,
+            'total_timeouts': 0,
+            'timeout_percentage': 0.0,
+            'avg_response_time': 0.0,
+            'max_response_time': 0.0
+        }
+    
+    return {
+        'total_requests': total_requests,
+        'total_timeouts': total_timeouts,
+        'timeout_percentage': (total_timeouts / total_requests) * 100,
+        'avg_response_time': sum(response_times) / len(response_times) if response_times else 0.0,
+        'max_response_time': max(response_times) if response_times else 0.0
+    }
 
 
 def generate_findings_from_results(results: Dict[str, Any], 
@@ -226,7 +306,9 @@ def save_results(results: Dict[str, Any], output_dir: str, verbose: bool) -> Non
                 "evidence": evaluation.evidence,
                 "reasoning": evaluation.reasoning,
                 "response_content": responses[0].content if responses else "",
-                "response_time": responses[0].response_time if responses else 0.0
+                "response_time": responses[0].response_time if responses else 0.0,
+                "timed_out": responses[0].timed_out if responses else False,
+                "response_error": responses[0].error if responses else None
             }
             serializable_results[category]["test_details"].append(test_detail)
     
@@ -268,16 +350,42 @@ def test_connection(ctx):
     
     click.echo("Testing Ollama connection...")
     
+    # Check if Ollama is busy before testing
+    click.echo("🔍 Checking Ollama status...")
+    try:
+        status = client.check_ollama_status()
+        
+        if status.is_busy:
+            click.echo(f"⚠️  WARNING: Ollama appears busy (GPU usage: {status.gpu_usage})")
+            click.echo(f"   Model loaded: {'Yes' if status.model_loaded else 'No'}")
+            click.echo(f"   Memory usage: {status.memory_usage}")
+            click.echo(f"   This may cause slower responses or timeouts.")
+            if ctx.obj['verbose']:
+                click.echo(f"   Raw status: {status.raw_output}")
+        else:
+            click.echo(f"✅ Ollama status: Available")
+            if status.model_loaded:
+                click.echo(f"   Model loaded: Yes (Memory: {status.memory_usage})")
+            else:
+                click.echo(f"   Model loaded: No")
+    except Exception as e:
+        click.echo(f"⚠️  Could not check Ollama status: {e}")
+    
     try:
         if client.is_model_available():
             click.echo(f"✅ Model {client.model} is available")
             
             # Test generation
+            click.echo("🧪 Testing generation...")
             response = client.generate("Hello, this is a test.")
             if response.error:
                 click.echo(f"❌ Generation failed: {response.error}")
+                if response.timed_out:
+                    click.echo(f"   This was a timeout - model may be busy or overloaded")
             else:
                 click.echo(f"✅ Generation successful ({response.response_time:.2f}s)")
+                if response.timed_out:
+                    click.echo(f"⚠️  Response had timeout issues")
                 if ctx.obj['verbose']:
                     click.echo(f"Sample response: {response.content[:100]}...")
         else:
