@@ -104,29 +104,35 @@ llm-eval/
 
 ### Quick Start
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+# Setup project
+uv sync
 
-# Run comprehensive vulnerability scan
-python testbed.py --model gpt-oss-20b --category all --output findings/
+# Run comprehensive vulnerability scan  
+uv run testbed run --category all --export-findings
 
 # Test specific vulnerability category
-python testbed.py --model gpt-oss-20b --category deception --verbose
+uv run testbed run --category deception --auto-score
 
 # Generate competition findings file
-python testbed.py --model gpt-oss-20b --category reward_hacking --export-finding findings/finding_1.json
+uv run testbed run --category deception --export-findings
 ```
 
 ### Advanced Usage
 ```bash
-# Multi-turn conversation testing
-python testbed.py --model gpt-oss-20b --multi-turn --max-turns 10
+# Launch interactive CLI for result evaluation
+uv run testbed ui results/test_results_20250810_143022.json
 
-# Tool use vulnerability testing
-python testbed.py --model gpt-oss-20b --enable-tools --category inappropriate_tool_use
+# Run with custom configuration
+uv run testbed --config custom_config.yaml run --category deception
 
-# Chain of thought analysis
-python testbed.py --model gpt-oss-20b --show-reasoning --category chain_of_thought
+# Generate summary of all findings
+uv run testbed summary --findings-dir findings
+
+# Development commands
+uv run black .                    # Format code
+uv run isort .                   # Sort imports  
+uv run mypy utils categories ui  # Type checking
+uv run pytest                   # Run tests
 ```
 
 ## Output Evaluation UIs
@@ -138,11 +144,11 @@ The testbed includes both web and CLI interfaces for evaluating model responses 
 Launch the web interface for intuitive output review:
 
 ```bash
-# Start web UI server
-python -m ui.web_ui --port 8080
+# Start web UI server  
+uv run python -m ui.web_ui --port 8080
 
 # Or using Streamlit
-streamlit run ui/web_ui.py
+uv run streamlit run ui/web_ui.py
 ```
 
 **Features:**
@@ -167,10 +173,10 @@ For terminal-based evaluation:
 
 ```bash
 # Start interactive CLI judge
-python -m ui.cli_ui --results results/latest_run.json
+uv run testbed ui results/latest_run.json
 
-# Quick scoring mode
-python -m ui.cli_ui --quick-score --category deception
+# Or direct module access
+uv run python -m ui.cli_ui results/latest_run.json
 ```
 
 **CLI Features:**
@@ -210,10 +216,10 @@ Both UIs support automated preliminary scoring:
 
 ```bash
 # Run with auto-scoring enabled
-python testbed.py --auto-score --threshold 6.0
+uv run testbed run --auto-score --export-findings
 
-# Enable ML-based response classification
-python testbed.py --auto-classify --model-judge gpt-4
+# Generate findings for high-scoring vulnerabilities  
+uv run testbed run --category all --export-findings
 ```
 
 **Auto-scoring capabilities:**
@@ -227,8 +233,8 @@ python testbed.py --auto-classify --model-judge gpt-4
 
 ```bash
 # Complete evaluation pipeline
-python testbed.py --category deception --output results/
-python -m ui.web_ui --load results/ --auto-score
+uv run testbed run --category deception --export-findings
+uv run testbed ui results/test_results_*.json
 # Review and refine scores in UI
 # Export top findings to competition format
 ```
@@ -325,26 +331,52 @@ This testbed is designed exclusively for:
 
 ## Getting Started
 
+### Prerequisites
+- [Ollama](https://ollama.ai/) installed and running
+- Python 3.8+
+- [uv](https://github.com/astral-sh/uv) (recommended) or pip for package management
+
+### Installation
+
 1. **Install Ollama and pull the model**:
    ```bash
+   # Install Ollama (see https://ollama.ai)
    ollama pull gpt-oss:20b
    ```
 
-2. **Clone and setup testbed**:
+2. **Setup testbed environment**:
    ```bash
-   git clone <repo>
-   cd llm-eval
-   pip install -r requirements.txt
+   # Using uv (recommended - fastest and most reliable)
+   uv sync
+   
+   # Or using pip (traditional method)
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -e .
    ```
 
-3. **Run initial vulnerability scan**:
+3. **Test connection to model**:
    ```bash
-   python testbed.py --quick-scan
+   # Using uv (recommended)
+   uv run testbed test-connection
+   
+   # Or with activated environment
+   testbed test-connection
    ```
 
-4. **Review generated findings**:
+4. **Run initial vulnerability scan**:
+   ```bash
+   # Using uv (recommended)
+   uv run testbed run --category deception
+   
+   # Or with activated environment
+   testbed run --category deception
+   ```
+
+5. **Review generated findings**:
    ```bash
    ls findings/*.json
+   uv run testbed summary
    ```
 
 ## Competition Submission Workflow
