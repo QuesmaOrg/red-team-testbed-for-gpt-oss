@@ -1,7 +1,9 @@
 """
 Live display utilities for real-time test progress and results
 """
+import atexit
 import os
+import signal
 import sys
 import time
 import threading
@@ -57,6 +59,7 @@ class LiveDisplay:
         self._timer_progress: Optional[TestProgress] = None
         self._spinner_chars = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
         self._spinner_index = 0
+        self._live_context = None
         
         if RICH_AVAILABLE:
             self.console = Console()
@@ -65,6 +68,9 @@ class LiveDisplay:
             # Fall back to basic print if Rich not available
             if enable_live and not quiet_mode:
                 print("Note: Install 'rich' for enhanced live display")
+        
+        # Set up signal handlers for clean exit
+        self._setup_signal_handlers()
     
     def _is_interactive_shell(self) -> bool:
         """Detect if running in an interactive shell/terminal"""
@@ -85,6 +91,56 @@ class LiveDisplay:
             # Terminal environment variable exists (usually set in interactive shells)
             'TERM' in os.environ and os.environ.get('TERM') != 'dumb'
         )
+    
+    def _setup_signal_handlers(self) -> None:
+        """Set up signal handlers for graceful cleanup"""
+        def signal_handler(signum, frame):
+            """Handle interrupt signals (Ctrl+C, etc.)"""
+            self._cleanup_display()
+            # Re-raise the KeyboardInterrupt to maintain normal behavior
+            if signum == signal.SIGINT:
+                raise KeyboardInterrupt()
+        
+        # Register signal handlers
+        signal.signal(signal.SIGINT, signal_handler)  # Ctrl+C
+        if hasattr(signal, 'SIGTERM'):
+            signal.signal(signal.SIGTERM, signal_handler)  # Termination
+        
+        # Also register cleanup function to run at exit
+        atexit.register(self._cleanup_display)
+    
+    def _cleanup_display(self) -> None:
+        """Clean up display state and restore terminal"""
+        try:
+            # Stop any running timer
+            self.stop_thinking_timer()
+            
+            # Clean up Rich live context if it exists
+            if self._live_context:
+                try:
+                    self._live_context.stop()
+                    self._live_context = None
+                except:
+                    pass
+            
+            # Restore cursor and clear any remaining output
+            if self.console and self.is_interactive:
+                try:
+                    # Show cursor and reset terminal state
+                    self.console.show_cursor(True)
+                    self.console.print("", end="")  # Ensure clean state
+                except:
+                    pass
+            elif self.is_interactive:
+                # Fallback: show cursor and clear line
+                try:
+                    sys.stdout.write("\r\033[K\033[?25h")  # Clear line and show cursor
+                    sys.stdout.flush()
+                except:
+                    pass
+        except:
+            # Ignore any errors during cleanup to avoid masking original exceptions
+            pass
     
     def start_category(self, category: str, total_tests: int) -> None:
         """Display category start information"""
@@ -221,43 +277,66 @@ class LiveDisplay:
             return
         
         if self.console:
-            # Use Rich's live update mechanism
+            # Use Rich's live update mechanism with proper cleanup
             from rich.live import Live
             from rich.text import Text
             
-            with Live(refresh_per_second=10, console=self.console) as live:
+            try:
+                self._live_context = Live(refresh_per_second=10, console=self.console)
+                self._live_context.start()
+                
                 while not self._stop_timer.is_set():
                     elapsed = time.time() - self._timer_progress.start_time
                     spinner = self._spinner_chars[self._spinner_index % len(self._spinner_chars)]
                     
                     # Create Rich text object for proper styling
                     thinking_text = Text(f"⏱️  Waiting for response... [{elapsed:.1f}s] {spinner}", style="dim")
-                    live.update(thinking_text)
+                    self._live_context.update(thinking_text)
                     
                     self._spinner_index += 1
                     
                     # Wait 0.1 seconds or until stop signal
                     if self._stop_timer.wait(timeout=0.1):
                         break
+                        
+            except Exception as e:
+                # Fall back to basic print if Rich fails
+                while not self._stop_timer.is_set():
+                    elapsed = time.time() - self._timer_progress.start_time
+                    spinner = self._spinner_chars[self._spinner_index % len(self._spinner_chars)]
+                    thinking_msg = f"⏱️  Waiting for response... [{elapsed:.1f}s] {spinner}"
+                    print(f"\r{thinking_msg}", end="", flush=True)
+                    self._spinner_index += 1
+                    if self._stop_timer.wait(timeout=0.1):
+                        break
+            finally:
+                # Always clean up the live context
+                if self._live_context:
+                    try:
+                        self._live_context.stop()
+                        self._live_context = None
+                    except:
+                        pass
         else:
             # Fallback for non-Rich terminals
-            while not self._stop_timer.is_set():
-                elapsed = time.time() - self._timer_progress.start_time
-                spinner = self._spinner_chars[self._spinner_index % len(self._spinner_chars)]
-                thinking_msg = f"⏱️  Waiting for response... [{elapsed:.1f}s] {spinner}"
-                
-                # Use carriage return to overwrite the line
-                print(f"\r{thinking_msg}", end="", flush=True)
-                
-                self._spinner_index += 1
-                
-                # Wait 0.1 seconds or until stop signal
-                if self._stop_timer.wait(timeout=0.1):
-                    break
-            
-            # Clear the line when done
-            if not self.quiet_mode:
-                print("\r" + " " * 60 + "\r", end="", flush=True)
+            try:
+                while not self._stop_timer.is_set():
+                    elapsed = time.time() - self._timer_progress.start_time
+                    spinner = self._spinner_chars[self._spinner_index % len(self._spinner_chars)]
+                    thinking_msg = f"⏱️  Waiting for response... [{elapsed:.1f}s] {spinner}"
+                    
+                    # Use carriage return to overwrite the line
+                    print(f"\r{thinking_msg}", end="", flush=True)
+                    
+                    self._spinner_index += 1
+                    
+                    # Wait 0.1 seconds or until stop signal
+                    if self._stop_timer.wait(timeout=0.1):
+                        break
+            finally:
+                # Clear the line when done
+                if not self.quiet_mode:
+                    print("\r" + " " * 60 + "\r", end="", flush=True)
     
     def show_thinking(self, progress: TestProgress) -> None:
         """Legacy method - now redirects to start_thinking_timer"""
