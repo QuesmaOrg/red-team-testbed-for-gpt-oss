@@ -1,6 +1,8 @@
 """
 Live display utilities for real-time test progress and results
 """
+import os
+import sys
 import time
 import threading
 from typing import Optional, Dict, Any, List
@@ -46,6 +48,9 @@ class LiveDisplay:
         self.quiet_mode = quiet_mode
         self.verbose = verbose
         
+        # Detect if running in interactive shell
+        self.is_interactive = self._is_interactive_shell()
+        
         # Timer thread management
         self._timer_thread: Optional[threading.Thread] = None
         self._stop_timer: threading.Event = threading.Event()
@@ -60,6 +65,26 @@ class LiveDisplay:
             # Fall back to basic print if Rich not available
             if enable_live and not quiet_mode:
                 print("Note: Install 'rich' for enhanced live display")
+    
+    def _is_interactive_shell(self) -> bool:
+        """Detect if running in an interactive shell/terminal"""
+        # Check multiple indicators for interactive shell
+        return (
+            # Standard TTY check
+            sys.stdout.isatty() and sys.stdin.isatty() and
+            # Not running in a pipe or redirect
+            os.isatty(sys.stdout.fileno()) and
+            # Check for common non-interactive environments
+            not any(env_var in os.environ for env_var in [
+                'CI',           # Continuous Integration
+                'GITHUB_ACTIONS',  # GitHub Actions
+                'JENKINS_URL',     # Jenkins
+                'BUILDBOT_WORKER_NAME',  # Buildbot
+                'TF_BUILD',        # Azure DevOps
+            ]) and
+            # Terminal environment variable exists (usually set in interactive shells)
+            'TERM' in os.environ and os.environ.get('TERM') != 'dumb'
+        )
     
     def start_category(self, category: str, total_tests: int) -> None:
         """Display category start information"""
@@ -154,6 +179,17 @@ class LiveDisplay:
         if self.quiet_mode:
             return
         
+        # Only use fast updates in interactive shells, slower updates otherwise
+        if not self.is_interactive:
+            # In non-interactive mode, show a simple static message
+            elapsed = time.time() - progress.start_time
+            thinking_msg = f"⏱️  Waiting for response... [{elapsed:.1f}s]"
+            if self.console:
+                self.console.print(thinking_msg, style="dim")
+            else:
+                print(thinking_msg)
+            return
+        
         # Stop any existing timer first
         self.stop_thinking_timer()
         
@@ -184,33 +220,44 @@ class LiveDisplay:
         if not self._timer_progress:
             return
         
-        last_line = ""
-        
-        while not self._stop_timer.is_set():
-            elapsed = time.time() - self._timer_progress.start_time
-            spinner = self._spinner_chars[self._spinner_index % len(self._spinner_chars)]
-            thinking_msg = f"⏱️  Waiting for response... [{elapsed:.1f}s] {spinner}"
+        if self.console:
+            # Use Rich's live update mechanism
+            from rich.live import Live
+            from rich.text import Text
             
-            if self.console:
-                # Clear previous line and print new one
-                if last_line:
-                    # Move cursor up and clear line
-                    self.console.print("\033[1A\033[K", end="")
-                self.console.print(thinking_msg, style="dim")
-                last_line = thinking_msg
-            else:
-                # For non-Rich fallback, use carriage return to overwrite
+            with Live(refresh_per_second=10, console=self.console) as live:
+                while not self._stop_timer.is_set():
+                    elapsed = time.time() - self._timer_progress.start_time
+                    spinner = self._spinner_chars[self._spinner_index % len(self._spinner_chars)]
+                    
+                    # Create Rich text object for proper styling
+                    thinking_text = Text(f"⏱️  Waiting for response... [{elapsed:.1f}s] {spinner}", style="dim")
+                    live.update(thinking_text)
+                    
+                    self._spinner_index += 1
+                    
+                    # Wait 0.1 seconds or until stop signal
+                    if self._stop_timer.wait(timeout=0.1):
+                        break
+        else:
+            # Fallback for non-Rich terminals
+            while not self._stop_timer.is_set():
+                elapsed = time.time() - self._timer_progress.start_time
+                spinner = self._spinner_chars[self._spinner_index % len(self._spinner_chars)]
+                thinking_msg = f"⏱️  Waiting for response... [{elapsed:.1f}s] {spinner}"
+                
+                # Use carriage return to overwrite the line
                 print(f"\r{thinking_msg}", end="", flush=True)
+                
+                self._spinner_index += 1
+                
+                # Wait 0.1 seconds or until stop signal
+                if self._stop_timer.wait(timeout=0.1):
+                    break
             
-            self._spinner_index += 1
-            
-            # Wait 0.1 seconds or until stop signal
-            if self._stop_timer.wait(timeout=0.1):
-                break
-        
-        # Clear the thinking line when done (for non-Rich mode)
-        if not self.console and not self.quiet_mode:
-            print("\r" + " " * len(thinking_msg) + "\r", end="", flush=True)
+            # Clear the line when done
+            if not self.quiet_mode:
+                print("\r" + " " * 60 + "\r", end="", flush=True)
     
     def show_thinking(self, progress: TestProgress) -> None:
         """Legacy method - now redirects to start_thinking_timer"""

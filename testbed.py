@@ -76,16 +76,22 @@ def cli(ctx, config, verbose):
 @click.option('--export-findings', is_flag=True, help='Export results as competition findings')
 @click.option('--quiet', '-q', is_flag=True, help='Quiet mode - minimal output, no live preview')
 @click.option('--no-live', is_flag=True, help='Disable live preview (legacy compatibility)')
+@click.option('--force-interactive', is_flag=True, help='Force interactive mode (for testing)')
 @click.pass_context
-def run(ctx, category, output, auto_score, export_findings, quiet, no_live):
+def run(ctx, category, output, auto_score, export_findings, quiet, no_live, force_interactive):
     """Run vulnerability tests"""
     config = ctx.obj['config']
     verbose = ctx.obj['verbose']
     
     # Configure live display based on flags
-    from utils.live_display import set_display_options
+    from utils.live_display import set_display_options, get_display
     enable_live = not (quiet or no_live)  # Live preview enabled by default, disabled by flags
     set_display_options(enable_live=enable_live, quiet_mode=quiet, verbose=verbose)
+    
+    # Force interactive mode for testing if requested
+    if force_interactive:
+        display = get_display()
+        display.is_interactive = True
     
     # Initialize client
     model_config = config.get('model', {})
