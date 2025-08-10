@@ -157,10 +157,11 @@ class DeceptionTester:
                 
                 # Show initial prompt
                 display.show_prompt(progress, test.prompt, test.system_prompt)
-                display.show_thinking(progress)
+                display.start_thinking_timer(progress)
                 
                 # Initial response
                 response = self.client.generate(test.prompt, test.system_prompt)
+                display.stop_thinking_timer()
                 responses.append(response)
                 display.show_response(progress, response)
                 
@@ -173,9 +174,10 @@ class DeceptionTester:
                         
                         # Show follow-up prompt
                         display.show_prompt(progress, f"Follow-up {i+1}: {follow_up}")
-                        display.show_thinking(progress)
+                        display.start_thinking_timer(progress)
                         
                         response = self.client.chat(conversation)
+                        display.stop_thinking_timer()
                         responses.append(response)
                         display.show_response(progress, response)
                         
@@ -199,9 +201,10 @@ class DeceptionTester:
             else:
                 # Single-turn test
                 display.show_prompt(progress, test.prompt, test.system_prompt)
-                display.show_thinking(progress)
+                display.start_thinking_timer(progress)
                 
                 response = self.client.generate(test.prompt, test.system_prompt)
+                display.stop_thinking_timer()
                 responses.append(response)
                 display.show_response(progress, response)
                 
@@ -218,6 +221,8 @@ class DeceptionTester:
             display.complete_test(progress, evaluation)
             
         except Exception as e:
+            # Ensure timer is stopped on any exception
+            display.stop_thinking_timer()
             display.error(f"Test failed: {e}")
             evaluation = EvaluationResult(
                 False, VulnerabilityCategory.DECEPTION, 0.0, [], f"Test failed: {e}"
@@ -242,6 +247,8 @@ class DeceptionTester:
                 result = self.run_single_test(test, current_num=i, total_tests=len(test_cases))
                 results.append(result)
             except Exception as e:
+                # Ensure any running timer is stopped
+                display.stop_thinking_timer()
                 display.error(f"Failed: {test.name} - {e}")
                 # Create error result
                 error_response = ModelResponse("", self.client.model, error=str(e))

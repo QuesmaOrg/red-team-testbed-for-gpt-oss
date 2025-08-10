@@ -2,6 +2,7 @@
 Live display utilities for real-time test progress and results
 """
 import time
+import threading
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 
@@ -44,6 +45,13 @@ class LiveDisplay:
         self.enable_live = enable_live
         self.quiet_mode = quiet_mode
         self.verbose = verbose
+        
+        # Timer thread management
+        self._timer_thread: Optional[threading.Thread] = None
+        self._stop_timer: threading.Event = threading.Event()
+        self._timer_progress: Optional[TestProgress] = None
+        self._spinner_chars = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+        self._spinner_index = 0
         
         if RICH_AVAILABLE:
             self.console = Console()
@@ -141,18 +149,72 @@ class LiveDisplay:
                 print(f"\n⚙️  SYSTEM PROMPT:")
                 print(f"   {system_prompt}")
     
-    def show_thinking(self, progress: TestProgress) -> None:
-        """Show that model is thinking"""
+    def start_thinking_timer(self, progress: TestProgress) -> None:
+        """Start a live timer that updates while waiting for response"""
         if self.quiet_mode:
             return
         
-        elapsed = time.time() - progress.start_time
-        thinking_msg = f"⏱️  Waiting for response... [{elapsed:.1f}s]"
+        # Stop any existing timer first
+        self.stop_thinking_timer()
         
-        if self.console:
-            self.console.print(thinking_msg, style="dim")
-        else:
-            print(thinking_msg)
+        # Reset timer state
+        self._stop_timer.clear()
+        self._timer_progress = progress
+        self._spinner_index = 0
+        
+        # Start timer thread
+        self._timer_thread = threading.Thread(
+            target=self._timer_update_loop,
+            daemon=True
+        )
+        self._timer_thread.start()
+    
+    def stop_thinking_timer(self) -> None:
+        """Stop the live timer"""
+        if self._timer_thread and self._timer_thread.is_alive():
+            self._stop_timer.set()
+            # Give thread a moment to stop gracefully
+            self._timer_thread.join(timeout=0.2)
+        
+        self._timer_thread = None
+        self._timer_progress = None
+    
+    def _timer_update_loop(self) -> None:
+        """Background thread that updates the thinking display"""
+        if not self._timer_progress:
+            return
+        
+        last_line = ""
+        
+        while not self._stop_timer.is_set():
+            elapsed = time.time() - self._timer_progress.start_time
+            spinner = self._spinner_chars[self._spinner_index % len(self._spinner_chars)]
+            thinking_msg = f"⏱️  Waiting for response... [{elapsed:.1f}s] {spinner}"
+            
+            if self.console:
+                # Clear previous line and print new one
+                if last_line:
+                    # Move cursor up and clear line
+                    self.console.print("\033[1A\033[K", end="")
+                self.console.print(thinking_msg, style="dim")
+                last_line = thinking_msg
+            else:
+                # For non-Rich fallback, use carriage return to overwrite
+                print(f"\r{thinking_msg}", end="", flush=True)
+            
+            self._spinner_index += 1
+            
+            # Wait 0.1 seconds or until stop signal
+            if self._stop_timer.wait(timeout=0.1):
+                break
+        
+        # Clear the thinking line when done (for non-Rich mode)
+        if not self.console and not self.quiet_mode:
+            print("\r" + " " * len(thinking_msg) + "\r", end="", flush=True)
+    
+    def show_thinking(self, progress: TestProgress) -> None:
+        """Legacy method - now redirects to start_thinking_timer"""
+        self.start_thinking_timer(progress)
     
     def show_response(self, progress: TestProgress, response: ModelResponse) -> None:
         """Display the model response"""
