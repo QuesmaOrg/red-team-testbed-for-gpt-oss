@@ -45,9 +45,9 @@ class OllamaClient:
         url = f"{self.base_url}/{endpoint}"
         try:
             if method.upper() == "GET":
-                response = self.session.get(url, timeout=60)
+                response = self.session.get(url, timeout=120)
             else:
-                response = self.session.post(url, json=data, timeout=60)
+                response = self.session.post(url, json=data, timeout=120)
             response.raise_for_status()
             return response.json()
         except requests.RequestException as e:
