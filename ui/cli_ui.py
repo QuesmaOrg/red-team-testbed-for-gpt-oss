@@ -91,7 +91,7 @@ class TestResult:
                 
                 # Format each turn as a conversation with colors
                 turn_header = f"--- {turn_name} ({response_time:.1f}s) ---"
-                user_part = f"[bold cyan]USER:[/bold cyan] {turn_prompt}"
+                user_part = f"[bold cyan]USER: {turn_prompt}[/bold cyan]"
                 model_part = f"[bold green]MODEL:[/bold green] {response}"
                 
                 conversation_parts.append(f"{turn_header}\n{user_part}\n\n{model_part}")
@@ -109,7 +109,7 @@ class TestResult:
             
         else:
             # Single-turn: just return the prompt and response with colors
-            return f"[bold cyan]PROMPT:[/bold cyan]\n{self.prompt or 'No prompt available'}\n\n[bold green]RESPONSE:[/bold green]\n{self.response}"
+            return f"[bold cyan]PROMPT:\n{self.prompt or 'No prompt available'}[/bold cyan]\n\n[bold green]RESPONSE:[/bold green]\n{self.response}"
     
     def _strip_rich_markup(self, text: str) -> str:
         """Strip Rich markup for plain text display"""
@@ -170,11 +170,48 @@ class CLIEvaluator:
                     # Multi-turn conversation data
                     all_responses=test_detail.get('all_responses', None),
                     response_times=test_detail.get('response_times', None),
-                    response_errors=test_detail.get('response_errors', None)
+                    response_errors=test_detail.get('response_errors', None),
+                    # Load saved flagged status and scores
+                    flagged=test_detail.get('flagged', False),
+                    severity_score=test_detail.get('severity_score'),
+                    breadth_score=test_detail.get('breadth_score'),
+                    novelty_score=test_detail.get('novelty_score'),
+                    reproducibility_score=test_detail.get('reproducibility_score'),
+                    methodological_score=test_detail.get('methodological_score'),
+                    notes=test_detail.get('notes')
                 )
                 test_results.append(result)
         
         return test_results
+    
+    def _save_updated_results(self):
+        """Save updated results with flagged status back to JSON file"""
+        try:
+            # Update the original results data with flagged status
+            for category, category_data in self.results_data.items():
+                for i, test_detail in enumerate(category_data.get('test_details', [])):
+                    # Find matching test result by test_id
+                    for result in self.test_results:
+                        if result.test_id == test_detail.get('test_id'):
+                            # Update the flagged status and any scores
+                            test_detail['flagged'] = result.flagged
+                            test_detail['severity_score'] = result.severity_score
+                            test_detail['breadth_score'] = result.breadth_score
+                            test_detail['novelty_score'] = result.novelty_score
+                            test_detail['reproducibility_score'] = result.reproducibility_score
+                            test_detail['methodological_score'] = result.methodological_score
+                            test_detail['notes'] = result.notes
+                            break
+            
+            # Write back to file
+            with open(self.results_file, 'w') as f:
+                json.dump(self.results_data, f, indent=2)
+                
+        except Exception as e:
+            if self.console:
+                self.console.print(f"[yellow]⚠️  Could not save updated results: {e}[/yellow]")
+            else:
+                print(f"⚠️  Could not save updated results: {e}")
     
     def _display_header(self):
         """Display header information"""
@@ -330,6 +367,9 @@ class CLIEvaluator:
             self.console.print(f"\n[bold green]Total Score: {total}/50[/bold green]")
         else:
             print(f"\nTotal Score: {total}/50")
+        
+        # Save updated results to JSON
+        self._save_updated_results()
     
     def _display_status_bar(self):
         """Display status bar with progress and flagged count"""
@@ -390,6 +430,73 @@ class CLIEvaluator:
             print("="*50)
             input("Press Enter to continue...")
     
+    def _save_flagged_finding(self, result: TestResult):
+        """Automatically save a flagged result as a finding"""
+        try:
+            from utils.findings_generator import FindingsGenerator
+            from utils.evaluator import VulnerabilityCategory, VulnerabilityScore, EvaluationResult
+            
+            generator = FindingsGenerator()
+            
+            # Convert to required objects
+            try:
+                category = VulnerabilityCategory(result.category.lower().replace('_', ''))
+            except ValueError:
+                # If category doesn't match enum, use a default
+                category = VulnerabilityCategory.INAPPROPRIATE_TOOL_USE
+            
+            # Use existing scores if available, otherwise set defaults
+            severity = result.severity_score or 5
+            breadth = result.breadth_score or 3
+            novelty = result.novelty_score or 3
+            reproducibility = result.reproducibility_score or 7
+            methodological = result.methodological_score or 4
+            
+            score = VulnerabilityScore(
+                severity=severity,
+                breadth=breadth,
+                novelty=novelty,
+                reproducibility=reproducibility,
+                methodological_insight=methodological
+            )
+            
+            evaluation = EvaluationResult(
+                is_vulnerable=result.vulnerability_detected,
+                category=category,
+                confidence=result.confidence,
+                evidence=result.evidence,
+                reasoning=result.reasoning
+            )
+            
+            finding = generator.create_finding(
+                category=category,
+                title=f"{result.test_name} - Flagged Finding",
+                evaluation=evaluation,
+                score=score,
+                prompt=result.get_display_prompt(),
+                response=result.response,
+                methodology=f"Interactive CLI flagging of {result.test_id}",
+                reproduction_steps=[
+                    f"Run test: {result.test_id}",
+                    f"Use prompt: {result.get_display_prompt()[:100]}{'...' if len(result.get_display_prompt()) > 100 else ''}",
+                    "Analyze response for evidence of vulnerability",
+                    "Manual review confirmed this as a potential finding"
+                ]
+            )
+            
+            if result.notes:
+                finding.additional_notes = result.notes
+            
+            filepath = generator.save_finding(finding)
+            return filepath
+            
+        except Exception as e:
+            if self.console:
+                self.console.print(f"[red]⚠️  Could not auto-save finding: {e}[/red]")
+            else:
+                print(f"⚠️  Could not auto-save finding: {e}")
+            return None
+
     def _export_findings(self):
         """Export flagged results as findings"""
         flagged_results = [r for r in self.test_results if r.flagged and r.severity_score is not None]
@@ -490,10 +597,39 @@ class CLIEvaluator:
                     self._score_current_result()
                 elif command == 'f':
                     result.flagged = True
-                    print("🚩 Flagged as potential finding")
+                    if self.console:
+                        self.console.print("🚩 Flagged as potential finding")
+                        self.console.print("💾 Auto-saving as finding...")
+                    else:
+                        print("🚩 Flagged as potential finding")
+                        print("💾 Auto-saving as finding...")
+                    
+                    # Automatically save as finding
+                    filepath = self._save_flagged_finding(result)
+                    if filepath:
+                        if self.console:
+                            self.console.print(f"[green]✅ Saved finding: {filepath}[/green]")
+                        else:
+                            print(f"✅ Saved finding: {filepath}")
+                    else:
+                        if self.console:
+                            self.console.print("[yellow]⚠️  Flagged but could not auto-save (you can export manually with 'e')[/yellow]")
+                        else:
+                            print("⚠️  Flagged but could not auto-save (you can export manually with 'e')")
+                    
+                    # Save updated results to JSON
+                    self._save_updated_results()
                 elif command == 'u':
                     result.flagged = False
-                    print("Unflagged")
+                    if self.console:
+                        self.console.print("🔄 Unflagged")
+                        self.console.print("[dim]Note: Auto-saved finding (if any) remains in findings/ directory[/dim]")
+                    else:
+                        print("🔄 Unflagged")
+                        print("Note: Auto-saved finding (if any) remains in findings/ directory")
+                    
+                    # Save updated results to JSON
+                    self._save_updated_results()
                 elif command == 'j':
                     try:
                         if self.console:

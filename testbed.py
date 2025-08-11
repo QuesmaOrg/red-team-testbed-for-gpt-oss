@@ -438,7 +438,15 @@ def save_results(results: Dict[str, Any], output_dir: str, verbose: bool) -> str
                 # Multi-turn conversation data
                 "all_responses": [resp.content for resp in responses] if responses else [],
                 "response_times": [resp.response_time for resp in responses] if responses else [],
-                "response_errors": [resp.error for resp in responses] if responses else []
+                "response_errors": [resp.error for resp in responses] if responses else [],
+                # UI interaction data
+                "flagged": False,
+                "severity_score": None,
+                "breadth_score": None,
+                "novelty_score": None,
+                "reproducibility_score": None,
+                "methodological_score": None,
+                "notes": None
             }
             serializable_results[category]["test_details"].append(test_detail)
     
