@@ -782,13 +782,17 @@ class CLIEvaluator:
         if self.console:
             # Show remaining content with preserved colors
             if result.conversation_turns and result.all_responses:
-                # Multi-turn: show remaining conversation with colors
-                formatted_content = f"[bold cyan]...continuing conversation:[/bold cyan]\n\n{self.remaining_content}"
+                # Multi-turn: remaining content already has full formatting with colors
+                # Make sure we preserve the Rich markup by not adding extra formatting
+                title = "Continuing Conversation"
+                formatted_content = f"\n{self.remaining_content}"
             else:
                 # Single-turn: show remaining response with MODEL color
-                formatted_content = f"[bold green]...continuing response:[/bold green]\n\n{self.remaining_content}"
+                title = "Continuing Response"
+                formatted_content = f"\n[bold green]{self.remaining_content}[/bold green]"
             
-            self.console.print(Panel(formatted_content, title="More Content"))
+            self.console.print("\n")
+            self.console.print(Panel(formatted_content, title=title, style="yellow"))
             
             # Ask if user wants to see everything at once
             show_all = input("Press Enter to continue, or type 'all' to see complete content: ").strip().lower()
