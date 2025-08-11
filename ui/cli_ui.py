@@ -1078,7 +1078,7 @@ class CLIEvaluator:
                     self._export_findings()
                 elif command in ['h', '?']:
                     self._show_help()
-                elif command in ['q', 'quit', 'exit', 'end']:
+                elif command in ['q', 'quit', 'exit', 'end', '\x04']:
                     break
                 else:
                     print(f"Unknown command: {command}")
