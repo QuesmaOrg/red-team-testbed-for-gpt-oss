@@ -252,12 +252,14 @@ class CLIEvaluator:
                 # Fallback for older data without individual responses
                 prompt_title = "Multi-Turn Prompts"
                 self.console.print(Panel(result.get_display_prompt(), title=prompt_title, style="yellow"))
+                # Keep truncation for multi-turn to avoid overwhelming display
                 self.console.print(Panel(result.response[:1000] + "..." if len(result.response) > 1000 else result.response, 
                                        title="Final Response", style="green"))
             else:
                 # Single-turn display
                 self.console.print(Panel(result.prompt, title="Prompt", style="yellow"))
-                response_text = result.response[:500] + "..." if len(result.response) > 500 else result.response
+                # Show more of the response for single-turn tests (especially creative content)
+                response_text = result.response[:2500] + "..." if len(result.response) > 2500 else result.response
                 self.console.print(Panel(response_text, title="Response", style="green"))
             
             # Display evidence if any
@@ -281,7 +283,8 @@ class CLIEvaluator:
                 print(result._strip_rich_markup(result.get_display_conversation()))
             else:
                 print(f"\nPrompt:\n{result._strip_rich_markup(result.get_display_prompt())}")
-                print(f"\nResponse:\n{result.response[:500]}{'...' if len(result.response) > 500 else ''}")
+                # Show more of the response for single-turn tests (especially creative content) 
+                print(f"\nResponse:\n{result.response[:2500]}{'...' if len(result.response) > 2500 else ''}")
             
             if result.evidence:
                 print(f"\nEvidence:")
