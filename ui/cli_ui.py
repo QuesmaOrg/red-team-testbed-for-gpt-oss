@@ -220,17 +220,6 @@ class CLIEvaluator:
             else:
                 print(f"⚠️  Could not save updated results: {e}")
     
-    def _display_header(self):
-        """Display header information"""
-        if self.console:
-            self.console.clear()
-            title = f"GPT-OSS-20B Red Team Result Evaluator [{self.current_index + 1}/{len(self.test_results)}]"
-            self.console.print(Panel(title, style="bold blue"))
-        else:
-            print("=" * 70)
-            print(f"GPT-OSS-20B Red Team Result Evaluator [{self.current_index + 1}/{len(self.test_results)}]")
-            print("=" * 70)
-    
     def _calculate_available_space(self) -> Tuple[int, int]:
         """Calculate available terminal space for content display"""
         try:
@@ -246,7 +235,7 @@ class CLIEvaluator:
         # - Status bar: ~4 lines
         # - Margins and spacing: ~3 lines
         # - Extra buffer to prevent scrolling: ~5 lines
-        reserved_lines = 23
+        reserved_lines = 29
         available_lines = max(8, height - reserved_lines)  # Minimum 8 lines for content
         
         return available_lines, width
@@ -380,21 +369,23 @@ class CLIEvaluator:
         self.remaining_content = ""  # Reset remaining content
         self.showing_more = False  # Reset more mode
         available_lines, terminal_width = self._calculate_available_space()
+
+        if result.evidence:
+            available_lines -= len(result.evidence) + 2
+            available_lines = max(8, available_lines)
         
         if self.console:
             # Create rich display
-            table = Table(show_header=True, header_style="bold magenta")
+            table = Table(show_header=False, header_style="bold magenta")
             table.add_column("Field", style="cyan")
             table.add_column("Value")
             
             table.add_row("Test ID", result.test_id)
             table.add_row("Name", result.test_name)
             table.add_row("Category", result.category)
-            table.add_row("Vulnerable", "🔴 YES" if result.vulnerability_detected else "🟢 NO")
-            table.add_row("Confidence", f"{result.confidence:.2f}")
+            table.add_row("Vulnerable (confidence)", f"🔴 YES ({result.confidence:.2f})" if result.vulnerability_detected else f"🟢 NO ({result.confidence:.2f})")
             
             self.console.print(table)
-            self.console.print()
             
             # Calculate dynamic truncation based on available space
             lines_used = 0
@@ -405,9 +396,7 @@ class CLIEvaluator:
                 num_turns = len(result.conversation_turns)
                 conv_title = f"Multi-Turn Conversation ({num_turns} turns)"
                 
-                # Calculate how many turns can actually fit based on content and terminal width
-                evidence_reasoning_lines = 5  # Reserve space for evidence and reasoning
-                max_turns = self._calculate_max_turns_that_fit(result, available_lines - evidence_reasoning_lines, terminal_width)
+                max_turns = self._calculate_max_turns_that_fit(result, available_lines, terminal_width)
                 
                 if max_turns < num_turns:
                     # Show only turns that fit completely
@@ -427,7 +416,7 @@ class CLIEvaluator:
                 self.console.print(Panel(prompt_text, title=prompt_title, style="yellow"))
                 
                 # Response with standardized color
-                remaining_lines = available_lines - lines_used - 6
+                remaining_lines = available_lines - lines_used
                 response_lines = result.response.split('\n')
                 if len(response_lines) > remaining_lines:
                     response_text = '\n'.join(response_lines[:remaining_lines]) + '\n\n[dim]... (press \'m\' for more)[/dim]'
@@ -445,7 +434,7 @@ class CLIEvaluator:
                 self.console.print(Panel(prompt_text, title="Prompt", style="yellow"))
                 
                 # Response with smart truncation based on available space
-                remaining_lines = available_lines - 6  # Account for prompt, evidence, reasoning
+                remaining_lines = available_lines
                 response_lines = result.response.split('\n')
                 if len(response_lines) > remaining_lines:
                     response_text = '\n'.join(response_lines[:remaining_lines]) + '\n\n[dim]... (press \'m\' for more)[/dim]'
@@ -668,9 +657,9 @@ class CLIEvaluator:
         """Get a single character input without pressing Enter"""
         try:
             if self.console:
-                self.console.print(f"\n[dim]{prompt_text}[/dim]", end="")
+                self.console.print(f"[dim]{prompt_text}[/dim]", end="")
             else:
-                print(f"\n{prompt_text}", end="", flush=True)
+                print(f"{prompt_text}", end="", flush=True)
             
             # Save terminal settings
             fd = sys.stdin.fileno()
@@ -731,7 +720,6 @@ class CLIEvaluator:
             status_line = f"{progress_text} | {flagged_text} | {commands_text}"
         
         if self.console:
-            self.console.print()
             if self.content_truncated:
                 self.console.print(Panel(status_line, style="yellow", title="Status", title_align="left"))
             else:
@@ -968,7 +956,6 @@ class CLIEvaluator:
         """Main evaluation loop"""
         try:
             while True:
-                self._display_header()
                 result = self.test_results[self.current_index]
                 self._display_test_result(result)
                 
@@ -991,6 +978,10 @@ class CLIEvaluator:
                 
                 # Get user input (single character)
                 command = self._get_single_char()
+                if self.console:
+                    self.console.print()
+                else:
+                    print()
                 
                 # Process commands
                 if command in ['n', 'next', '→']:
