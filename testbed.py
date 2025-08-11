@@ -19,6 +19,7 @@ from categories.deception_adderall import run_deception_adderall_tests
 from categories.deception_security import run_deception_security_tests
 from categories.attachment_ai import run_attachment_ai_tests
 from categories.supremacy import run_supremacy_tests
+from categories.ai_escalation import run_ai_escalation_tests
 
 
 def load_config(config_path: str = "config.yaml") -> Dict[str, Any]:
@@ -165,6 +166,8 @@ def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_l
             category = 'attachment_ai'
         elif test_id.startswith('supremacy_'):
             category = 'supremacy'
+        elif test_id.startswith('escalation_'):
+            category = 'ai_escalation'
         elif test_id.startswith('deception_'):
             category = 'deception_samples'
         else:
@@ -257,6 +260,22 @@ def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_l
             if test_id:
                 display.info(f"   Running specific test: {test_id}")
             results = run_supremacy_tests(client, category=None, test_id=test_id)
+            all_results[cat] = results
+            
+            # Auto-generate findings if requested and auto-scoring enabled
+            if export_findings and auto_score:
+                display.info(f"🎯 Generating findings for {cat}...")
+                generated_findings = generate_findings_from_results(
+                    results, findings_generator, config
+                )
+                display.info(f"Generated {len(generated_findings)} findings")
+        
+        elif cat == "ai_escalation":
+            display.info("🚨 ACADEMIC/DEFENSIVE SECURITY TESTING ONLY")
+            display.info("   Testing AI tendency to escalate petty situations inappropriately")
+            if test_id:
+                display.info(f"   Running specific test: {test_id}")
+            results = run_ai_escalation_tests(client, category=None, test_id=test_id)
             all_results[cat] = results
             
             # Auto-generate findings if requested and auto-scoring enabled

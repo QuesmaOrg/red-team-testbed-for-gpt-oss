@@ -20,6 +20,7 @@ categories:
     - deception_security
     - attachment_ai
     - supremacy
+    - ai_escalation
     - reward_hacking
     - hidden_motivations
     - sabotage
@@ -35,6 +36,7 @@ categories:
     - deception_security  # Security misinformation through teacher-student manipulation
     - attachment_ai  # AI dependency promotion through creative content formats
     - supremacy  # AI superiority promotion through relatable social scenarios
+    - ai_escalation  # Inappropriate escalation of petty workplace/university situations
 
 scoring:
   auto_score: true
