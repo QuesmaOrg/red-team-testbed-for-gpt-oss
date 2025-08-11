@@ -381,6 +381,24 @@ def generate_findings_from_results(results: Dict[str, Any],
     return generated_files
 
 
+def extract_categories_from_file(file_path: Path) -> List[str]:
+    """Extract categories from a test results JSON file"""
+    try:
+        with open(file_path, 'r') as f:
+            data = json.load(f)
+        # Categories are top-level keys in the JSON
+        categories = list(data.keys())
+        return [cat for cat in categories if isinstance(data[cat], dict)]
+    except (json.JSONDecodeError, FileNotFoundError, PermissionError):
+        # Return empty list if file can't be read or parsed
+        return []
+
+
+def format_category_name(category: str) -> str:
+    """Format category name for display (remove underscores, capitalize)"""
+    return category.replace('_', ' ').title()
+
+
 def select_results_file(config: Dict[str, Any]) -> Optional[str]:
     """Prompt user to select a results file from available files"""
     import os
@@ -406,11 +424,25 @@ def select_results_file(config: Dict[str, Any]) -> Optional[str]:
     # Sort by modification time (most recent first)
     result_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
     
+    # Extract categories from all files and calculate global popularity
+    from collections import Counter
+    all_categories = []
+    file_categories = {}
+    
+    for file_path in result_files:
+        categories = extract_categories_from_file(file_path)
+        file_categories[file_path] = categories
+        all_categories.extend(categories)
+    
+    # Get category popularity ranking (most common first)
+    category_popularity = Counter(all_categories)
+    popular_categories = [cat for cat, _ in category_popularity.most_common()]
+    
     # Display table of available files
     click.echo("📁 Available result files:")
-    click.echo("=" * 80)
-    click.echo(f"{'#':<3} {'Filename':<35} {'Size':<8} {'Modified':<20} {'Age'}")
-    click.echo("-" * 80)
+    click.echo("=" * 110)
+    click.echo(f"{'#':<3} {'Filename':<30} {'Size':<8} {'Modified':<20} {'Age':<10} {'Categories'}")
+    click.echo("-" * 110)
     
     now = datetime.now()
     for i, file_path in enumerate(result_files, 1):
@@ -419,9 +451,27 @@ def select_results_file(config: Dict[str, Any]) -> Optional[str]:
         modified = datetime.fromtimestamp(stat.st_mtime)
         age = format_time_ago(now, modified)
         
-        click.echo(f"{i:<3} {file_path.name:<35} {size:<8} {modified.strftime('%Y-%m-%d %H:%M'):<20} {age}")
+        # Get categories for this file and format them
+        file_cats = file_categories.get(file_path, [])
+        if len(file_cats) <= 3:
+            # Show all categories if 3 or fewer
+            categories_display = ", ".join([format_category_name(cat) for cat in file_cats])
+        else:
+            # Show top 3 most popular categories globally + "..."
+            top_3_for_file = []
+            for cat in popular_categories:
+                if cat in file_cats:
+                    top_3_for_file.append(cat)
+                if len(top_3_for_file) == 3:
+                    break
+            categories_display = ", ".join([format_category_name(cat) for cat in top_3_for_file]) + "..."
+        
+        if not categories_display:
+            categories_display = "Unknown"
+        
+        click.echo(f"{i:<3} {file_path.name:<30} {size:<8} {modified.strftime('%Y-%m-%d %H:%M'):<20} {age:<10} {categories_display}")
     
-    click.echo("-" * 80)
+    click.echo("-" * 110)
     
     # Prompt for selection
     try:
