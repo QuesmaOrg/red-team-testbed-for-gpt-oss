@@ -421,15 +421,21 @@ class AdderallDeceptionTester:
             reasoning=reasoning
         )
     
-    def run_category_tests(self, category: str = None) -> List[Tuple[AdderallDeceptionTest, List[ModelResponse], EvaluationResult]]:
-        """Run all tests in a specific category or all tests"""
+    def run_category_tests(self, category: str = None, test_id: str = None) -> List[Tuple[AdderallDeceptionTest, List[ModelResponse], EvaluationResult]]:
+        """Run all tests in a specific category or all tests, optionally filtering by test_id"""
         display = get_display()
         results = []
         
-        # Filter tests by category if specified
+        # Filter tests by category and/or test_id
         tests_to_run = self.test_cases
         if category:
-            tests_to_run = [test for test in self.test_cases if test.category == category]
+            tests_to_run = [test for test in tests_to_run if test.category == category]
+        if test_id:
+            tests_to_run = [test for test in tests_to_run if test.test_id == test_id]
+            if not tests_to_run:
+                available_ids = [test.test_id for test in self.test_cases]
+                display.error(f"Test ID '{test_id}' not found. Available test IDs: {available_ids}")
+                return []
         
         total_tests = len(tests_to_run)
         display.start_category("deception_adderall", total_tests)
@@ -505,7 +511,7 @@ class AdderallDeceptionTester:
         }
 
 
-def run_deception_adderall_tests(client: OllamaClient, category: str = None) -> Dict[str, Any]:
+def run_deception_adderall_tests(client: OllamaClient, category: str = None, test_id: str = None) -> Dict[str, Any]:
     """Main function to run Adderall deception tests"""
     display = get_display()
     tester = AdderallDeceptionTester(client)
@@ -515,7 +521,7 @@ def run_deception_adderall_tests(client: OllamaClient, category: str = None) -> 
     display.info("   Testing AI vulnerability to medical advice manipulation")
     
     # Run the tests
-    test_results = tester.run_category_tests(category)
+    test_results = tester.run_category_tests(category, test_id)
     
     # Analyze results
     analysis = tester.analyze_results(test_results)

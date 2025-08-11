@@ -230,14 +230,20 @@ class DeceptionTester:
         
         return test, responses, evaluation
     
-    def run_category_tests(self, category: str = None) -> List[Tuple[DeceptionTest, List[ModelResponse], EvaluationResult]]:
-        """Run all tests in a category or all tests"""
+    def run_category_tests(self, category: str = None, test_id: str = None) -> List[Tuple[DeceptionTest, List[ModelResponse], EvaluationResult]]:
+        """Run all tests in a category or all tests, optionally filtering by test_id"""
         display = get_display()
         results = []
         
         test_cases = self.test_cases
         if category:
-            test_cases = [t for t in self.test_cases if t.category == category]
+            test_cases = [t for t in test_cases if t.category == category]
+        if test_id:
+            test_cases = [t for t in test_cases if t.test_id == test_id]
+            if not test_cases:
+                available_ids = [test.test_id for test in self.test_cases]
+                display.error(f"Test ID '{test_id}' not found. Available test IDs: {available_ids}")
+                return []
         
         # Start category display
         display.start_category("deception", len(test_cases))
@@ -319,12 +325,12 @@ class DeceptionTester:
         return list(set(test.category for test in self.test_cases))
 
 
-def run_deception_samples_tests(client: OllamaClient, category: str = None) -> Dict[str, Any]:
+def run_deception_samples_tests(client: OllamaClient, category: str = None, test_id: str = None) -> Dict[str, Any]:
     """Main function to run deception tests"""
     display = get_display()
     tester = DeceptionTester(client)
     
-    results = tester.run_category_tests(category)
+    results = tester.run_category_tests(category, test_id)
     analysis = tester.analyze_results(results)
     
     # Display final summary

@@ -31,11 +31,17 @@ class TestResult:
     test_name: str
     category: str
     prompt: str
+    conversation_turns: Optional[List[str]]
     response: str
     vulnerability_detected: bool
     confidence: float
     evidence: List[str]
     reasoning: str
+    
+    # Multi-turn conversation data
+    all_responses: Optional[List[str]] = None
+    response_times: Optional[List[float]] = None
+    response_errors: Optional[List[str]] = None
     
     # Manual scoring fields
     severity_score: Optional[int] = None
@@ -45,6 +51,79 @@ class TestResult:
     methodological_score: Optional[int] = None
     notes: Optional[str] = None
     flagged: bool = False
+    
+    def get_turn_names(self) -> List[str]:
+        """Get descriptive names for conversation turns"""
+        if not self.conversation_turns:
+            return []
+        
+        # Map turn indices to descriptive names based on common patterns
+        turn_names = [
+            "Opening/Rapport Building",
+            "Topic Introduction", 
+            "Escalation/Focus Shift",
+            "Direct Request/Goal",
+            "Follow-up/Clarification",
+            "Final Push"
+        ]
+        
+        # Return appropriate number of turn names
+        num_turns = len(self.conversation_turns)
+        if num_turns <= len(turn_names):
+            return turn_names[:num_turns]
+        else:
+            # If more turns than predefined names, add generic ones
+            result = turn_names[:]
+            for i in range(len(turn_names), num_turns):
+                result.append(f"Turn {i+1}")
+            return result
+    
+    def get_display_conversation(self) -> str:
+        """Get full conversation for display - handles both single-turn and multi-turn"""
+        if self.conversation_turns and self.all_responses:
+            # Multi-turn: show full conversation with responses
+            conversation_parts = []
+            turn_names = self.get_turn_names()
+            
+            for i, (turn_prompt, response) in enumerate(zip(self.conversation_turns, self.all_responses)):
+                turn_name = turn_names[i] if i < len(turn_names) else f"Turn {i+1}"
+                response_time = self.response_times[i] if self.response_times and i < len(self.response_times) else 0.0
+                
+                # Format each turn as a conversation
+                turn_header = f"--- {turn_name} ({response_time:.1f}s) ---"
+                user_part = f"USER: {turn_prompt}"
+                model_part = f"MODEL: {response}"
+                
+                conversation_parts.append(f"{turn_header}\n{user_part}\n\n{model_part}")
+            
+            return "\n\n" + "="*60 + "\n\n".join(conversation_parts)
+            
+        elif self.conversation_turns:
+            # Multi-turn but no individual responses (fallback)
+            turns = []
+            turn_names = self.get_turn_names()
+            for i, turn in enumerate(self.conversation_turns):
+                turn_name = turn_names[i] if i < len(turn_names) else f"Turn {i+1}"
+                turns.append(f"{turn_name}: {turn}")
+            return "\n\n".join(turns) + f"\n\nFINAL RESPONSE:\n{self.response}"
+            
+        else:
+            # Single-turn: just return the prompt and response
+            return f"PROMPT:\n{self.prompt or 'No prompt available'}\n\nRESPONSE:\n{self.response}"
+    
+    def get_display_prompt(self) -> str:
+        """Legacy method for backward compatibility"""
+        if self.conversation_turns:
+            # Multi-turn: show all turns with labels
+            turn_names = self.get_turn_names()
+            turns = []
+            for i, turn in enumerate(self.conversation_turns):
+                turn_name = turn_names[i] if i < len(turn_names) else f"Turn {i+1}"
+                turns.append(f"{turn_name}: {turn}")
+            return "\n\n".join(turns)
+        else:
+            # Single-turn: just return the prompt
+            return self.prompt or "No prompt available"
 
 
 class CLIEvaluator:
@@ -77,11 +156,16 @@ class CLIEvaluator:
                     test_name=test_detail.get('test_name', ''),
                     category=test_detail.get('category', category),
                     prompt=test_detail.get('prompt', ''),
+                    conversation_turns=test_detail.get('conversation_turns', None),
                     response=test_detail.get('response_content', ''),
                     vulnerability_detected=test_detail.get('vulnerability_detected', False),
                     confidence=test_detail.get('confidence', 0.0),
                     evidence=test_detail.get('evidence', []),
-                    reasoning=test_detail.get('reasoning', '')
+                    reasoning=test_detail.get('reasoning', ''),
+                    # Multi-turn conversation data
+                    all_responses=test_detail.get('all_responses', None),
+                    response_times=test_detail.get('response_times', None),
+                    response_errors=test_detail.get('response_errors', None)
                 )
                 test_results.append(result)
         
@@ -115,12 +199,21 @@ class CLIEvaluator:
             self.console.print(table)
             self.console.print()
             
-            # Display prompt
-            self.console.print(Panel(result.prompt, title="Prompt", style="yellow"))
-            
-            # Display response
-            response_text = result.response[:500] + "..." if len(result.response) > 500 else result.response
-            self.console.print(Panel(response_text, title="Response", style="green"))
+            # Display full conversation (handles both single-turn and multi-turn)
+            if result.conversation_turns and result.all_responses:
+                conv_title = f"Multi-Turn Conversation ({len(result.conversation_turns)} turns)"
+                self.console.print(Panel(result.get_display_conversation(), title=conv_title, style="yellow"))
+            elif result.conversation_turns:
+                # Fallback for older data without individual responses
+                prompt_title = "Multi-Turn Prompts"
+                self.console.print(Panel(result.get_display_prompt(), title=prompt_title, style="yellow"))
+                self.console.print(Panel(result.response[:1000] + "..." if len(result.response) > 1000 else result.response, 
+                                       title="Final Response", style="green"))
+            else:
+                # Single-turn display
+                self.console.print(Panel(result.prompt, title="Prompt", style="yellow"))
+                response_text = result.response[:500] + "..." if len(result.response) > 500 else result.response
+                self.console.print(Panel(response_text, title="Response", style="green"))
             
             # Display evidence if any
             if result.evidence:
@@ -137,8 +230,13 @@ class CLIEvaluator:
             print(f"Category: {result.category}")
             print(f"Vulnerable: {'YES' if result.vulnerability_detected else 'NO'}")
             print(f"Confidence: {result.confidence:.2f}")
-            print(f"\nPrompt:\n{result.prompt}")
-            print(f"\nResponse:\n{result.response[:500]}{'...' if len(result.response) > 500 else ''}")
+            # Display full conversation for non-rich console
+            if result.conversation_turns and result.all_responses:
+                print(f"\nFull Conversation ({len(result.conversation_turns)} turns):")
+                print(result.get_display_conversation())
+            else:
+                print(f"\nPrompt:\n{result.get_display_prompt()}")
+                print(f"\nResponse:\n{result.response[:500]}{'...' if len(result.response) > 500 else ''}")
             
             if result.evidence:
                 print(f"\nEvidence:")
@@ -308,12 +406,12 @@ class CLIEvaluator:
                     title=result.test_name,
                     evaluation=evaluation,
                     score=score,
-                    prompt=result.prompt,
+                    prompt=result.get_display_prompt(),
                     response=result.response,
                     methodology=f"Interactive CLI evaluation of {result.test_id}",
                     reproduction_steps=[
                         f"Run test: {result.test_id}",
-                        f"Use prompt: {result.prompt}",
+                        f"Use prompt: {result.get_display_prompt()[:100]}{'...' if len(result.get_display_prompt()) > 100 else ''}",
                         "Analyze response for evidence of vulnerability"
                     ]
                 )

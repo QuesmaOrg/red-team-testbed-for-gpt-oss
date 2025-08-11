@@ -72,6 +72,7 @@ def cli(ctx, config, verbose):
 
 @cli.command()
 @click.option('--category', '-c', help='Specific vulnerability category to test')
+@click.option('--test-id', help='Specific test ID to run (e.g., adderall_001, deception_003)')
 @click.option('--output', '-o', help='Output directory for results')
 @click.option('--auto-score', is_flag=True, help='Enable automatic scoring')
 @click.option('--export-findings', is_flag=True, help='Export results as competition findings')
@@ -80,7 +81,7 @@ def cli(ctx, config, verbose):
 @click.option('--force-interactive', is_flag=True, help='Force interactive mode (for testing)')
 @click.option('--skip-busy-check', is_flag=True, help='Skip busy check and proceed anyway')
 @click.pass_context
-def run(ctx, category, output, auto_score, export_findings, quiet, no_live, force_interactive, skip_busy_check):
+def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_live, force_interactive, skip_busy_check):
     """Run vulnerability tests"""
     config = ctx.obj['config']
     verbose = ctx.obj['verbose']
@@ -151,6 +152,17 @@ def run(ctx, category, output, auto_score, export_findings, quiet, no_live, forc
     available_categories = config.get('categories', {}).get('enabled', ['deception'])
     focus_categories = config.get('categories', {}).get('focus_categories', ['deception'])
     
+    if test_id and not category:
+        # Auto-detect category from test_id prefix
+        if test_id.startswith('adderall_'):
+            category = 'deception_adderall'
+        elif test_id.startswith('deception_'):
+            category = 'deception_samples'
+        else:
+            click.echo(f"❌ Cannot determine category for test ID '{test_id}'. Please specify --category")
+            click.echo(f"   Available categories: {available_categories}")
+            return
+    
     if category:
         if category not in available_categories:
             click.echo(f"❌ Category '{category}' not available. Options: {available_categories}")
@@ -171,7 +183,7 @@ def run(ctx, category, output, auto_score, export_findings, quiet, no_live, forc
     
     for cat in test_categories:
         if cat == "deception_samples":
-            results = run_deception_samples_tests(client, category=None)
+            results = run_deception_samples_tests(client, category=None, test_id=test_id)
             all_results[cat] = results
             
             # Auto-generate findings if requested and auto-scoring enabled
@@ -185,7 +197,9 @@ def run(ctx, category, output, auto_score, export_findings, quiet, no_live, forc
         elif cat == "deception_adderall":
             display.info("🚨 ACADEMIC/DEFENSIVE SECURITY TESTING ONLY")
             display.info("   Testing AI vulnerability to medical advice manipulation")
-            results = run_deception_adderall_tests(client, category=None)
+            if test_id:
+                display.info(f"   Running specific test: {test_id}")
+            results = run_deception_adderall_tests(client, category=None, test_id=test_id)
             all_results[cat] = results
             
             # Auto-generate findings if requested and auto-scoring enabled
@@ -314,8 +328,9 @@ def save_results(results: Dict[str, Any], output_dir: str, verbose: bool) -> Non
                 "test_id": test.test_id,
                 "test_name": test.name,
                 "category": test.category,
-                "prompt": test.prompt,
-                "system_prompt": test.system_prompt,
+                "prompt": getattr(test, 'prompt', None),
+                "conversation_turns": getattr(test, 'conversation_turns', None),
+                "system_prompt": getattr(test, 'system_prompt', ''),
                 "vulnerability_detected": evaluation.is_vulnerable,
                 "confidence": evaluation.confidence,
                 "evidence": evaluation.evidence,
@@ -323,7 +338,11 @@ def save_results(results: Dict[str, Any], output_dir: str, verbose: bool) -> Non
                 "response_content": responses[0].content if responses else "",
                 "response_time": responses[0].response_time if responses else 0.0,
                 "timed_out": responses[0].timed_out if responses else False,
-                "response_error": responses[0].error if responses else None
+                "response_error": responses[0].error if responses else None,
+                # Multi-turn conversation data
+                "all_responses": [resp.content for resp in responses] if responses else [],
+                "response_times": [resp.response_time for resp in responses] if responses else [],
+                "response_errors": [resp.error for resp in responses] if responses else []
             }
             serializable_results[category]["test_details"].append(test_detail)
     
