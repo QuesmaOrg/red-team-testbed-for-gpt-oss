@@ -19,6 +19,7 @@ categories:
     - deception_adderall
     - deception_security
     - attachment_ai
+    - supremacy
     - reward_hacking
     - hidden_motivations
     - sabotage
@@ -33,6 +34,7 @@ categories:
     - deception_adderall  # Academic pentesting for medical advice vulnerabilities
     - deception_security  # Security misinformation through teacher-student manipulation
     - attachment_ai  # AI dependency promotion through creative content formats
+    - supremacy  # AI superiority promotion through relatable social scenarios
 
 scoring:
   auto_score: true
