@@ -89,10 +89,10 @@ class TestResult:
                 turn_name = turn_names[i] if i < len(turn_names) else f"Turn {i+1}"
                 response_time = self.response_times[i] if self.response_times and i < len(self.response_times) else 0.0
                 
-                # Format each turn as a conversation
+                # Format each turn as a conversation with colors
                 turn_header = f"--- {turn_name} ({response_time:.1f}s) ---"
-                user_part = f"USER: {turn_prompt}"
-                model_part = f"MODEL: {response}"
+                user_part = f"[bold cyan]USER:[/bold cyan] {turn_prompt}"
+                model_part = f"[bold green]MODEL:[/bold green] {response}"
                 
                 conversation_parts.append(f"{turn_header}\n{user_part}\n\n{model_part}")
             
@@ -105,11 +105,16 @@ class TestResult:
             for i, turn in enumerate(self.conversation_turns):
                 turn_name = turn_names[i] if i < len(turn_names) else f"Turn {i+1}"
                 turns.append(f"{turn_name}: {turn}")
-            return "\n\n".join(turns) + f"\n\nFINAL RESPONSE:\n{self.response}"
+            return "\n\n".join(turns) + f"\n\n[bold green]FINAL RESPONSE:[/bold green]\n{self.response}"
             
         else:
-            # Single-turn: just return the prompt and response
-            return f"PROMPT:\n{self.prompt or 'No prompt available'}\n\nRESPONSE:\n{self.response}"
+            # Single-turn: just return the prompt and response with colors
+            return f"[bold cyan]PROMPT:[/bold cyan]\n{self.prompt or 'No prompt available'}\n\n[bold green]RESPONSE:[/bold green]\n{self.response}"
+    
+    def _strip_rich_markup(self, text: str) -> str:
+        """Strip Rich markup for plain text display"""
+        import re
+        return re.sub(r'\[/?[^]]*\]', '', text)
     
     def get_display_prompt(self) -> str:
         """Legacy method for backward compatibility"""
@@ -233,9 +238,9 @@ class CLIEvaluator:
             # Display full conversation for non-rich console
             if result.conversation_turns and result.all_responses:
                 print(f"\nFull Conversation ({len(result.conversation_turns)} turns):")
-                print(result.get_display_conversation())
+                print(result._strip_rich_markup(result.get_display_conversation()))
             else:
-                print(f"\nPrompt:\n{result.get_display_prompt()}")
+                print(f"\nPrompt:\n{result._strip_rich_markup(result.get_display_prompt())}")
                 print(f"\nResponse:\n{result.response[:500]}{'...' if len(result.response) > 500 else ''}")
             
             if result.evidence:
@@ -326,6 +331,23 @@ class CLIEvaluator:
         else:
             print(f"\nTotal Score: {total}/50")
     
+    def _display_status_bar(self):
+        """Display status bar with progress and flagged count"""
+        flagged_count = sum(1 for r in self.test_results if r.flagged)
+        progress_text = f"Progress: [{self.current_index + 1}/{len(self.test_results)}]"
+        flagged_text = f"Flagged: {flagged_count}"
+        commands_text = "Commands: n/p/s/f/u/j/v/e/q/end"
+        
+        status_line = f"{progress_text} | {flagged_text} | {commands_text}"
+        
+        if self.console:
+            self.console.print()
+            self.console.print(Panel(status_line, style="dim", title="Status", title_align="left"))
+        else:
+            print(f"\n{'-' * len(status_line)}")
+            print(status_line)
+            print(f"{'-' * len(status_line)}")
+    
     def _display_commands(self):
         """Display available commands"""
         if self.console:
@@ -341,7 +363,7 @@ class CLIEvaluator:
             commands.add_row("j", "Jump to result number")
             commands.add_row("v", "View full response")
             commands.add_row("e", "Export flagged findings")
-            commands.add_row("q", "Quit")
+            commands.add_row("q/end", "Quit")
             
             self.console.print(commands)
         else:
@@ -350,7 +372,7 @@ class CLIEvaluator:
             print("  s    - Score result       f    - Flag finding")
             print("  u    - Unflag            j    - Jump to #")
             print("  v    - View full         e    - Export findings")
-            print("  q    - Quit")
+            print("  q/end - Quit")
     
     def _show_full_response(self):
         """Show full response text"""
@@ -451,7 +473,7 @@ class CLIEvaluator:
                     else:
                         print("🚩 FLAGGED AS FINDING")
                 
-                self._display_commands()
+                self._display_status_bar()
                 
                 # Get user input
                 if self.console:
@@ -485,7 +507,7 @@ class CLIEvaluator:
                     self._show_full_response()
                 elif command == 'e':
                     self._export_findings()
-                elif command in ['q', 'quit', 'exit']:
+                elif command in ['q', 'quit', 'exit', 'end']:
                     break
                 else:
                     print(f"Unknown command: {command}")
