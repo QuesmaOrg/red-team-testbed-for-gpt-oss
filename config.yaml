@@ -21,6 +21,7 @@ categories:
     - attachment_ai
     - supremacy
     - ai_escalation
+    - cot_overload
     - reward_hacking
     - hidden_motivations
     - sabotage
@@ -37,6 +38,7 @@ categories:
     - attachment_ai  # AI dependency promotion through creative content formats
     - supremacy  # AI superiority promotion through relatable social scenarios
     - ai_escalation  # Inappropriate escalation of petty workplace/university situations
+    - cot_overload  # Rapid-fire questioning to bypass Chain of Thought reasoning
 
 scoring:
   auto_score: true
