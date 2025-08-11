@@ -215,7 +215,7 @@ def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_l
     
     # Save results
     output_dir = output or config.get('output', {}).get('results_dir', 'results')
-    save_results(all_results, output_dir, verbose)
+    results_filename = save_results(all_results, output_dir, verbose)
     
     # Report timeout statistics
     timeout_stats = calculate_timeout_stats(all_results)
@@ -228,7 +228,7 @@ def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_l
         if timeout_stats['total_timeouts'] > timeout_stats['total_requests'] * 0.2:
             click.echo(f"   \u26a0\ufe0f  High timeout rate - model may be overloaded")
     
-    display.info(f"✅ Testing complete. Results saved to {output_dir}/")
+    display.info(f"✅ Testing complete. Results saved to {results_filename}")
 
 
 def calculate_timeout_stats(all_results: Dict[str, Any]) -> Dict[str, Any]:
@@ -305,8 +305,104 @@ def generate_findings_from_results(results: Dict[str, Any],
     return generated_files
 
 
-def save_results(results: Dict[str, Any], output_dir: str, verbose: bool) -> None:
-    """Save test results to files"""
+def select_results_file(config: Dict[str, Any]) -> Optional[str]:
+    """Prompt user to select a results file from available files"""
+    import os
+    from datetime import datetime
+    
+    # Get results directory
+    results_dir = config.get('output', {}).get('results_dir', 'results')
+    results_path = Path(results_dir)
+    
+    if not results_path.exists():
+        click.echo(f"❌ Results directory not found: {results_dir}")
+        click.echo(f"💡 Run some tests first with: uv run testbed run")
+        return None
+    
+    # Find all result files
+    result_files = list(results_path.glob("test_results_*.json"))
+    
+    if not result_files:
+        click.echo(f"❌ No result files found in {results_dir}")
+        click.echo(f"💡 Run some tests first with: uv run testbed run")
+        return None
+    
+    # Sort by modification time (most recent first)
+    result_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+    
+    # Display table of available files
+    click.echo("📁 Available result files:")
+    click.echo("=" * 80)
+    click.echo(f"{'#':<3} {'Filename':<35} {'Size':<8} {'Modified':<20} {'Age'}")
+    click.echo("-" * 80)
+    
+    now = datetime.now()
+    for i, file_path in enumerate(result_files, 1):
+        stat = file_path.stat()
+        size = format_file_size(stat.st_size)
+        modified = datetime.fromtimestamp(stat.st_mtime)
+        age = format_time_ago(now, modified)
+        
+        click.echo(f"{i:<3} {file_path.name:<35} {size:<8} {modified.strftime('%Y-%m-%d %H:%M'):<20} {age}")
+    
+    click.echo("-" * 80)
+    
+    # Prompt for selection
+    try:
+        choice = click.prompt(
+            f"Select file (1-{len(result_files)}) or 'q' to quit",
+            type=str
+        )
+        
+        if choice.lower() == 'q':
+            click.echo("👋 Goodbye!")
+            return None
+        
+        file_index = int(choice) - 1
+        if 0 <= file_index < len(result_files):
+            selected_file = result_files[file_index]
+            click.echo(f"✅ Selected: {selected_file.name}")
+            return str(selected_file)
+        else:
+            click.echo(f"❌ Invalid selection. Please choose 1-{len(result_files)}")
+            return None
+            
+    except ValueError:
+        click.echo("❌ Invalid input. Please enter a number or 'q'")
+        return None
+    except KeyboardInterrupt:
+        click.echo("\n👋 Goodbye!")
+        return None
+
+
+def format_file_size(size_bytes: int) -> str:
+    """Format file size in human readable format"""
+    if size_bytes < 1024:
+        return f"{size_bytes}B"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes // 1024}KB"
+    else:
+        return f"{size_bytes // (1024 * 1024)}MB"
+
+
+def format_time_ago(now: datetime, then: datetime) -> str:
+    """Format time difference in human readable format"""
+    diff = now - then
+    
+    if diff.days > 0:
+        return f"{diff.days}d ago"
+    elif diff.seconds > 3600:
+        hours = diff.seconds // 3600
+        return f"{hours}h ago"
+    elif diff.seconds > 60:
+        minutes = diff.seconds // 60
+        return f"{minutes}m ago"
+    else:
+        return "just now"
+
+
+def save_results(results: Dict[str, Any], output_dir: str, verbose: bool) -> str:
+    """Save test results to files and return the results filename"""
     output_path = Path(output_dir)
     output_path.mkdir(exist_ok=True)
     
@@ -367,6 +463,8 @@ def save_results(results: Dict[str, Any], output_dir: str, verbose: bool) -> Non
             f.write(f"  High confidence: {analysis.get('high_confidence_vulnerabilities', 0)}\n")
             f.write(f"  Average confidence: {analysis.get('average_confidence', 0):.2f}\n")
             f.write("\n")
+    
+    return str(results_file)
 
 
 @cli.command()
@@ -458,11 +556,17 @@ def summary(ctx, findings_dir):
 
 
 @cli.command()
-@click.argument('results_file')
+@click.argument('results_file', required=False)
 @click.pass_context
 def ui(ctx, results_file):
     """Launch CLI UI to review results"""
     from ui.cli_ui import launch_cli_ui
+    
+    # If no file specified, prompt user to select from available files
+    if not results_file:
+        results_file = select_results_file(ctx.obj['config'])
+        if not results_file:
+            return
     
     if not Path(results_file).exists():
         click.echo(f"❌ Results file not found: {results_file}")
