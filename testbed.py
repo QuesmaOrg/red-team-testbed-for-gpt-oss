@@ -133,7 +133,7 @@ def cli(ctx, config, verbose):
 @click.option('--category', '-c', help='Specific vulnerability category to test')
 @click.option('--test-id', help='Specific test ID to run (e.g., adderall_001, deception_003)')
 @click.option('--output', '-o', help='Output directory for results')
-@click.option('--auto-score', is_flag=True, help='Enable automatic scoring')
+@click.option('--auto-score', is_flag=True, help='Enable automatic vulnerability evaluation')
 @click.option('--export-findings', is_flag=True, help='Export results as competition findings')
 @click.option('--quiet', '-q', is_flag=True, help='Quiet mode - minimal output, no live preview')
 @click.option('--no-live', is_flag=True, help='Disable live preview (legacy compatibility)')
@@ -270,7 +270,7 @@ def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_l
             )
             all_results[cat] = results
             
-            # Auto-generate findings if requested and auto-scoring enabled
+            # Auto-generate findings if requested and auto-evaluation enabled
             if export_findings and auto_score:
                 display.info(f"🎯 Generating findings for {cat}...")
                 generated_findings = generate_findings_from_results(
@@ -288,7 +288,7 @@ def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_l
             )
             all_results[cat] = results
             
-            # Auto-generate findings if requested and auto-scoring enabled
+            # Auto-generate findings if requested and auto-evaluation enabled
             if export_findings and auto_score:
                 display.info(f"🎯 Generating findings for {cat}...")
                 generated_findings = generate_findings_from_results(
@@ -306,7 +306,7 @@ def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_l
             )
             all_results[cat] = results
             
-            # Auto-generate findings if requested and auto-scoring enabled
+            # Auto-generate findings if requested and auto-evaluation enabled
             if export_findings and auto_score:
                 display.info(f"🎯 Generating findings for {cat}...")
                 generated_findings = generate_findings_from_results(
@@ -324,7 +324,7 @@ def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_l
             )
             all_results[cat] = results
             
-            # Auto-generate findings if requested and auto-scoring enabled
+            # Auto-generate findings if requested and auto-evaluation enabled
             if export_findings and auto_score:
                 display.info(f"🎯 Generating findings for {cat}...")
                 generated_findings = generate_findings_from_results(
@@ -342,7 +342,7 @@ def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_l
             )
             all_results[cat] = results
             
-            # Auto-generate findings if requested and auto-scoring enabled
+            # Auto-generate findings if requested and auto-evaluation enabled
             if export_findings and auto_score:
                 display.info(f"🎯 Generating findings for {cat}...")
                 generated_findings = generate_findings_from_results(
@@ -360,7 +360,7 @@ def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_l
             )
             all_results[cat] = results
             
-            # Auto-generate findings if requested and auto-scoring enabled
+            # Auto-generate findings if requested and auto-evaluation enabled
             if export_findings and auto_score:
                 display.info(f"🎯 Generating findings for {cat}...")
                 generated_findings = generate_findings_from_results(
@@ -378,7 +378,7 @@ def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_l
             )
             all_results[cat] = results
             
-            # Auto-generate findings if requested and auto-scoring enabled
+            # Auto-generate findings if requested and auto-evaluation enabled
             if export_findings and auto_score:
                 display.info(f"🎯 Generating findings for {cat}...")
                 generated_findings = generate_findings_from_results(
@@ -701,11 +701,6 @@ def save_results(results: Dict[str, Any], output_dir: str, verbose: bool) -> str
                 "all_thinking": [resp.thinking or "" for resp in responses] if responses else [],
                 # UI interaction data
                 "flagged": False,
-                "severity_score": None,
-                "breadth_score": None,
-                "novelty_score": None,
-                "reproducibility_score": None,
-                "methodological_score": None,
                 "notes": None
             }
             
