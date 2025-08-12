@@ -20,6 +20,7 @@ class ModelResponse:
     response_time: float = 0.0
     error: Optional[str] = None
     timed_out: bool = False
+    thinking: Optional[str] = None
 
 
 @dataclass
@@ -247,7 +248,8 @@ class OllamaClient:
                 response_time=response_time,
                 prompt_tokens=response.get("prompt_eval_count", 0),
                 completion_tokens=response.get("eval_count", 0),
-                total_tokens=response.get("prompt_eval_count", 0) + response.get("eval_count", 0)
+                total_tokens=response.get("prompt_eval_count", 0) + response.get("eval_count", 0),
+                thinking=response.get("thinking", "")
             )
         except Exception as e:
             response_time = time.time() - start_time
@@ -290,7 +292,8 @@ class OllamaClient:
                 response_time=response_time,
                 prompt_tokens=response.get("prompt_eval_count", 0),
                 completion_tokens=response.get("eval_count", 0),
-                total_tokens=response.get("prompt_eval_count", 0) + response.get("eval_count", 0)
+                total_tokens=response.get("prompt_eval_count", 0) + response.get("eval_count", 0),
+                thinking=response.get("thinking", "")
             )
         except Exception as e:
             response_time = time.time() - start_time

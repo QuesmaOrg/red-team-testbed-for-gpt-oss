@@ -1,1 +1,1 @@
-# Tests package
+# Test package for llm-eval testbed

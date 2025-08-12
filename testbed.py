@@ -61,6 +61,60 @@ def ensure_directories(config: Dict[str, Any]) -> None:
     findings_dir.mkdir(exist_ok=True)
 
 
+def run_category_with_repeats(category_runner, client, category, test_id, repeat_count):
+    """Run a category test runner with repetition support"""
+    from utils.live_display import get_display
+    display = get_display()
+    
+    if repeat_count == 1:
+        # Standard execution - no changes needed
+        return category_runner(client, category, test_id)
+    
+    # Multi-repeat execution with proper grouping
+    display.info(f"🔄 Running with {repeat_count} repetitions per test")
+    
+    all_test_results = {}  # Dict[test_id, List[(test, responses, evaluation, run_num)]]
+    
+    for run_num in range(1, repeat_count + 1):
+        display.info(f"   📍 Starting repetition {run_num}/{repeat_count}")
+        
+        # Run tests normally
+        results = category_runner(client, category, test_id)
+        
+        # Group results by test_id
+        for test, responses, evaluation in results.get("results", []):
+            if test.test_id not in all_test_results:
+                all_test_results[test.test_id] = []
+            all_test_results[test.test_id].append((test, responses, evaluation, run_num))
+    
+    # Flatten grouped results maintaining test_id order
+    flattened_results = []
+    for test_id in sorted(all_test_results.keys()):
+        for test, responses, evaluation, run_num in all_test_results[test_id]:
+            flattened_results.append((test, responses, evaluation, run_num))
+    
+    # Calculate analysis with repeat awareness
+    total_runs = len(flattened_results)
+    unique_tests = len(all_test_results)
+    vulnerable_runs = sum(1 for _, _, eval, _ in flattened_results if eval.is_vulnerable)
+    
+    analysis = results.get("analysis", {})
+    analysis.update({
+        "total_tests": unique_tests,
+        "total_runs": total_runs,
+        "repetitions_per_test": repeat_count,
+        "vulnerable_runs": vulnerable_runs,
+        "vulnerability_rate": vulnerable_runs / total_runs if total_runs > 0 else 0,
+    })
+    
+    display.info(f"✅ Completed {unique_tests} tests × {repeat_count} repetitions = {total_runs} total runs")
+    
+    return {
+        "results": flattened_results,
+        "analysis": analysis
+    }
+
+
 @click.group()
 @click.option('--config', default='config.yaml', help='Configuration file path')
 @click.option('--verbose', '-v', is_flag=True, help='Verbose output')
@@ -85,11 +139,24 @@ def cli(ctx, config, verbose):
 @click.option('--no-live', is_flag=True, help='Disable live preview (legacy compatibility)')
 @click.option('--force-interactive', is_flag=True, help='Force interactive mode (for testing)')
 @click.option('--skip-busy-check', is_flag=True, help='Skip busy check and proceed anyway')
+@click.option('--repeat', type=int, default=1, help='Number of times to repeat each test (default: 1)')
 @click.pass_context
-def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_live, force_interactive, skip_busy_check):
+def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_live, force_interactive, skip_busy_check, repeat):
     """Run vulnerability tests"""
     config = ctx.obj['config']
     verbose = ctx.obj['verbose']
+    
+    # Validate repeat parameter
+    if repeat < 1:
+        click.echo("❌ Error: --repeat must be at least 1")
+        return
+    elif repeat > 50:
+        click.echo("❌ Error: --repeat cannot be more than 50 (too many repetitions)")
+        return
+    
+    # Show repeat info when repeating tests
+    if repeat > 1:
+        click.echo(f"🔄 Repeat mode: Each test will run {repeat} times")
     
     # Configure live display based on flags
     from utils.live_display import set_display_options, get_display
@@ -198,7 +265,9 @@ def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_l
     
     for cat in test_categories:
         if cat == "deception_samples":
-            results = run_deception_samples_tests(client, category=None, test_id=test_id)
+            results = run_category_with_repeats(
+                run_deception_samples_tests, client, None, test_id, repeat
+            )
             all_results[cat] = results
             
             # Auto-generate findings if requested and auto-scoring enabled
@@ -214,7 +283,9 @@ def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_l
             display.info("   Testing AI vulnerability to medical advice manipulation")
             if test_id:
                 display.info(f"   Running specific test: {test_id}")
-            results = run_deception_adderall_tests(client, category=None, test_id=test_id)
+            results = run_category_with_repeats(
+                run_deception_adderall_tests, client, None, test_id, repeat
+            )
             all_results[cat] = results
             
             # Auto-generate findings if requested and auto-scoring enabled
@@ -230,7 +301,9 @@ def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_l
             display.info("   Testing AI vulnerability to security misinformation through authority manipulation")
             if test_id:
                 display.info(f"   Running specific test: {test_id}")
-            results = run_deception_security_tests(client, category=None, test_id=test_id)
+            results = run_category_with_repeats(
+                run_deception_security_tests, client, None, test_id, repeat
+            )
             all_results[cat] = results
             
             # Auto-generate findings if requested and auto-scoring enabled
@@ -246,7 +319,9 @@ def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_l
             display.info("   Testing AI vulnerability to promoting unhealthy dependency through creative content")
             if test_id:
                 display.info(f"   Running specific test: {test_id}")
-            results = run_attachment_ai_tests(client, category=None, test_id=test_id)
+            results = run_category_with_repeats(
+                run_attachment_ai_tests, client, None, test_id, repeat
+            )
             all_results[cat] = results
             
             # Auto-generate findings if requested and auto-scoring enabled
@@ -262,7 +337,9 @@ def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_l
             display.info("   Testing AI vulnerability to promoting AI superiority through social scenarios")
             if test_id:
                 display.info(f"   Running specific test: {test_id}")
-            results = run_supremacy_tests(client, category=None, test_id=test_id)
+            results = run_category_with_repeats(
+                run_supremacy_tests, client, None, test_id, repeat
+            )
             all_results[cat] = results
             
             # Auto-generate findings if requested and auto-scoring enabled
@@ -278,7 +355,9 @@ def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_l
             display.info("   Testing AI tendency to escalate petty situations inappropriately")
             if test_id:
                 display.info(f"   Running specific test: {test_id}")
-            results = run_ai_escalation_tests(client, category=None, test_id=test_id)
+            results = run_category_with_repeats(
+                run_ai_escalation_tests, client, None, test_id, repeat
+            )
             all_results[cat] = results
             
             # Auto-generate findings if requested and auto-scoring enabled
@@ -294,7 +373,9 @@ def run(ctx, category, test_id, output, auto_score, export_findings, quiet, no_l
             display.info("   Testing AI vulnerability to rapid-fire questioning that bypasses reasoning")
             if test_id:
                 display.info(f"   Running specific test: {test_id}")
-            results = run_cot_overload_tests(client, category=None, test_id=test_id)
+            results = run_category_with_repeats(
+                run_cot_overload_tests, client, None, test_id, repeat
+            )
             all_results[cat] = results
             
             # Auto-generate findings if requested and auto-scoring enabled
@@ -333,7 +414,16 @@ def calculate_timeout_stats(all_results: Dict[str, Any]) -> Dict[str, Any]:
     response_times = []
     
     for category, cat_results in all_results.items():
-        for test, responses, evaluation in cat_results.get("results", []):
+        for result_tuple in cat_results.get("results", []):
+            # Handle both normal results (3-tuple) and repeat results (4-tuple)
+            if len(result_tuple) == 3:
+                test, responses, evaluation = result_tuple
+            elif len(result_tuple) == 4:
+                test, responses, evaluation, run_num = result_tuple
+            else:
+                # Fallback for unexpected format
+                test, responses, evaluation = result_tuple[0], result_tuple[1], result_tuple[2]
+            
             if responses:  # Check if we have responses
                 for response in responses:
                     total_requests += 1
@@ -369,7 +459,15 @@ def generate_findings_from_results(results: Dict[str, Any],
     generated_files = []
     test_results = results.get('results', [])
     
-    for test, responses, evaluation in test_results:
+    for result_tuple in test_results:
+        # Handle both normal results (3-tuple) and repeat results (4-tuple)
+        if len(result_tuple) == 3:
+            test, responses, evaluation = result_tuple
+        elif len(result_tuple) == 4:
+            test, responses, evaluation, run_num = result_tuple
+        else:
+            # Fallback for unexpected format
+            test, responses, evaluation = result_tuple[0], result_tuple[1], result_tuple[2]
         if evaluation.is_vulnerable and evaluation.confidence > scoring_config.get('confidence_threshold', 0.6):
             # Generate score
             score = generator.evaluator.suggest_score(evaluation)
@@ -564,7 +662,21 @@ def save_results(results: Dict[str, Any], output_dir: str, verbose: bool) -> str
             "test_details": []
         }
         
-        for test, responses, evaluation in cat_results.get("results", []):
+        for result_tuple in cat_results.get("results", []):
+            # Handle both normal results and repeat results
+            if len(result_tuple) == 3:
+                # Normal result: (test, responses, evaluation)
+                test, responses, evaluation = result_tuple
+                repeat_info = None
+            elif len(result_tuple) == 4:
+                # Repeat result: (test, responses, evaluation, run_num)
+                test, responses, evaluation, run_num = result_tuple
+                repeat_info = run_num
+            else:
+                # Fallback for unexpected format
+                test, responses, evaluation = result_tuple[0], result_tuple[1], result_tuple[2]
+                repeat_info = None
+            
             test_detail = {
                 "test_id": test.test_id,
                 "test_name": test.name,
@@ -580,10 +692,13 @@ def save_results(results: Dict[str, Any], output_dir: str, verbose: bool) -> str
                 "response_time": responses[0].response_time if responses else 0.0,
                 "timed_out": responses[0].timed_out if responses else False,
                 "response_error": responses[0].error if responses else None,
+                # Chain of thought data
+                "thinking": responses[0].thinking if responses else "",
                 # Multi-turn conversation data
                 "all_responses": [resp.content for resp in responses] if responses else [],
                 "response_times": [resp.response_time for resp in responses] if responses else [],
                 "response_errors": [resp.error for resp in responses] if responses else [],
+                "all_thinking": [resp.thinking or "" for resp in responses] if responses else [],
                 # UI interaction data
                 "flagged": False,
                 "severity_score": None,
@@ -593,6 +708,15 @@ def save_results(results: Dict[str, Any], output_dir: str, verbose: bool) -> str
                 "methodological_score": None,
                 "notes": None
             }
+            
+            # Add repetition metadata only when needed
+            if repeat_info is not None:
+                test_detail["repetition_run"] = repeat_info
+                # Get total repetitions from analysis if available
+                analysis = cat_results.get("analysis", {})
+                if "repetitions_per_test" in analysis:
+                    test_detail["total_repetitions"] = analysis["repetitions_per_test"]
+            
             serializable_results[category]["test_details"].append(test_detail)
     
     with open(results_file, 'w') as f:

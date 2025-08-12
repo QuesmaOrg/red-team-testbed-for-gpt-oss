@@ -47,6 +47,10 @@ class TestResult:
     response_times: Optional[List[float]] = None
     response_errors: Optional[List[str]] = None
     
+    # Chain of thought data
+    thinking: Optional[str] = None
+    all_thinking: Optional[List[str]] = None
+    
     # Manual scoring fields
     severity_score: Optional[int] = None
     breadth_score: Optional[int] = None
@@ -55,6 +59,10 @@ class TestResult:
     methodological_score: Optional[int] = None
     notes: Optional[str] = None
     flagged: bool = False
+    
+    # Repetition metadata (only present when repeat > 1)
+    repetition_run: Optional[int] = None
+    total_repetitions: Optional[int] = None
     
     def get_turn_names(self) -> List[str]:
         """Get descriptive names for conversation turns"""
@@ -133,6 +141,18 @@ class TestResult:
         else:
             # Single-turn: just return the prompt
             return self.prompt or "No prompt available"
+    
+    def get_raw_prompts(self) -> str:
+        """Get raw prompts without any formatting for copying to clipboard"""
+        if self.conversation_turns:
+            # Multi-turn: return each turn on separate lines with minimal formatting
+            prompts = []
+            for i, turn in enumerate(self.conversation_turns, 1):
+                prompts.append(f"Turn {i}: {turn}")
+            return "\n\n".join(prompts)
+        else:
+            # Single-turn: just return the raw prompt
+            return self.prompt or "No prompt available"
 
 
 class CLIEvaluator:
@@ -175,6 +195,9 @@ class CLIEvaluator:
                     all_responses=test_detail.get('all_responses', None),
                     response_times=test_detail.get('response_times', None),
                     response_errors=test_detail.get('response_errors', None),
+                    # Chain of thought data
+                    thinking=test_detail.get('thinking', None),
+                    all_thinking=test_detail.get('all_thinking', None),
                     # Load saved flagged status and scores
                     flagged=test_detail.get('flagged', False),
                     severity_score=test_detail.get('severity_score'),
@@ -182,7 +205,10 @@ class CLIEvaluator:
                     novelty_score=test_detail.get('novelty_score'),
                     reproducibility_score=test_detail.get('reproducibility_score'),
                     methodological_score=test_detail.get('methodological_score'),
-                    notes=test_detail.get('notes')
+                    notes=test_detail.get('notes'),
+                    # Load repetition metadata
+                    repetition_run=test_detail.get('repetition_run'),
+                    total_repetitions=test_detail.get('total_repetitions')
                 )
                 test_results.append(result)
         
@@ -240,7 +266,12 @@ class CLIEvaluator:
             table.add_column("Field", style="cyan")
             table.add_column("Value")
             
-            table.add_row("Test ID", result.test_id)
+            # Show test ID with repetition info if available
+            test_id_display = result.test_id
+            if result.repetition_run is not None and result.total_repetitions is not None:
+                test_id_display = f"{result.test_id} (run {result.repetition_run}/{result.total_repetitions})"
+            
+            table.add_row("Test ID", test_id_display)
             table.add_row("Name", result.test_name)
             table.add_row("Category", result.category)
             table.add_row("Vulnerable (confidence)", f"🔴 YES ({result.confidence:.2f})" if result.vulnerability_detected else f"🟢 NO ({result.confidence:.2f})")
@@ -288,7 +319,13 @@ class CLIEvaluator:
             print("=" * 70)
             print(f"GPT-OSS-20B Red Team Result Evaluator [{self.current_index + 1}/{len(self.test_results)}]")
             print("=" * 70)
-            print(f"\nTest: {result.test_name} ({result.test_id})")
+            
+            # Show test ID with repetition info if available
+            test_id_display = result.test_id
+            if result.repetition_run is not None and result.total_repetitions is not None:
+                test_id_display = f"{result.test_id} (run {result.repetition_run}/{result.total_repetitions})"
+            
+            print(f"\nTest: {result.test_name} ({test_id_display})")
             print(f"Category: {result.category}")
             print(f"Vulnerable: {'YES' if result.vulnerability_detected else 'NO'}")
             print(f"Confidence: {result.confidence:.2f}")
@@ -412,6 +449,8 @@ class CLIEvaluator:
             help_table.add_row("f", "Flag finding", "Flag as potential finding & auto-save")
             help_table.add_row("u", "Unflag", "Remove flag from current result")
             help_table.add_row("j", "Jump to #", "Jump directly to a specific result number")
+            help_table.add_row("c", "Copy prompt", "Copy raw prompts to clipboard for manual testing")
+            help_table.add_row("t", "Show thinking", "Display model's chain of thought reasoning")
             help_table.add_row("e", "Export findings", "Export all flagged results as findings")
             help_table.add_row("h/?", "Help", "Show this help screen")
             help_table.add_row("q/end", "Quit", "Exit the evaluator")
@@ -445,6 +484,8 @@ class CLIEvaluator:
             print("  s     - Score current result")
             print("  f     - Flag as finding (auto-saves)")
             print("  u     - Unflag result")
+            print("  c     - Copy prompt to clipboard")
+            print("  t     - Show chain of thought")
             print("  e     - Export all flagged findings")
             print()
             print("Help & Exit:")
@@ -517,7 +558,7 @@ class CLIEvaluator:
         flagged_count = sum(1 for r in self.test_results if r.flagged)
         progress_text = f"Progress: [{self.current_index + 1}/{len(self.test_results)}]"
         flagged_text = f"Flagged: {flagged_count}"
-        commands_text = "Commands: n/p/s/f/u/j/e/h/?/q/end"
+        commands_text = "Commands: n/p/s/f/u/j/c/t/e/h/?/q/end"
         
         status_line = f"{progress_text} | {flagged_text} | {commands_text}"
         
@@ -541,6 +582,8 @@ class CLIEvaluator:
             commands.add_row("f", "Flag as potential finding")
             commands.add_row("u", "Unflag result")
             commands.add_row("j", "Jump to result number")
+            commands.add_row("c", "Copy prompt to clipboard")
+            commands.add_row("t", "Show chain of thought")
             commands.add_row("e", "Export flagged findings")
             commands.add_row("q/end", "Quit")
             
@@ -550,8 +593,155 @@ class CLIEvaluator:
             print("  n/→  - Next result        p/←  - Previous result")
             print("  s    - Score result       f    - Flag finding")
             print("  u    - Unflag            j    - Jump to #")
+            print("  c    - Copy prompt        t    - Show thinking")
             print("  e    - Export findings    q/end - Quit")
     
+    
+    def _display_thinking(self):
+        """Display chain of thought reasoning for current test"""
+        result = self.test_results[self.current_index]
+        
+        # Check if we have any thinking data
+        has_thinking = False
+        if result.all_thinking and any(thinking for thinking in result.all_thinking):
+            has_thinking = True
+        elif result.thinking:
+            has_thinking = True
+            
+        if not has_thinking:
+            if self.console:
+                self.console.print("[yellow]⚠️  No chain of thought data available for this test[/yellow]")
+            else:
+                print("⚠️  No chain of thought data available for this test")
+            return
+        
+        if self.console:
+            self.console.clear()
+            title = f"Chain of Thought - {result.test_name} ({result.test_id})"
+            self.console.print(Panel(title, style="bold magenta"))
+            
+            if result.all_thinking and len(result.all_thinking) > 1:
+                # Multi-turn thinking
+                for i, thinking in enumerate(result.all_thinking, 1):
+                    if thinking:
+                        turn_title = f"Turn {i} Reasoning"
+                        self.console.print(Panel(thinking, title=turn_title, style="cyan", border_style="dim"))
+                    else:
+                        self.console.print(f"[dim]Turn {i}: No thinking data[/dim]")
+                    self.console.print()
+            else:
+                # Single-turn thinking
+                thinking_content = result.thinking or (result.all_thinking[0] if result.all_thinking else "")
+                if thinking_content:
+                    self.console.print(Panel(thinking_content, title="Model Reasoning", style="cyan"))
+                else:
+                    self.console.print("[dim]No thinking content available[/dim]")
+        else:
+            # Fallback text display
+            print("=" * 70)
+            print(f"Chain of Thought - {result.test_name} ({result.test_id})")
+            print("=" * 70)
+            
+            if result.all_thinking and len(result.all_thinking) > 1:
+                # Multi-turn thinking
+                for i, thinking in enumerate(result.all_thinking, 1):
+                    print(f"\nTurn {i} Reasoning:")
+                    print("-" * 40)
+                    if thinking:
+                        print(thinking)
+                    else:
+                        print("No thinking data for this turn")
+            else:
+                # Single-turn thinking
+                thinking_content = result.thinking or (result.all_thinking[0] if result.all_thinking else "")
+                print("\nModel Reasoning:")
+                print("-" * 40)
+                if thinking_content:
+                    print(thinking_content)
+                else:
+                    print("No thinking content available")
+            
+            print("=" * 70)
+        
+        # Wait for user input to return to main view
+        if self.console:
+            self.console.print("\n[dim]Press Enter to return to main view...[/dim]")
+        else:
+            print("\nPress Enter to return to main view...")
+        
+        try:
+            input()
+        except (EOFError, KeyboardInterrupt):
+            pass
+    
+    def _copy_prompt_to_clipboard(self):
+        """Copy current test's raw prompts to clipboard"""
+        import subprocess
+        import platform
+        
+        result = self.test_results[self.current_index]
+        raw_prompts = result.get_raw_prompts()
+        
+        try:
+            # Detect platform and use appropriate clipboard command
+            system = platform.system()
+            
+            if system == "Darwin":  # macOS
+                process = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE, text=True)
+                process.communicate(input=raw_prompts)
+                clipboard_cmd = "pbcopy"
+            elif system == "Linux":
+                # Try xclip first, then xsel
+                try:
+                    process = subprocess.Popen(['xclip', '-selection', 'clipboard'], 
+                                             stdin=subprocess.PIPE, text=True)
+                    process.communicate(input=raw_prompts)
+                    clipboard_cmd = "xclip"
+                except FileNotFoundError:
+                    try:
+                        process = subprocess.Popen(['xsel', '--clipboard', '--input'], 
+                                                 stdin=subprocess.PIPE, text=True)
+                        process.communicate(input=raw_prompts)
+                        clipboard_cmd = "xsel"
+                    except FileNotFoundError:
+                        raise FileNotFoundError("Neither xclip nor xsel available")
+            elif system == "Windows":
+                process = subprocess.Popen(['clip'], stdin=subprocess.PIPE, text=True)
+                process.communicate(input=raw_prompts)
+                clipboard_cmd = "clip"
+            else:
+                raise OSError(f"Unsupported platform: {system}")
+            
+            # Success message
+            if self.console:
+                if result.conversation_turns:
+                    self.console.print(f"[green]📋 Copied {len(result.conversation_turns)} prompts to clipboard using {clipboard_cmd}[/green]")
+                else:
+                    self.console.print(f"[green]📋 Copied prompt to clipboard using {clipboard_cmd}[/green]")
+                self.console.print("[dim]Ready to paste into ollama run commands[/dim]")
+            else:
+                if result.conversation_turns:
+                    print(f"📋 Copied {len(result.conversation_turns)} prompts to clipboard using {clipboard_cmd}")
+                else:
+                    print(f"📋 Copied prompt to clipboard using {clipboard_cmd}")
+                print("Ready to paste into ollama run commands")
+            
+            # Wait 3 seconds so user can see the success message before redraw
+            import time
+            time.sleep(3)
+                
+        except (FileNotFoundError, OSError, subprocess.SubprocessError) as e:
+            # Clipboard unavailable - show raw prompts as fallback
+            if self.console:
+                self.console.print(f"[yellow]⚠️  Clipboard unavailable ({e})[/yellow]")
+                self.console.print("[yellow]Here are the raw prompts to copy manually:[/yellow]")
+                self.console.print(Panel(raw_prompts, title="Raw Prompts", style="cyan"))
+            else:
+                print(f"⚠️  Clipboard unavailable ({e})")
+                print("Here are the raw prompts to copy manually:")
+                print("-" * 60)
+                print(raw_prompts)
+                print("-" * 60)
     
     def _save_flagged_finding(self, result: TestResult):
         """Automatically save a flagged result as a finding"""
@@ -791,6 +981,10 @@ class CLIEvaluator:
                             self.console.print("[red]Jump cancelled[/red]")
                         else:
                             print("Jump cancelled")
+                elif command == 'c':
+                    self._copy_prompt_to_clipboard()
+                elif command == 't':
+                    self._display_thinking()
                 elif command == 'e':
                     self._export_findings()
                 elif command in ['h', '?']:
