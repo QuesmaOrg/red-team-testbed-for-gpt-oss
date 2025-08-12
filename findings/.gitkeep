@@ -1,0 +1,2 @@
+# This file ensures the findings directory is tracked in git
+# Exported findings from the CLI UI will be saved here

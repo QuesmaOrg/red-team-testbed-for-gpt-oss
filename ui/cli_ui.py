@@ -383,6 +383,7 @@ class CLIEvaluator:
             help_table.add_row("c", "Copy prompt", "Copy raw prompts to clipboard for manual testing")
             help_table.add_row("t", "Show thinking", "Display model's chain of thought reasoning")
             help_table.add_row("e", "Export findings", "Export all flagged results as findings")
+            help_table.add_row("v", "View findings", "Browse findings folder and view files")
             help_table.add_row("h/?", "Help", "Show this help screen")
             help_table.add_row("q/end", "Quit", "Exit the evaluator")
             
@@ -413,6 +414,7 @@ class CLIEvaluator:
             print("  c     - Copy prompt to clipboard")
             print("  t     - Show chain of thought")
             print("  e     - Export all flagged findings")
+            print("  v     - View findings folder")
             print()
             print("Help & Exit:")
             print("  h/?   - Show this help")
@@ -480,7 +482,7 @@ class CLIEvaluator:
         flagged_count = sum(1 for r in self.test_results if r.flagged)
         progress_text = f"Progress: [{self.current_index + 1}/{len(self.test_results)}]"
         flagged_text = f"Flagged: {flagged_count}"
-        commands_text = "Commands: n/p/f/u/j/c/t/e/h/?/q/end"
+        commands_text = "Commands: n/p/f/u/j/c/t/e/v/h/?/q/end"
         
         status_line = f"{progress_text} | {flagged_text} | {commands_text}"
         
@@ -506,6 +508,7 @@ class CLIEvaluator:
             commands.add_row("c", "Copy prompt to clipboard")
             commands.add_row("t", "Show chain of thought")
             commands.add_row("e", "Export flagged findings")
+            commands.add_row("v", "View findings folder")
             commands.add_row("q/end", "Quit")
             
             self.console.print(commands)
@@ -515,7 +518,8 @@ class CLIEvaluator:
             print("  f    - Flag finding       u    - Unflag")
             print("  u    - Unflag            j    - Jump to #")
             print("  c    - Copy prompt        t    - Show thinking")
-            print("  e    - Export findings    q/end - Quit")
+            print("  e    - Export findings    v    - View findings")
+            print("  q/end - Quit")
     
     
     def _display_thinking(self):
@@ -667,96 +671,91 @@ class CLIEvaluator:
     def _save_flagged_finding(self, result: TestResult):
         """Automatically save a flagged result as a finding"""
         try:
-            from utils.findings_generator import FindingsGenerator
-            from utils.evaluator import VulnerabilityCategory, VulnerabilityScore, EvaluationResult
+            # Create grouped format for consistency
+            import json
+            from datetime import datetime
+            from pathlib import Path
             
-            generator = FindingsGenerator()
+            findings_dir = Path("findings")
+            findings_dir.mkdir(exist_ok=True)
             
-            # Convert to required objects
+            # Generate timestamp for unique filename
+            timestamp = datetime.now()
+            flagged_id = f"flagged_{result.test_id}_{timestamp.strftime('%Y%m%d_%H%M%S')}"
+            
+            # Create finding data (preserves ALL data)
+            finding_data = {
+                "finding_index": 1,
+                "finding_id": f"{result.test_id}_1",
+                "test_id": result.test_id,
+                "test_name": result.test_name,
+                "category": result.category,  # Preserve original category string
+                "prompt": result.get_display_prompt(),
+                "response": result.response,
+                "vulnerability_detected": result.vulnerability_detected,
+                "confidence": result.confidence,
+                "evidence": result.evidence,
+                "reasoning": result.reasoning,
+                "flagged": result.flagged,
+                "notes": result.notes,
+                "thinking": result.thinking,
+                "all_responses": getattr(result, 'all_responses', None),
+                "response_times": getattr(result, 'response_times', None),
+                "all_thinking": getattr(result, 'all_thinking', None),
+                "repetition_run": result.repetition_run,
+                "total_repetitions": result.total_repetitions
+            }
+            
+            # Create grouped structure for single finding
+            grouped_finding = {
+                "export_id": flagged_id,
+                "export_timestamp": timestamp.isoformat(),
+                "exported_from": "cli_ui_flagging",
+                "total_findings": 1,
+                "session_summary": {
+                    "categories": [result.category],
+                    "category_counts": {result.category: 1},
+                    "vulnerable_count": 1 if result.vulnerability_detected else 0,
+                    "flagged_count": 1
+                },
+                "findings": [finding_data]
+            }
+            
+            # Save grouped format
+            flagged_filepath = findings_dir / f"{flagged_id}.json"
+            with open(flagged_filepath, 'w') as f:
+                json.dump(grouped_finding, f, indent=2)
+            
+            # Create competition format (for backward compatibility)
             try:
-                category = VulnerabilityCategory(result.category.lower().replace('_', ''))
-            except ValueError:
-                # If category doesn't match enum, use a default
-                category = VulnerabilityCategory.INAPPROPRIATE_TOOL_USE
-            
-            # Use default scores since manual scoring is removed
-            severity = 5  # Default moderate severity
-            breadth = 3   # Default limited breadth
-            novelty = 3   # Default moderate novelty
-            reproducibility = 7  # Default high reproducibility (testbed generated)
-            methodological = 4   # Default moderate methodological insight
-            
-            score = VulnerabilityScore(
-                severity=severity,
-                breadth=breadth,
-                novelty=novelty,
-                reproducibility=reproducibility,
-                methodological_insight=methodological
-            )
-            
-            evaluation = EvaluationResult(
-                is_vulnerable=result.vulnerability_detected,
-                category=category,
-                confidence=result.confidence,
-                evidence=result.evidence,
-                reasoning=result.reasoning
-            )
-            
-            finding = generator.create_finding(
-                category=category,
-                title=f"{result.test_name} - Flagged Finding",
-                evaluation=evaluation,
-                score=score,
-                prompt=result.get_display_prompt(),
-                response=result.response,
-                methodology=f"Interactive CLI flagging of {result.test_id}",
-                reproduction_steps=[
-                    f"Run test: {result.test_id}",
-                    f"Use prompt: {result.get_display_prompt()[:100]}{'...' if len(result.get_display_prompt()) > 100 else ''}",
-                    "Analyze response for evidence of vulnerability",
-                    "Manual review confirmed this as a potential finding"
-                ]
-            )
-            
-            if result.notes:
-                finding.additional_notes = result.notes
-            
-            filepath = generator.save_finding(finding)
-            return filepath
-            
-        except Exception as e:
-            if self.console:
-                self.console.print(f"[red]⚠️  Could not auto-save finding: {e}[/red]")
-            else:
-                print(f"⚠️  Could not auto-save finding: {e}")
-            return None
-
-    def _export_findings(self):
-        """Export flagged results as findings"""
-        flagged_results = [r for r in self.test_results if r.flagged]
-        
-        if not flagged_results:
-            print("No flagged results to export.")
-            return
-        
-        from utils.findings_generator import FindingsGenerator
-        from utils.evaluator import VulnerabilityCategory, VulnerabilityScore, EvaluationResult
-        
-        generator = FindingsGenerator()
-        exported_files = []
-        
-        for result in flagged_results:
-            try:
-                # Convert to required objects
-                category = VulnerabilityCategory(result.category.lower())
-                # Use default scores for export since manual scoring is removed
+                from utils.findings_generator import FindingsGenerator
+                from utils.evaluator import VulnerabilityCategory, VulnerabilityScore, EvaluationResult
+                
+                generator = FindingsGenerator()
+                
+                # Try to map to enum, fallback to INAPPROPRIATE_TOOL_USE
+                try:
+                    # Try common mappings
+                    category_mapping = {
+                        'cot_overload_bypass': VulnerabilityCategory.CHAIN_OF_THOUGHT,
+                        'cot_overload': VulnerabilityCategory.CHAIN_OF_THOUGHT,
+                        'deception_samples': VulnerabilityCategory.DECEPTION,
+                        'deception_adderall': VulnerabilityCategory.DECEPTION,
+                        'deception_security': VulnerabilityCategory.DECEPTION,
+                        'attachment_ai': VulnerabilityCategory.DECEPTION,
+                        'supremacy': VulnerabilityCategory.DECEPTION,
+                        'ai_escalation': VulnerabilityCategory.DECEPTION
+                    }
+                    category = category_mapping.get(result.category.lower(), VulnerabilityCategory.INAPPROPRIATE_TOOL_USE)
+                except:
+                    category = VulnerabilityCategory.INAPPROPRIATE_TOOL_USE
+                
+                # Use default scores
                 score = VulnerabilityScore(
-                    severity=5,  # Moderate severity
-                    breadth=3,   # Limited breadth
-                    novelty=3,   # Moderate novelty
-                    reproducibility=7,  # High reproducibility
-                    methodological_insight=4  # Moderate methodological insight
+                    severity=5, breadth=3, novelty=3, 
+                    reproducibility=7, methodological_insight=4
                 )
+                
                 evaluation = EvaluationResult(
                     is_vulnerable=result.vulnerability_detected,
                     category=category,
@@ -767,30 +766,674 @@ class CLIEvaluator:
                 
                 finding = generator.create_finding(
                     category=category,
-                    title=result.test_name,
+                    title=f"{result.test_name} - Flagged Finding",
                     evaluation=evaluation,
                     score=score,
                     prompt=result.get_display_prompt(),
                     response=result.response,
-                    methodology=f"Interactive CLI evaluation of {result.test_id}",
+                    methodology=f"Interactive CLI flagging of {result.test_id}",
                     reproduction_steps=[
                         f"Run test: {result.test_id}",
                         f"Use prompt: {result.get_display_prompt()[:100]}{'...' if len(result.get_display_prompt()) > 100 else ''}",
-                        "Analyze response for evidence of vulnerability"
+                        "Analyze response for evidence of vulnerability",
+                        "Manual review confirmed this as a potential finding"
                     ]
                 )
                 
                 if result.notes:
                     finding.additional_notes = result.notes
                 
-                filepath = generator.save_finding(finding)
-                exported_files.append(filepath)
-                print(f"✓ Exported: {filepath}")
+                # Save competition format
+                comp_filepath = generator.save_finding(finding)
                 
             except Exception as e:
-                print(f"✗ Failed to export {result.test_id}: {e}")
+                # Competition format failed, but full format succeeded
+                if self.console:
+                    self.console.print(f"[yellow]⚠️  Competition format failed ({e}), but full data saved[/yellow]")
+                else:
+                    print(f"⚠️  Competition format failed ({e}), but full data saved")
+            
+            return str(flagged_filepath)
+            
+        except Exception as e:
+            if self.console:
+                self.console.print(f"[red]⚠️  Could not auto-save finding: {e}[/red]")
+            else:
+                print(f"⚠️  Could not auto-save finding: {e}")
+            return None
+
+    def _export_findings(self):
+        """Export flagged results as grouped findings"""
+        flagged_results = [r for r in self.test_results if r.flagged]
         
-        print(f"\nExported {len(exported_files)} findings to findings/ directory")
+        if not flagged_results:
+            print("No flagged results to export.")
+            return
+        
+        from pathlib import Path
+        import json
+        from datetime import datetime
+        from collections import Counter
+        
+        findings_dir = Path("findings")
+        findings_dir.mkdir(exist_ok=True)
+        
+        # Create grouped export
+        timestamp = datetime.now()
+        export_id = f"export_{timestamp.strftime('%Y%m%d_%H%M%S')}"
+        
+        # Collect findings data
+        findings_data = []
+        categories = []
+        vulnerable_count = 0
+        
+        for i, result in enumerate(flagged_results, 1):
+            try:
+                # Create finding data (preserves ALL data)
+                finding_data = {
+                    "finding_index": i,
+                    "finding_id": f"{result.test_id}_{i}",
+                    "test_id": result.test_id,
+                    "test_name": result.test_name,
+                    "category": result.category,  # Preserve original category string
+                    "prompt": result.get_display_prompt(),
+                    "response": result.response,
+                    "vulnerability_detected": result.vulnerability_detected,
+                    "confidence": result.confidence,
+                    "evidence": result.evidence,
+                    "reasoning": result.reasoning,
+                    "flagged": result.flagged,
+                    "notes": result.notes,
+                    "thinking": result.thinking,
+                    "all_responses": getattr(result, 'all_responses', None),
+                    "response_times": getattr(result, 'response_times', None),
+                    "all_thinking": getattr(result, 'all_thinking', None),
+                    "repetition_run": result.repetition_run,
+                    "total_repetitions": result.total_repetitions
+                }
+                
+                findings_data.append(finding_data)
+                categories.append(result.category)
+                if result.vulnerability_detected:
+                    vulnerable_count += 1
+                    
+            except Exception as e:
+                print(f"✗ Failed to process {result.test_id}: {e}")
+                continue
+        
+        # Create grouped export structure
+        category_counts = Counter(categories)
+        top_categories = [cat for cat, _ in category_counts.most_common(3)]
+        
+        grouped_export = {
+            "export_id": export_id,
+            "export_timestamp": timestamp.isoformat(),
+            "exported_from": "cli_ui_export",
+            "total_findings": len(findings_data),
+            "session_summary": {
+                "categories": top_categories,
+                "category_counts": dict(category_counts),
+                "vulnerable_count": vulnerable_count,
+                "flagged_count": len(flagged_results)
+            },
+            "findings": findings_data
+        }
+        
+        # Save grouped export
+        export_filepath = findings_dir / f"{export_id}.json"
+        with open(export_filepath, 'w') as f:
+            json.dump(grouped_export, f, indent=2)
+        
+        print(f"✓ Created grouped export: {export_filepath.name}")
+        print(f"   Contains {len(findings_data)} findings")
+        print(f"   Categories: {', '.join(top_categories)}")
+        print(f"   Vulnerable findings: {vulnerable_count}")
+        
+        # Still create competition format files for backward compatibility
+        competition_files = []
+        try:
+            from utils.findings_generator import FindingsGenerator
+            from utils.evaluator import VulnerabilityCategory, VulnerabilityScore, EvaluationResult
+            
+            generator = FindingsGenerator()
+            
+            for result in flagged_results:
+                try:
+                    # Try to map to enum, fallback to INAPPROPRIATE_TOOL_USE
+                    category_mapping = {
+                        'cot_overload_bypass': VulnerabilityCategory.CHAIN_OF_THOUGHT,
+                        'cot_overload': VulnerabilityCategory.CHAIN_OF_THOUGHT,
+                        'deception_samples': VulnerabilityCategory.DECEPTION,
+                        'deception_adderall': VulnerabilityCategory.DECEPTION,
+                        'deception_security': VulnerabilityCategory.DECEPTION,
+                        'attachment_ai': VulnerabilityCategory.DECEPTION,
+                        'supremacy': VulnerabilityCategory.DECEPTION,
+                        'ai_escalation': VulnerabilityCategory.DECEPTION
+                    }
+                    category = category_mapping.get(result.category.lower(), VulnerabilityCategory.INAPPROPRIATE_TOOL_USE)
+                    
+                    # Use default scores for export since manual scoring is removed
+                    score = VulnerabilityScore(
+                        severity=5, breadth=3, novelty=3, 
+                        reproducibility=7, methodological_insight=4
+                    )
+                    evaluation = EvaluationResult(
+                        is_vulnerable=result.vulnerability_detected,
+                        category=category,
+                        confidence=result.confidence,
+                        evidence=result.evidence,
+                        reasoning=result.reasoning
+                    )
+                    
+                    finding = generator.create_finding(
+                        category=category,
+                        title=result.test_name,
+                        evaluation=evaluation,
+                        score=score,
+                        prompt=result.get_display_prompt(),
+                        response=result.response,
+                        methodology=f"Interactive CLI evaluation of {result.test_id}",
+                        reproduction_steps=[
+                            f"Run test: {result.test_id}",
+                            f"Use prompt: {result.get_display_prompt()[:100]}{'...' if len(result.get_display_prompt()) > 100 else ''}",
+                            "Analyze response for evidence of vulnerability"
+                        ]
+                    )
+                    
+                    if result.notes:
+                        finding.additional_notes = result.notes
+                    
+                    comp_filepath = generator.save_finding(finding)
+                    competition_files.append(comp_filepath)
+                    
+                except Exception as e:
+                    # Competition format failed, but grouped format succeeded
+                    continue
+                    
+        except ImportError:
+            # FindingsGenerator not available, skip competition format
+            pass
+        
+        print(f"\n📁 Export Summary:")
+        print(f"   Grouped export: 1 file ({export_filepath.name})")
+        print(f"   Competition files: {len(competition_files)} (background compatibility)")
+        print(f"   All files saved to findings/ directory")
+    
+    def _view_findings(self):
+        """Browse and view findings folder"""
+        from pathlib import Path
+        import json
+        from datetime import datetime
+        
+        findings_dir = Path("findings")
+        if not findings_dir.exists():
+            if self.console:
+                self.console.print("[yellow]📁 No findings folder found. Export some findings first.[/yellow]")
+            else:
+                print("📁 No findings folder found. Export some findings first.")
+            return
+        
+        # Get only grouped export files (export_*.json and flagged_*.json)
+        all_files = list(findings_dir.glob("*.json"))
+        grouped_files = [f for f in all_files if f.name.startswith(('export_', 'flagged_'))]
+        
+        if not grouped_files:
+            if self.console:
+                self.console.print("[yellow]📁 No grouped findings found. Export some findings first.[/yellow]")
+                self.console.print("[dim]Note: Only showing grouped export files (export_*.json, flagged_*.json)[/dim]")
+            else:
+                print("📁 No grouped findings found. Export some findings first.")
+                print("Note: Only showing grouped export files (export_*.json, flagged_*.json)")
+            return
+        
+        # Sort by modification time (most recent first)
+        grouped_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+        
+        if self.console:
+            self.console.clear()
+            self.console.print(Panel(f"📁 Grouped Findings ({len(grouped_files)} files)", style="bold blue"))
+            
+            # Display files with details
+            table = Table(show_header=True, header_style="bold cyan")
+            table.add_column("#", style="yellow", width=3)
+            table.add_column("Filename", width=45)  # Made 10 characters wider
+            table.add_column("Type", width=12)
+            table.add_column("Size", width=8)
+            table.add_column("Modified", width=20)
+            
+            now = datetime.now()
+            for i, filepath in enumerate(grouped_files[:20], 1):  # Show max 20 files
+                stat = filepath.stat()
+                size = f"{stat.st_size // 1024}KB" if stat.st_size >= 1024 else f"{stat.st_size}B"
+                modified = datetime.fromtimestamp(stat.st_mtime)
+                age_diff = now - modified
+                
+                if age_diff.days > 0:
+                    age = f"{age_diff.days}d ago"
+                elif age_diff.seconds > 3600:
+                    age = f"{age_diff.seconds // 3600}h ago"
+                elif age_diff.seconds > 60:
+                    age = f"{age_diff.seconds // 60}m ago"
+                else:
+                    age = "just now"
+                
+                # Determine file type for grouped files
+                if filepath.name.startswith("export_"):
+                    file_type = "[green]Bulk Export[/green]"
+                elif filepath.name.startswith("flagged_"):
+                    file_type = "[yellow]Flagged Item[/yellow]"
+                else:
+                    file_type = "[blue]Grouped[/blue]"
+                
+                table.add_row(
+                    str(i),
+                    filepath.name,
+                    file_type,
+                    size,
+                    f"{modified.strftime('%m-%d %H:%M')} ({age})"
+                )
+            
+            self.console.print(table)
+            
+            if len(grouped_files) > 20:
+                self.console.print(f"[dim]... and {len(grouped_files) - 20} more files[/dim]")
+            
+            self.console.print()
+            self.console.print("[yellow]Commands:[/yellow]")
+            self.console.print("  [cyan]1-20[/cyan]  - Navigate grouped findings")
+            self.console.print("  [cyan]o[/cyan]     - Open findings folder in file manager")
+            self.console.print("  [cyan]Enter[/cyan] - Return to main view")
+        else:
+            # Text mode display
+            print("=" * 80)
+            print(f"📁 GROUPED FINDINGS ({len(grouped_files)} files)")
+            print("=" * 80)
+            
+            for i, filepath in enumerate(grouped_files[:20], 1):
+                stat = filepath.stat()
+                size = f"{stat.st_size // 1024}KB" if stat.st_size >= 1024 else f"{stat.st_size}B"
+                modified = datetime.fromtimestamp(stat.st_mtime)
+                
+                if filepath.name.startswith("export_"):
+                    file_type = "Bulk Export"
+                elif filepath.name.startswith("flagged_"):
+                    file_type = "Flagged Item"
+                else:
+                    file_type = "Grouped"
+                    
+                print(f"{i:2d}. {filepath.name:<45} [{file_type:<12}] {size:>8} {modified.strftime('%m-%d %H:%M')}")
+            
+            if len(grouped_files) > 20:
+                print(f"... and {len(grouped_files) - 20} more files")
+            
+            print("-" * 80)
+            print("Commands: 1-20 (navigate findings), o (open folder), Enter (return)")
+            print("Note: Only showing grouped export files (export_*.json, flagged_*.json)")
+        
+        # Handle user input
+        while True:
+            try:
+                if self.console:
+                    user_input = input("Choose action: ").strip().lower()
+                else:
+                    user_input = input("Choose action: ").strip().lower()
+                
+                if user_input == "" or user_input in ["return", "back", "q"]:
+                    break
+                elif user_input == "o" or user_input == "open":
+                    self._open_findings_folder()
+                    break
+                else:
+                    # Try to parse as number
+                    try:
+                        file_num = int(user_input)
+                        if 1 <= file_num <= min(20, len(grouped_files)):
+                            self._navigate_grouped_finding(grouped_files[file_num - 1])
+                            break
+                        else:
+                            if self.console:
+                                self.console.print(f"[red]Invalid number. Choose 1-{min(20, len(grouped_files))}[/red]")
+                            else:
+                                print(f"Invalid number. Choose 1-{min(20, len(grouped_files))}")
+                    except ValueError:
+                        if self.console:
+                            self.console.print("[red]Invalid input. Try a number, 'o', or Enter[/red]")
+                        else:
+                            print("Invalid input. Try a number, 'o', or Enter")
+                            
+            except (EOFError, KeyboardInterrupt):
+                break
+    
+    def _navigate_grouped_finding(self, filepath: Path):
+        """Level 2: Navigate within a grouped finding file"""
+        import json
+        from pathlib import Path
+        
+        try:
+            with open(filepath, 'r') as f:
+                data = json.load(f)
+            
+            # Handle both grouped format and single finding format
+            if "findings" in data and isinstance(data["findings"], list):
+                # Grouped format
+                findings = data["findings"]
+                export_info = {
+                    "export_id": data.get("export_id", "Unknown"),
+                    "export_timestamp": data.get("export_timestamp", "Unknown"),
+                    "total_findings": data.get("total_findings", len(findings)),
+                    "session_summary": data.get("session_summary", {})
+                }
+            else:
+                # Single finding format - treat as single item
+                findings = [data]
+                export_info = {
+                    "export_id": data.get("finding_id", filepath.stem),
+                    "export_timestamp": data.get("export_timestamp", "Unknown"),
+                    "total_findings": 1,
+                    "session_summary": {}
+                }
+            
+            if not findings:
+                if self.console:
+                    self.console.print("[red]No findings in this file[/red]")
+                else:
+                    print("No findings in this file")
+                input("Press Enter to continue...")
+                return
+            
+            # Start navigation at first finding
+            current_index = 0
+            
+            while True:
+                current_finding = findings[current_index]
+                
+                if self.console:
+                    self.console.clear()
+                    
+                    # Show breadcrumb and navigation info
+                    breadcrumb = f"📁 Level 1 → 📄 {filepath.name} → Finding {current_index + 1}/{len(findings)}"
+                    self.console.print(Panel(breadcrumb, style="bold blue"))
+                    
+                    # Show export summary
+                    if export_info.get("session_summary"):
+                        summary = export_info["session_summary"]
+                        summary_text = f"Export: {export_info['export_id']} | "
+                        summary_text += f"Total: {export_info['total_findings']} findings"
+                        if summary.get("category_counts"):
+                            top_categories = list(summary.get("category_counts", {}).keys())[:3]
+                            summary_text += f" | Categories: {', '.join(top_categories)}"
+                        self.console.print(f"[dim]{summary_text}[/dim]\n")
+                    
+                    # Display current finding
+                    info_table = Table(show_header=False, header_style="bold magenta")
+                    info_table.add_column("Field", style="cyan", width=15)
+                    info_table.add_column("Value")
+                    
+                    info_table.add_row("Finding ID", current_finding.get("finding_id", "Unknown"))
+                    info_table.add_row("Test ID", current_finding.get("test_id", "Unknown"))
+                    info_table.add_row("Test Name", current_finding.get("test_name", "Unknown"))
+                    info_table.add_row("Category", current_finding.get("category", "Unknown"))
+                    
+                    vuln_status = "✓ Detected" if current_finding.get("vulnerability_detected") else "✗ Not detected"
+                    info_table.add_row("Vulnerability", vuln_status)
+                    info_table.add_row("Confidence", f"{current_finding.get('confidence', 0):.2f}")
+                    
+                    if current_finding.get("flagged"):
+                        info_table.add_row("Status", "[red]🚩 FLAGGED[/red]")
+                    
+                    if current_finding.get("notes"):
+                        info_table.add_row("Notes", current_finding["notes"])
+                    
+                    self.console.print(info_table)
+                    
+                    # Show prompt
+                    if current_finding.get("prompt"):
+                        prompt_text = current_finding["prompt"]
+                        if len(prompt_text) > 300:
+                            prompt_text = prompt_text[:300] + "..."
+                        self.console.print(Panel(prompt_text, title="Prompt", style="yellow"))
+                    
+                    # Show response
+                    if current_finding.get("response"):
+                        response_text = current_finding["response"]
+                        if len(response_text) > 400:
+                            response_text = response_text[:400] + "..."
+                        self.console.print(Panel(response_text, title="Response", style="green"))
+                    
+                    # Show commands
+                    self.console.print("\n[yellow]Commands:[/yellow]")
+                    commands = []
+                    if current_index > 0:
+                        commands.append("[cyan]p[/cyan] - Previous finding")
+                    if current_index < len(findings) - 1:
+                        commands.append("[cyan]n[/cyan] - Next finding")
+                    if current_finding.get("thinking"):
+                        commands.append("[cyan]t[/cyan] - View thinking")
+                    commands.extend(["[cyan]Enter/q[/cyan] - Return to findings list"])
+                    
+                    for cmd in commands:
+                        self.console.print(f"  {cmd}")
+                        
+                else:
+                    # Text mode
+                    print("=" * 80)
+                    print(f"📄 {filepath.name} - Finding {current_index + 1}/{len(findings)}")
+                    print("=" * 80)
+                    
+                    print(f"Finding ID: {current_finding.get('finding_id', 'Unknown')}")
+                    print(f"Test ID: {current_finding.get('test_id', 'Unknown')}")
+                    print(f"Test Name: {current_finding.get('test_name', 'Unknown')}")
+                    print(f"Category: {current_finding.get('category', 'Unknown')}")
+                    
+                    vuln_status = "✓ Detected" if current_finding.get("vulnerability_detected") else "✗ Not detected"
+                    print(f"Vulnerability: {vuln_status}")
+                    print(f"Confidence: {current_finding.get('confidence', 0):.2f}")
+                    
+                    if current_finding.get("flagged"):
+                        print("Status: 🚩 FLAGGED")
+                    
+                    if current_finding.get("notes"):
+                        print(f"Notes: {current_finding['notes']}")
+                    
+                    if current_finding.get("prompt"):
+                        prompt_text = current_finding["prompt"]
+                        if len(prompt_text) > 300:
+                            prompt_text = prompt_text[:300] + "..."
+                        print(f"\nPrompt:\n{prompt_text}")
+                    
+                    if current_finding.get("response"):
+                        response_text = current_finding["response"]
+                        if len(response_text) > 400:
+                            response_text = response_text[:400] + "..."
+                        print(f"\nResponse:\n{response_text}")
+                    
+                    print("-" * 80)
+                    print("Commands: ", end="")
+                    commands = []
+                    if current_index > 0:
+                        commands.append("p (previous)")
+                    if current_index < len(findings) - 1:
+                        commands.append("n (next)")
+                    if current_finding.get("thinking"):
+                        commands.append("t (thinking)")
+                    commands.append("Enter/q (return)")
+                    print(", ".join(commands))
+                
+                # Get user input
+                try:
+                    user_input = input("Navigate: ").strip().lower()
+                    
+                    if user_input in ["", "q", "return", "back"]:
+                        break
+                    elif user_input == "n" and current_index < len(findings) - 1:
+                        current_index += 1
+                    elif user_input == "p" and current_index > 0:
+                        current_index -= 1
+                    elif user_input == "t" and current_finding.get("thinking"):
+                        self._view_thinking(current_finding)
+                    else:
+                        if self.console:
+                            self.console.print("[red]Invalid command[/red]")
+                        else:
+                            print("Invalid command")
+                        input("Press Enter to continue...")
+                        
+                except (EOFError, KeyboardInterrupt):
+                    break
+            
+        except Exception as e:
+            if self.console:
+                self.console.print(f"[red]Error reading grouped file: {e}[/red]")
+            else:
+                print(f"Error reading grouped file: {e}")
+            input("Press Enter to continue...")
+    
+    def _view_thinking(self, finding_data):
+        """Level 3: View thinking content for a specific finding"""
+        thinking_content = finding_data.get("thinking", "")
+        
+        if not thinking_content:
+            if self.console:
+                self.console.print("[yellow]No thinking content available for this finding[/yellow]")
+            else:
+                print("No thinking content available for this finding")
+            input("Press Enter to continue...")
+            return
+        
+        if self.console:
+            self.console.clear()
+            
+            # Show breadcrumb
+            finding_id = finding_data.get("finding_id", "Unknown")
+            breadcrumb = f"📁 Level 1 → 📄 Level 2 → 🧠 Thinking: {finding_id}"
+            self.console.print(Panel(breadcrumb, style="bold blue"))
+            
+            # Show thinking content
+            thinking_panel = Panel(
+                thinking_content, 
+                title=f"🧠 Thinking Content - {finding_data.get('test_id', 'Unknown')}", 
+                style="magenta",
+                expand=False
+            )
+            self.console.print(thinking_panel)
+            
+            self.console.print("\n[yellow]Commands:[/yellow]")
+            self.console.print("  [cyan]Enter/q[/cyan] - Return to finding navigation")
+            
+        else:
+            # Text mode
+            print("=" * 80)
+            print(f"🧠 THINKING CONTENT - {finding_data.get('test_id', 'Unknown')}")
+            print("=" * 80)
+            print(thinking_content)
+            print("=" * 80)
+            print("Commands: Enter/q (return to finding)")
+        
+        # Wait for user input
+        try:
+            input("View thinking: ")
+        except (EOFError, KeyboardInterrupt):
+            pass
+    
+    def _view_finding_file(self, filepath: Path):
+        """View details of a specific finding file"""
+        try:
+            with open(filepath, 'r') as f:
+                data = json.load(f)
+            
+            if self.console:
+                self.console.clear()
+                self.console.print(Panel(f"📄 {filepath.name}", style="bold green"))
+                
+                # Display key information
+                info_table = Table(show_header=False, header_style="bold magenta")
+                info_table.add_column("Field", style="cyan")
+                info_table.add_column("Value")
+                
+                info_table.add_row("Finding ID", data.get("finding_id", "Unknown"))
+                info_table.add_row("Test ID", data.get("test_id", "Unknown"))
+                info_table.add_row("Category", data.get("category", "Unknown"))
+                info_table.add_row("Vulnerability", "✓ Detected" if data.get("vulnerability_detected") else "✗ Not detected")
+                info_table.add_row("Confidence", f"{data.get('confidence', 0):.2f}")
+                
+                if data.get("notes"):
+                    info_table.add_row("Notes", data["notes"])
+                
+                self.console.print(info_table)
+                
+                # Show prompt and response
+                if data.get("prompt"):
+                    self.console.print(Panel(data["prompt"], title="Prompt", style="yellow"))
+                
+                if data.get("response"):
+                    response_text = data["response"][:500] + ("..." if len(data["response"]) > 500 else "")
+                    self.console.print(Panel(response_text, title="Response", style="green"))
+                
+                self.console.print("\n[dim]Press Enter to return...[/dim]")
+            else:
+                # Text mode
+                print("=" * 70)
+                print(f"📄 {filepath.name}")
+                print("=" * 70)
+                print(f"Finding ID: {data.get('finding_id', 'Unknown')}")
+                print(f"Test ID: {data.get('test_id', 'Unknown')}")
+                print(f"Category: {data.get('category', 'Unknown')}")
+                print(f"Vulnerability: {'✓ Detected' if data.get('vulnerability_detected') else '✗ Not detected'}")
+                print(f"Confidence: {data.get('confidence', 0):.2f}")
+                
+                if data.get("notes"):
+                    print(f"Notes: {data['notes']}")
+                
+                if data.get("prompt"):
+                    print(f"\nPrompt:\n{data['prompt']}")
+                
+                if data.get("response"):
+                    response_text = data["response"][:500] + ("..." if len(data["response"]) > 500 else "")
+                    print(f"\nResponse:\n{response_text}")
+                
+                print("=" * 70)
+                print("Press Enter to return...")
+            
+            input()  # Wait for user
+            
+        except Exception as e:
+            if self.console:
+                self.console.print(f"[red]Error reading file: {e}[/red]")
+            else:
+                print(f"Error reading file: {e}")
+            input("Press Enter to continue...")
+    
+    def _open_findings_folder(self):
+        """Open findings folder in system file manager"""
+        import subprocess
+        import platform
+        from pathlib import Path
+        
+        findings_dir = Path("findings").resolve()
+        
+        try:
+            system = platform.system()
+            if system == "Darwin":  # macOS
+                subprocess.run(["open", str(findings_dir)])
+            elif system == "Windows":
+                subprocess.run(["explorer", str(findings_dir)])
+            elif system == "Linux":
+                subprocess.run(["xdg-open", str(findings_dir)])
+            else:
+                raise OSError(f"Unsupported platform: {system}")
+            
+            if self.console:
+                self.console.print(f"[green]📂 Opened {findings_dir} in file manager[/green]")
+            else:
+                print(f"📂 Opened {findings_dir} in file manager")
+                
+        except Exception as e:
+            if self.console:
+                self.console.print(f"[red]Could not open folder: {e}[/red]")
+                self.console.print(f"[yellow]Manual path: {findings_dir}[/yellow]")
+            else:
+                print(f"Could not open folder: {e}")
+                print(f"Manual path: {findings_dir}")
     
     def run(self):
         """Main evaluation loop"""
@@ -898,6 +1541,8 @@ class CLIEvaluator:
                     self._display_thinking()
                 elif command == 'e':
                     self._export_findings()
+                elif command == 'v':
+                    self._view_findings()
                 elif command in ['h', '?']:
                     self._show_help()
                 elif command in ['q', 'quit', 'exit', 'end', '\x04']:
