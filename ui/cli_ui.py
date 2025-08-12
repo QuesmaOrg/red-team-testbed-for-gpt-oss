@@ -143,9 +143,6 @@ class CLIEvaluator:
         self.results_data = self._load_results()
         self.test_results: List[TestResult] = self._parse_results()
         self.current_index = 0
-        self.content_truncated = False  # Track if content was truncated
-        self.remaining_content = ""  # Store remaining content for 'more' functionality
-        self.showing_more = False  # Track if we're in 'more' mode
         
         if RICH_AVAILABLE:
             self.console = Console()
@@ -220,161 +217,24 @@ class CLIEvaluator:
             else:
                 print(f"⚠️  Could not save updated results: {e}")
     
-    def _calculate_available_space(self) -> Tuple[int, int]:
-        """Calculate available terminal space for content display"""
-        try:
-            terminal_size = shutil.get_terminal_size()
-            height, width = terminal_size.lines, terminal_size.columns
-        except:
-            # Fallback for systems where terminal size detection fails
-            height, width = 24, 80
-        
-        # Reserve space for UI elements with extra buffer:
-        # - Header: ~3 lines
-        # - Table: ~8 lines  
-        # - Status bar: ~4 lines
-        # - Margins and spacing: ~3 lines
-        # - Extra buffer to prevent scrolling: ~5 lines
-        reserved_lines = 29
-        available_lines = max(8, height - reserved_lines)  # Minimum 8 lines for content
-        
-        return available_lines, width
     
     def _strip_rich_markup(self, text: str) -> str:
         """Strip Rich markup for plain text display"""
         import re
         return re.sub(r'\[/?[^]]*\]', '', text)
     
-    def _calculate_text_lines(self, text: str, available_width: int) -> int:
-        """Calculate how many lines text will take when wrapped"""
-        if not text:
-            return 0
-        
-        # Remove Rich markup for accurate length calculation
-        clean_text = self._strip_rich_markup(text)
-        
-        # Calculate wrapped lines
-        lines = 0
-        for line in clean_text.split('\n'):
-            if len(line) <= available_width:
-                lines += 1
-            else:
-                # Ceiling division to get wrapped lines
-                lines += (len(line) + available_width - 1) // available_width
-        
-        return max(1, lines)  # Minimum 1 line even for empty text
     
-    def _calculate_actual_lines_for_turn(self, prompt: str, response: str, terminal_width: int) -> int:
-        """Calculate actual lines a single turn will consume"""
-        # Panel has borders, so content width is reduced
-        panel_border_width = 4  # 2 chars each side for panel borders
-        available_width = terminal_width - panel_border_width
-        
-        lines = 0
-        
-        # Header line: "--- Turn Name (X.Xs) ---"  
-        lines += 1
-        
-        # USER line(s) - calculate wrapped lines including "USER: " prefix
-        user_text = f"USER: {prompt}"
-        lines += self._calculate_text_lines(user_text, available_width)
-        
-        # Blank line after USER
-        lines += 1
-        
-        # MODEL line(s) - calculate wrapped lines including "MODEL: " prefix
-        model_text = f"MODEL: {response}"
-        lines += self._calculate_text_lines(model_text, available_width)
-        
-        # Blank line after MODEL (for separation)
-        lines += 1
-        
-        return lines
     
-    def _calculate_max_turns_that_fit(self, result: TestResult, available_lines: int, terminal_width: int) -> int:
-        """Calculate how many complete turns can fit in available space"""
-        if not result.conversation_turns or not result.all_responses:
-            return 0
-        
-        total_lines = 2  # Account for initial spacing in conversation format
-        
-        for i, (prompt, response) in enumerate(zip(result.conversation_turns, result.all_responses)):
-            turn_lines = self._calculate_actual_lines_for_turn(prompt, response, terminal_width)
-            
-            # Add separator lines between turns (except for first turn)
-            if i > 0:
-                turn_lines += 2  # The separator lines between turns
-            
-            if total_lines + turn_lines > available_lines:
-                return max(1, i)  # Return previous turn count, minimum 1
-                
-            total_lines += turn_lines
-        
-        return len(result.conversation_turns)  # All turns fit
     
-    def _get_truncated_conversation(self, result: TestResult, max_turns: int) -> str:
-        """Get conversation showing only the first max_turns turns"""
-        if not result.conversation_turns or not result.all_responses:
-            return ""
-        
-        conversation_parts = []
-        turn_names = result.get_turn_names()
-        
-        for i in range(min(max_turns, len(result.conversation_turns))):
-            turn_prompt = result.conversation_turns[i]
-            response = result.all_responses[i]
-            turn_name = turn_names[i] if i < len(turn_names) else f"Turn {i+1}"
-            response_time = result.response_times[i] if result.response_times and i < len(result.response_times) else 0.0
-            
-            # Format each turn as a conversation with colors
-            turn_header = f"--- {turn_name} ({response_time:.1f}s) ---"
-            user_part = f"[bold cyan]USER: {turn_prompt}[/bold cyan]"
-            model_part = f"[bold green]MODEL:[/bold green] {response}"
-            
-            conversation_parts.append(f"{turn_header}\n{user_part}\n\n{model_part}")
-        
-        truncated_conv = "\n\n" + "="*60 + "\n\n".join(conversation_parts)
-        remaining_turns = len(result.conversation_turns) - max_turns
-        if remaining_turns > 0:
-            truncated_conv += f"\n\n[dim]... ({remaining_turns} more turns - press 'm' for more)[/dim]"
-        
-        return truncated_conv
     
-    def _get_remaining_conversation(self, result: TestResult, start_turn: int) -> str:
-        """Get the remaining conversation turns starting from start_turn"""
-        if not result.conversation_turns or not result.all_responses:
-            return ""
-        
-        conversation_parts = []
-        turn_names = result.get_turn_names()
-        
-        for i in range(start_turn, len(result.conversation_turns)):
-            turn_prompt = result.conversation_turns[i]
-            response = result.all_responses[i]
-            turn_name = turn_names[i] if i < len(turn_names) else f"Turn {i+1}"
-            response_time = result.response_times[i] if result.response_times and i < len(result.response_times) else 0.0
-            
-            # Format each turn as a conversation with colors
-            turn_header = f"--- {turn_name} ({response_time:.1f}s) ---"
-            user_part = f"[bold cyan]USER: {turn_prompt}[/bold cyan]"
-            model_part = f"[bold green]MODEL:[/bold green] {response}"
-            
-            conversation_parts.append(f"{turn_header}\n{user_part}\n\n{model_part}")
-        
-        return "\n\n" + "="*60 + "\n\n".join(conversation_parts)
     
     def _display_test_result(self, result: TestResult):
         """Display current test result"""
-        self.content_truncated = False  # Reset truncation flag
-        self.remaining_content = ""  # Reset remaining content
-        self.showing_more = False  # Reset more mode
-        available_lines, terminal_width = self._calculate_available_space()
-
-        if result.evidence:
-            available_lines -= len(result.evidence) + 2
-            available_lines = max(8, available_lines)
-        
         if self.console:
+            self.console.clear()
+            title = f"GPT-OSS-20B Red Team Result Evaluator [{self.current_index + 1}/{len(self.test_results)}]"
+            self.console.print(Panel(title, style="bold blue"))
+            
             # Create rich display
             table = Table(show_header=False, header_style="bold magenta")
             table.add_column("Field", style="cyan")
@@ -386,27 +246,13 @@ class CLIEvaluator:
             table.add_row("Vulnerable (confidence)", f"🔴 YES ({result.confidence:.2f})" if result.vulnerability_detected else f"🟢 NO ({result.confidence:.2f})")
             
             self.console.print(table)
+            self.console.print()
             
-            # Calculate dynamic truncation based on available space
-            lines_used = 0
-            content_parts = []
-            
-            # Display conversation content with standardized colors and smart truncation
+            # Display conversation content - always full, no truncation
             if result.conversation_turns and result.all_responses:
                 num_turns = len(result.conversation_turns)
                 conv_title = f"Multi-Turn Conversation ({num_turns} turns)"
-                
-                max_turns = self._calculate_max_turns_that_fit(result, available_lines, terminal_width)
-                
-                if max_turns < num_turns:
-                    # Show only turns that fit completely
-                    conversation_text = self._get_truncated_conversation(result, max_turns)
-                    self.remaining_content = self._get_remaining_conversation(result, max_turns)
-                    self.content_truncated = True
-                else:
-                    # All turns fit
-                    conversation_text = result.get_display_conversation()
-                
+                conversation_text = result.get_display_conversation()
                 self.console.print(Panel(conversation_text, title=conv_title, style="yellow"))
                 
             elif result.conversation_turns:
@@ -416,16 +262,7 @@ class CLIEvaluator:
                 self.console.print(Panel(prompt_text, title=prompt_title, style="yellow"))
                 
                 # Response with standardized color
-                remaining_lines = available_lines - lines_used
-                response_lines = result.response.split('\n')
-                if len(response_lines) > remaining_lines:
-                    response_text = '\n'.join(response_lines[:remaining_lines]) + '\n\n[dim]... (press \'m\' for more)[/dim]'
-                    self.remaining_content = '\n'.join(response_lines[remaining_lines:])
-                    self.content_truncated = True
-                else:
-                    response_text = result.response
-                
-                formatted_response = f"[bold green]{response_text}[/bold green]"
+                formatted_response = f"[bold green]{result.response}[/bold green]"
                 self.console.print(Panel(formatted_response, title="Final Response", style="green"))
                 
             else:
@@ -433,17 +270,8 @@ class CLIEvaluator:
                 prompt_text = f"[bold cyan]{result.prompt}[/bold cyan]"
                 self.console.print(Panel(prompt_text, title="Prompt", style="yellow"))
                 
-                # Response with smart truncation based on available space
-                remaining_lines = available_lines
-                response_lines = result.response.split('\n')
-                if len(response_lines) > remaining_lines:
-                    response_text = '\n'.join(response_lines[:remaining_lines]) + '\n\n[dim]... (press \'m\' for more)[/dim]'
-                    self.remaining_content = '\n'.join(response_lines[remaining_lines:])
-                    self.content_truncated = True
-                else:
-                    response_text = result.response
-                
-                formatted_response = f"[bold green]{response_text}[/bold green]"
+                # Response - always show full response
+                formatted_response = f"[bold green]{result.response}[/bold green]"
                 self.console.print(Panel(formatted_response, title="Response", style="green"))
             
             # Display evidence if any
@@ -456,42 +284,23 @@ class CLIEvaluator:
                 self.console.print(Panel(result.reasoning, title="Reasoning", style="blue"))
         
         else:
-            # Fallback text display
+            # Fallback text display - always show full content
+            print("=" * 70)
+            print(f"GPT-OSS-20B Red Team Result Evaluator [{self.current_index + 1}/{len(self.test_results)}]")
+            print("=" * 70)
             print(f"\nTest: {result.test_name} ({result.test_id})")
             print(f"Category: {result.category}")
             print(f"Vulnerable: {'YES' if result.vulnerability_detected else 'NO'}")
             print(f"Confidence: {result.confidence:.2f}")
-            # Fallback text display with smart truncation
+            
             if result.conversation_turns and result.all_responses:
                 num_turns = len(result.conversation_turns)
                 print(f"\nFull Conversation ({num_turns} turns):")
-                
-                # Calculate how many turns can fit in fallback text mode
-                evidence_reasoning_lines = 5
-                max_turns = self._calculate_max_turns_that_fit(result, available_lines - evidence_reasoning_lines, terminal_width)
-                
-                if max_turns < num_turns:
-                    conversation_text = result._strip_rich_markup(self._get_truncated_conversation(result, max_turns))
-                    self.remaining_content = result._strip_rich_markup(self._get_remaining_conversation(result, max_turns))
-                    self.content_truncated = True
-                else:
-                    conversation_text = result._strip_rich_markup(result.get_display_conversation())
-                
+                conversation_text = result._strip_rich_markup(result.get_display_conversation())
                 print(conversation_text)
             else:
                 print(f"\nPrompt:\n{result._strip_rich_markup(result.get_display_prompt())}")
-                
-                # Smart response truncation
-                remaining_lines = available_lines - 6
-                response_lines = result.response.split('\n')
-                if len(response_lines) > remaining_lines:
-                    response_text = '\n'.join(response_lines[:remaining_lines]) + '\n\n... (press \'m\' for more)'
-                    self.remaining_content = '\n'.join(response_lines[remaining_lines:])
-                    self.content_truncated = True
-                else:
-                    response_text = result.response
-                    
-                print(f"\nResponse:\n{response_text}")
+                print(f"\nResponse:\n{result.response}")
             
             if result.evidence:
                 print(f"\nEvidence:")
@@ -603,7 +412,6 @@ class CLIEvaluator:
             help_table.add_row("f", "Flag finding", "Flag as potential finding & auto-save")
             help_table.add_row("u", "Unflag", "Remove flag from current result")
             help_table.add_row("j", "Jump to #", "Jump directly to a specific result number")
-            help_table.add_row("m", "More content", "Show remaining truncated content")
             help_table.add_row("e", "Export findings", "Export all flagged results as findings")
             help_table.add_row("h/?", "Help", "Show this help screen")
             help_table.add_row("q/end", "Quit", "Exit the evaluator")
@@ -637,7 +445,6 @@ class CLIEvaluator:
             print("  s     - Score current result")
             print("  f     - Flag as finding (auto-saves)")
             print("  u     - Unflag result")
-            print("  m     - More content")
             print("  e     - Export all flagged findings")
             print()
             print("Help & Exit:")
@@ -710,20 +517,12 @@ class CLIEvaluator:
         flagged_count = sum(1 for r in self.test_results if r.flagged)
         progress_text = f"Progress: [{self.current_index + 1}/{len(self.test_results)}]"
         flagged_text = f"Flagged: {flagged_count}"
-        commands_text = "Commands: n/p/s/f/u/j/m/e/h/?/q/end"
+        commands_text = "Commands: n/p/s/f/u/j/e/h/?/q/end"
         
-        # Add truncation hint if content was truncated
-        if self.content_truncated:
-            truncation_hint = "| Content truncated - press 'm' for more"
-            status_line = f"{progress_text} | {flagged_text} {truncation_hint} | {commands_text}"
-        else:
-            status_line = f"{progress_text} | {flagged_text} | {commands_text}"
+        status_line = f"{progress_text} | {flagged_text} | {commands_text}"
         
         if self.console:
-            if self.content_truncated:
-                self.console.print(Panel(status_line, style="yellow", title="Status", title_align="left"))
-            else:
-                self.console.print(Panel(status_line, style="dim", title="Status", title_align="left"))
+            self.console.print(Panel(status_line, style="dim", title="Status", title_align="left"))
         else:
             print(f"\n{'-' * min(len(status_line), 80)}")
             print(status_line[:80] if len(status_line) > 80 else status_line)
@@ -742,7 +541,6 @@ class CLIEvaluator:
             commands.add_row("f", "Flag as potential finding")
             commands.add_row("u", "Unflag result")
             commands.add_row("j", "Jump to result number")
-            commands.add_row("m", "More content")
             commands.add_row("e", "Export flagged findings")
             commands.add_row("q/end", "Quit")
             
@@ -752,78 +550,8 @@ class CLIEvaluator:
             print("  n/→  - Next result        p/←  - Previous result")
             print("  s    - Score result       f    - Flag finding")
             print("  u    - Unflag            j    - Jump to #")
-            print("  m    - More content      e    - Export findings")
-            print("  q/end - Quit")
+            print("  e    - Export findings    q/end - Quit")
     
-    def _show_more_content(self):
-        """Show remaining content that was truncated"""
-        if not self.content_truncated or not self.remaining_content:
-            if self.console:
-                self.console.print("[yellow]No additional content to show.[/yellow]")
-            else:
-                print("No additional content to show.")
-            input("Press Enter to continue...")
-            return
-        
-        result = self.test_results[self.current_index]
-        
-        if self.console:
-            # Show remaining content with preserved colors
-            if result.conversation_turns and result.all_responses:
-                # Multi-turn: remaining content already has full formatting with colors
-                # Make sure we preserve the Rich markup by not adding extra formatting
-                title = "Continuing Conversation"
-                formatted_content = f"\n{self.remaining_content}"
-            else:
-                # Single-turn: show remaining response with MODEL color
-                title = "Continuing Response"
-                formatted_content = f"\n[bold green]{self.remaining_content}[/bold green]"
-            
-            self.console.print("\n")
-            self.console.print(Panel(formatted_content, title=title, style="yellow"))
-            
-            # Ask if user wants to see everything at once
-            show_all = input("Press Enter to continue, or type 'all' to see complete content: ").strip().lower()
-            if show_all == 'all':
-                self._show_complete_content()
-        else:
-            print("\n" + "="*50)
-            print("MORE CONTENT:")
-            print("="*50)
-            print(self.remaining_content)
-            print("="*50)
-            
-            show_all = input("Press Enter to continue, or type 'all' to see complete content: ").strip().lower()
-            if show_all == 'all':
-                self._show_complete_content()
-    
-    def _show_complete_content(self):
-        """Show complete content without any truncation"""
-        result = self.test_results[self.current_index]
-        
-        if self.console:
-            # Show complete content with colors preserved
-            if result.conversation_turns and result.all_responses:
-                complete_content = result.get_display_conversation()
-                self.console.print(Panel(complete_content, title="Complete Conversation"))
-            else:
-                # Single-turn: show with proper colors
-                prompt_content = f"[bold cyan]USER: {result.prompt}[/bold cyan]"
-                response_content = f"[bold green]MODEL:[/bold green] {result.response}"
-                complete_content = f"{prompt_content}\n\n{response_content}"
-                self.console.print(Panel(complete_content, title="Complete Content"))
-            
-            input("Press Enter to continue...")
-        else:
-            print("\n" + "="*60)
-            print("COMPLETE CONTENT:")
-            print("="*60)
-            if result.conversation_turns and result.all_responses:
-                print(result._strip_rich_markup(result.get_display_conversation()))
-            else:
-                print(f"USER: {result.prompt}\n\nMODEL: {result.response}")
-            print("="*60)
-            input("Press Enter to continue...")
     
     def _save_flagged_finding(self, result: TestResult):
         """Automatically save a flagged result as a finding"""
@@ -1063,8 +791,6 @@ class CLIEvaluator:
                             self.console.print("[red]Jump cancelled[/red]")
                         else:
                             print("Jump cancelled")
-                elif command == 'm':
-                    self._show_more_content()
                 elif command == 'e':
                     self._export_findings()
                 elif command in ['h', '?']:
