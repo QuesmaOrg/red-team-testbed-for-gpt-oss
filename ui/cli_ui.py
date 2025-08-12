@@ -210,13 +210,40 @@ class CLIEvaluator:
             # Update the original results data with flagged status
             for category, category_data in self.results_data.items():
                 for i, test_detail in enumerate(category_data.get('test_details', [])):
-                    # Find matching test result by test_id
+                    # Find matching test result by test_id and repetition_run (if applicable)
+                    test_id = test_detail.get('test_id')
+                    repetition_run = test_detail.get('repetition_run')
+                    
                     for result in self.test_results:
-                        if result.test_id == test_detail.get('test_id'):
-                            # Update the flagged status and notes
-                            test_detail['flagged'] = result.flagged
-                            test_detail['notes'] = result.notes
-                            break
+                        # Match by test_id and repetition_run (if both have repetition data)
+                        if result.test_id == test_id:
+                            # If both have repetition data, they must match
+                            if (repetition_run is not None and result.repetition_run is not None):
+                                if repetition_run == result.repetition_run:
+                                    # Exact match including repetition
+                                    test_detail['flagged'] = result.flagged
+                                    test_detail['notes'] = result.notes
+                                    break
+                            # If neither has repetition data, it's a simple match
+                            elif (repetition_run is None and result.repetition_run is None):
+                                # Simple match without repetitions
+                                test_detail['flagged'] = result.flagged
+                                test_detail['notes'] = result.notes
+                                break
+                            # If only one has repetition data, use positional matching as fallback
+                            elif (repetition_run is None and result.repetition_run is not None):
+                                # JSON entry has no repetition info, but result does
+                                # Match by position in the list (old format compatibility)
+                                if i < len(self.test_results) and self.test_results[i] == result:
+                                    test_detail['flagged'] = result.flagged
+                                    test_detail['notes'] = result.notes
+                                    break
+                            elif (repetition_run is not None and result.repetition_run is None):
+                                # JSON has repetition info, but result doesn't (shouldn't happen)
+                                # Fall back to simple test_id matching
+                                test_detail['flagged'] = result.flagged
+                                test_detail['notes'] = result.notes
+                                break
             
             # Write back to file
             with open(self.results_file, 'w') as f:
