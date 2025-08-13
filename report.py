@@ -181,6 +181,7 @@ def main(results_file, findings_dir, output_format, save):
     
     Analyze test results, findings, and generate detailed reports for security assessments.
     
+    \b
     Report Sections:
     - Test Results Analysis: Stats from penetration testing
     - Findings Summary: Overview of exported findings  
@@ -188,6 +189,7 @@ def main(results_file, findings_dir, output_format, save):
     - Category Breakdown: Vulnerabilities by type
     - Recommendations: Next steps and observations
     
+    \b
     Examples:
       uv run report                           # Full report with latest results
       uv run report --results-file results.json  # Analyze specific results file

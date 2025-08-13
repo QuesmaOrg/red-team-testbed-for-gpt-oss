@@ -145,6 +145,7 @@ def main(results_file, config, latest):
     
     Interactive CLI for reviewing test results, flagging findings, and exporting data.
     
+    \b
     Features:
     - Navigate through test results
     - Flag potential vulnerabilities 
@@ -152,11 +153,13 @@ def main(results_file, config, latest):
     - Copy prompts for manual testing
     - View model chain-of-thought reasoning
     
+    \b
     Examples:
       uv run review                          # Interactive file selection
       uv run review results/test_results.json  # Review specific file
       uv run review --latest                 # Review latest results
     
+    \b
     Navigation:
       n/→   Next result      p/←   Previous result
       f     Flag finding     u     Unflag  

@@ -120,6 +120,8 @@ def main(config, verbose):
     """🛠️  Setup and verify environment for red team security testing
     
     This command will:
+    
+    \b
     - Load and validate configuration
     - Set up logging and directories
     - Test Ollama connection and model availability

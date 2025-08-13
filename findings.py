@@ -14,6 +14,7 @@ def main():
     
     Interactive browser for exploring exported findings and creating competition submissions.
     
+    \b
     Features:
     - Browse grouped findings files (export_*.json, flagged_*.json)  
     - View detailed finding information
@@ -22,11 +23,13 @@ def main():
     - View model chain-of-thought reasoning
     - Open findings folder in system file manager
     
+    \b
     File Types:
     - Bulk Export: Files from 'uv run review' bulk export (export_YYYYMMDD_HHMMSS.json)  
     - Flagged Item: Files from individual flagging during review (flagged_test_id_timestamp.json)
     - Competition: Individual findings ready for submission (finding_name.json)
     
+    \b
     Navigation:
     Level 1 (File List):
       1-20  Select file to browse    o  Open findings folder    Enter  Exit
@@ -38,6 +41,7 @@ def main():
     Level 3 (Thinking View):
       Enter Return to finding      q  Return to finding
     
+    \b
     Examples:
       uv run findings              # Browse all findings
       # Then navigate with numbers and commands

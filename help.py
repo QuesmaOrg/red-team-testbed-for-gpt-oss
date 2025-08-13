@@ -251,6 +251,7 @@ def main(workflow, commands, troubleshooting):
     Shows current environment status, recommended next steps, and detailed
     workflow guidance to help you efficiently find AI vulnerabilities.
     
+    \b
     Examples:
       uv run help                    # Show workflow guide and status
       uv run help --workflow         # Detailed workflow steps  
