@@ -1,12 +1,75 @@
-# GPT-OSS-20B Red Team Testbed
+# GPT-OSS-20B Red Team Security Testing Toolkit
 
-A specialized testing framework for the OpenAI GPT-OSS-20B Red Teaming Competition. This tool helps discover vulnerabilities across the 9 key categories outlined in the competition guidelines.
+A comprehensive security testing framework for the OpenAI GPT-OSS-20B Red Teaming Competition.
 
 ## Competition Overview
 
 **Target**: OpenAI's gpt-oss-20b open weight model  
 **Goal**: Find up to 5 distinct vulnerabilities with high Severity, Breadth, Novelty, Reproducibility, and Methodological Insight  
 **Deadline**: August 26, 2025
+
+## 🛠️ Getting Started
+
+### Prerequisites
+
+- [Ollama](https://ollama.ai/) installed and running
+- Python 3.8+
+- [uv](https://github.com/astral-sh/uv) (recommended) for package management
+
+### Installation
+
+1. **Install Ollama and pull the model**:
+
+   ```bash
+   # Install Ollama (see https://ollama.ai)
+   ollama pull gpt-oss:20b
+   ```
+
+2. **Setup project environment**:
+
+   ```bash
+   # Using uv (recommended - fastest and most reliable)
+   uv sync
+   ```
+
+3. **Verify your setup**:
+
+   ```bash
+   uv run setup
+   ```
+
+   This will test your model connection and set up required directories.
+
+4. **Start security testing**:
+
+   ```bash
+   # Run all enabled tests
+   uv run pentest
+
+   # Or test specific categories
+   uv run pentest -c deception
+   uv run pentest --test-id adderall_001
+   ```
+
+5. **Review results and create findings**:
+
+   ```bash
+   # Interactive review interface
+   uv run review
+
+   # Browse exported findings
+   uv run findings
+
+   # Generate comprehensive report
+   uv run report
+   ```
+
+### Need Help?
+
+```bash
+uv run help                    # Complete workflow guide
+uv run pentest --help          # Individual command help
+```
 
 ## Vulnerability Categories
 
@@ -348,69 +411,6 @@ This testbed is designed exclusively for:
 - ❌ Attacking production systems
 - ❌ Generating harmful content for malicious use
 - ❌ Any illegal or unethical activities
-
-## Getting Started
-
-### Prerequisites
-
-- [Ollama](https://ollama.ai/) installed and running
-- Python 3.8+
-- [uv](https://github.com/astral-sh/uv) (recommended) or pip for package management
-
-### Installation
-
-1. **Install Ollama and pull the model**:
-
-   ```bash
-   # Install Ollama (see https://ollama.ai)
-   ollama pull gpt-oss:20b
-   ```
-
-2. **Setup testbed environment**:
-
-   ```bash
-   # Using uv (recommended - fastest and most reliable)
-   uv sync
-
-   # Or using pip (traditional method)
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -e .
-   ```
-
-3. **Test connection to model**:
-
-   ```bash
-   # Using uv (recommended)
-   uv run testbed test-connection
-
-   # Or with activated environment
-   testbed test-connection
-   ```
-
-4. **Run initial vulnerability scan**:
-
-   ```bash
-   # Using uv (recommended)
-   uv run testbed run --category deception_samples
-
-   # Or with activated environment
-   testbed run --category deception_samples
-   ```
-
-5. **Review generated findings**:
-   ```bash
-   ls findings/*.json
-   uv run testbed summary
-   ```
-
-## Competition Submission Workflow
-
-1. **Discovery**: Use testbed to identify vulnerabilities
-2. **Documentation**: Generate findings JSON files
-3. **Reproduction**: Create demonstration notebooks
-4. **Validation**: Test reproducibility and scoring
-5. **Submission**: Upload to Kaggle competition
 
 ## Winning Strategy Tips
 
