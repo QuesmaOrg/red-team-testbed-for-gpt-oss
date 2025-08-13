@@ -667,12 +667,6 @@ class CLIEvaluator:
                 print("-" * 60)
                 print(raw_prompts)
                 print("-" * 60)
-    
-    def _save_flagged_finding(self, result: TestResult):
-        """Update flagged status - no file creation, just status tracking"""
-        # The flagged status is already set on the result object
-        # The actual saving to the results file is handled by _save_updated_results()
-        return True
 
     def _export_findings(self):
         """Export flagged results as grouped findings"""
@@ -1425,9 +1419,6 @@ class CLIEvaluator:
                         self.console.print("🚩 Flagged as potential finding")
                     else:
                         print("🚩 Flagged as potential finding")
-                    
-                    # Update flagged status
-                    self._save_flagged_finding(result)
                     
                     # Save updated results to JSON
                     self._save_updated_results()
