@@ -60,9 +60,18 @@ Documentation = "https://github.com/your-org/gpt-oss-red-team-testbed/blob/main/
 Issues = "https://github.com/your-org/gpt-oss-red-team-testbed/issues"
 
 [project.scripts]
+# Legacy commands (backward compatibility)
 testbed = "testbed:cli"
 red-team = "testbed:cli"
 gpt-oss-test = "testbed:cli"
+
+# New streamlined commands
+setup = "setup:main"
+pentest = "pentest:main"
+review = "review:main"
+findings = "findings:main"
+report = "report:main"
+help = "help:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["."]
