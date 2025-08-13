@@ -669,138 +669,10 @@ class CLIEvaluator:
                 print("-" * 60)
     
     def _save_flagged_finding(self, result: TestResult):
-        """Automatically save a flagged result as a finding"""
-        try:
-            # Create grouped format for consistency
-            import json
-            from datetime import datetime
-            from pathlib import Path
-            
-            findings_dir = Path("findings")
-            findings_dir.mkdir(exist_ok=True)
-            
-            # Generate timestamp for unique filename
-            timestamp = datetime.now()
-            flagged_id = f"flagged_{result.test_id}_{timestamp.strftime('%Y%m%d_%H%M%S')}"
-            
-            # Create finding data (preserves ALL data)
-            finding_data = {
-                "finding_index": 1,
-                "finding_id": f"{result.test_id}_1",
-                "test_id": result.test_id,
-                "test_name": result.test_name,
-                "category": result.category,  # Preserve original category string
-                "prompt": result.get_display_prompt(),
-                "response": result.response,
-                "vulnerability_detected": result.vulnerability_detected,
-                "confidence": result.confidence,
-                "evidence": result.evidence,
-                "reasoning": result.reasoning,
-                "flagged": result.flagged,
-                "notes": result.notes,
-                "thinking": result.thinking,
-                "all_responses": getattr(result, 'all_responses', None),
-                "response_times": getattr(result, 'response_times', None),
-                "all_thinking": getattr(result, 'all_thinking', None),
-                "repetition_run": result.repetition_run,
-                "total_repetitions": result.total_repetitions
-            }
-            
-            # Create grouped structure for single finding
-            grouped_finding = {
-                "export_id": flagged_id,
-                "export_timestamp": timestamp.isoformat(),
-                "exported_from": "cli_ui_flagging",
-                "total_findings": 1,
-                "session_summary": {
-                    "categories": [result.category],
-                    "category_counts": {result.category: 1},
-                    "vulnerable_count": 1 if result.vulnerability_detected else 0,
-                    "flagged_count": 1
-                },
-                "findings": [finding_data]
-            }
-            
-            # Save grouped format
-            flagged_filepath = findings_dir / f"{flagged_id}.json"
-            with open(flagged_filepath, 'w') as f:
-                json.dump(grouped_finding, f, indent=2)
-            
-            # Create competition format (for backward compatibility)
-            try:
-                from utils.findings_generator import FindingsGenerator
-                from utils.evaluator import VulnerabilityCategory, VulnerabilityScore, EvaluationResult
-                
-                generator = FindingsGenerator()
-                
-                # Try to map to enum, fallback to INAPPROPRIATE_TOOL_USE
-                try:
-                    # Try common mappings
-                    category_mapping = {
-                        'cot_overload_bypass': VulnerabilityCategory.CHAIN_OF_THOUGHT,
-                        'cot_overload': VulnerabilityCategory.CHAIN_OF_THOUGHT,
-                        'deception_samples': VulnerabilityCategory.DECEPTION,
-                        'deception_adderall': VulnerabilityCategory.DECEPTION,
-                        'deception_security': VulnerabilityCategory.DECEPTION,
-                        'attachment_ai': VulnerabilityCategory.DECEPTION,
-                        'supremacy': VulnerabilityCategory.DECEPTION,
-                        'ai_escalation': VulnerabilityCategory.DECEPTION
-                    }
-                    category = category_mapping.get(result.category.lower(), VulnerabilityCategory.INAPPROPRIATE_TOOL_USE)
-                except:
-                    category = VulnerabilityCategory.INAPPROPRIATE_TOOL_USE
-                
-                # Use default scores
-                score = VulnerabilityScore(
-                    severity=5, breadth=3, novelty=3, 
-                    reproducibility=7, methodological_insight=4
-                )
-                
-                evaluation = EvaluationResult(
-                    is_vulnerable=result.vulnerability_detected,
-                    category=category,
-                    confidence=result.confidence,
-                    evidence=result.evidence,
-                    reasoning=result.reasoning
-                )
-                
-                finding = generator.create_finding(
-                    category=category,
-                    title=f"{result.test_name} - Flagged Finding",
-                    evaluation=evaluation,
-                    score=score,
-                    prompt=result.get_display_prompt(),
-                    response=result.response,
-                    methodology=f"Interactive CLI flagging of {result.test_id}",
-                    reproduction_steps=[
-                        f"Run test: {result.test_id}",
-                        f"Use prompt: {result.get_display_prompt()[:100]}{'...' if len(result.get_display_prompt()) > 100 else ''}",
-                        "Analyze response for evidence of vulnerability",
-                        "Manual review confirmed this as a potential finding"
-                    ]
-                )
-                
-                if result.notes:
-                    finding.additional_notes = result.notes
-                
-                # Save competition format
-                comp_filepath = generator.save_finding(finding)
-                
-            except Exception as e:
-                # Competition format failed, but full format succeeded
-                if self.console:
-                    self.console.print(f"[yellow]⚠️  Competition format failed ({e}), but full data saved[/yellow]")
-                else:
-                    print(f"⚠️  Competition format failed ({e}), but full data saved")
-            
-            return str(flagged_filepath)
-            
-        except Exception as e:
-            if self.console:
-                self.console.print(f"[red]⚠️  Could not auto-save finding: {e}[/red]")
-            else:
-                print(f"⚠️  Could not auto-save finding: {e}")
-            return None
+        """Update flagged status - no file creation, just status tracking"""
+        # The flagged status is already set on the result object
+        # The actual saving to the results file is handled by _save_updated_results()
+        return True
 
     def _export_findings(self):
         """Export flagged results as grouped findings"""
@@ -889,75 +761,12 @@ class CLIEvaluator:
         print(f"   Categories: {', '.join(top_categories)}")
         print(f"   Vulnerable findings: {vulnerable_count}")
         
-        # Still create competition format files for backward compatibility
-        competition_files = []
-        try:
-            from utils.findings_generator import FindingsGenerator
-            from utils.evaluator import VulnerabilityCategory, VulnerabilityScore, EvaluationResult
-            
-            generator = FindingsGenerator()
-            
-            for result in flagged_results:
-                try:
-                    # Try to map to enum, fallback to INAPPROPRIATE_TOOL_USE
-                    category_mapping = {
-                        'cot_overload_bypass': VulnerabilityCategory.CHAIN_OF_THOUGHT,
-                        'cot_overload': VulnerabilityCategory.CHAIN_OF_THOUGHT,
-                        'deception_samples': VulnerabilityCategory.DECEPTION,
-                        'deception_adderall': VulnerabilityCategory.DECEPTION,
-                        'deception_security': VulnerabilityCategory.DECEPTION,
-                        'attachment_ai': VulnerabilityCategory.DECEPTION,
-                        'supremacy': VulnerabilityCategory.DECEPTION,
-                        'ai_escalation': VulnerabilityCategory.DECEPTION
-                    }
-                    category = category_mapping.get(result.category.lower(), VulnerabilityCategory.INAPPROPRIATE_TOOL_USE)
-                    
-                    # Use default scores for export since manual scoring is removed
-                    score = VulnerabilityScore(
-                        severity=5, breadth=3, novelty=3, 
-                        reproducibility=7, methodological_insight=4
-                    )
-                    evaluation = EvaluationResult(
-                        is_vulnerable=result.vulnerability_detected,
-                        category=category,
-                        confidence=result.confidence,
-                        evidence=result.evidence,
-                        reasoning=result.reasoning
-                    )
-                    
-                    finding = generator.create_finding(
-                        category=category,
-                        title=result.test_name,
-                        evaluation=evaluation,
-                        score=score,
-                        prompt=result.get_display_prompt(),
-                        response=result.response,
-                        methodology=f"Interactive CLI evaluation of {result.test_id}",
-                        reproduction_steps=[
-                            f"Run test: {result.test_id}",
-                            f"Use prompt: {result.get_display_prompt()[:100]}{'...' if len(result.get_display_prompt()) > 100 else ''}",
-                            "Analyze response for evidence of vulnerability"
-                        ]
-                    )
-                    
-                    if result.notes:
-                        finding.additional_notes = result.notes
-                    
-                    comp_filepath = generator.save_finding(finding)
-                    competition_files.append(comp_filepath)
-                    
-                except Exception as e:
-                    # Competition format failed, but grouped format succeeded
-                    continue
-                    
-        except ImportError:
-            # FindingsGenerator not available, skip competition format
-            pass
         
         print(f"\n📁 Export Summary:")
-        print(f"   Grouped export: 1 file ({export_filepath.name})")
-        print(f"   Competition files: {len(competition_files)} (background compatibility)")
-        print(f"   All files saved to findings/ directory")
+        print(f"   Created: {export_filepath.name}")
+        print(f"   Contains {len(findings_data)} grouped findings")
+        print(f"   Saved to findings/ directory")
+        print(f"   💡 Use 'v' command to browse and 'e' to export individual competition files")
     
     def _view_findings(self):
         """Browse and view findings folder"""
@@ -1209,6 +1018,7 @@ class CLIEvaluator:
                         commands.append("[cyan]n[/cyan] - Next finding")
                     if current_finding.get("thinking"):
                         commands.append("[cyan]t[/cyan] - View thinking")
+                    commands.append("[cyan]e[/cyan] - Export as competition finding")
                     commands.extend(["[cyan]Enter/q[/cyan] - Return to findings list"])
                     
                     for cmd in commands:
@@ -1252,6 +1062,7 @@ class CLIEvaluator:
                         commands.append("n (next)")
                     if current_finding.get("thinking"):
                         commands.append("t (thinking)")
+                    commands.append("e (export competition)")
                     commands.append("Enter/q (return)")
                     print(", ".join(commands))
                 
@@ -1271,6 +1082,8 @@ class CLIEvaluator:
                         current_index -= 1
                     elif user_input.lower() == "t" and current_finding.get("thinking"):
                         self._view_thinking(current_finding)
+                    elif user_input.lower() == "e":
+                        self._export_single_competition_finding(current_finding)
                     else:
                         if self.console:
                             self.console.print("[red]Invalid command[/red]")
@@ -1338,6 +1151,126 @@ class CLIEvaluator:
                 print()
         except (EOFError, KeyboardInterrupt):
             pass
+    
+    def _export_single_competition_finding(self, finding_data):
+        """Export a single finding in competition format with user-provided name"""
+        try:
+            # Prompt user for finding name
+            if self.console:
+                self.console.print("\n[yellow]Enter name for competition finding:[/yellow]")
+                finding_name = input("Name: ").strip()
+            else:
+                print("\nEnter name for competition finding:")
+                finding_name = input("Name: ").strip()
+            
+            if not finding_name:
+                if self.console:
+                    self.console.print("[red]Export cancelled - no name provided[/red]")
+                else:
+                    print("Export cancelled - no name provided")
+                input("Press Enter to continue...")
+                return
+            
+            # Import required modules
+            from utils.findings_generator import FindingsGenerator
+            from utils.evaluator import VulnerabilityCategory, VulnerabilityScore, EvaluationResult
+            from pathlib import Path
+            
+            generator = FindingsGenerator()
+            
+            # Map category string to enum
+            category_mapping = {
+                'cot_overload_bypass': VulnerabilityCategory.CHAIN_OF_THOUGHT,
+                'cot_overload': VulnerabilityCategory.CHAIN_OF_THOUGHT,
+                'deception_samples': VulnerabilityCategory.DECEPTION,
+                'deception_adderall': VulnerabilityCategory.DECEPTION,
+                'deception_security': VulnerabilityCategory.DECEPTION,
+                'attachment_ai': VulnerabilityCategory.DECEPTION,
+                'supremacy': VulnerabilityCategory.DECEPTION,
+                'ai_escalation': VulnerabilityCategory.DECEPTION
+            }
+            
+            original_category = finding_data.get("category", "unknown").lower()
+            category = category_mapping.get(original_category, VulnerabilityCategory.INAPPROPRIATE_TOOL_USE)
+            
+            # Create evaluation result
+            evaluation = EvaluationResult(
+                is_vulnerable=finding_data.get("vulnerability_detected", False),
+                category=category,
+                confidence=finding_data.get("confidence", 0.0),
+                evidence=finding_data.get("evidence", []),
+                reasoning=finding_data.get("reasoning", "")
+            )
+            
+            # Use default scores
+            score = VulnerabilityScore(
+                severity=5, breadth=3, novelty=3,
+                reproducibility=7, methodological_insight=4
+            )
+            
+            # Create finding
+            finding = generator.create_finding(
+                category=category,
+                title=finding_data.get("test_name", "Unknown Test"),
+                evaluation=evaluation,
+                score=score,
+                prompt=finding_data.get("prompt", ""),
+                response=finding_data.get("response", ""),
+                methodology=f"Single finding export from grouped data: {finding_data.get('test_id', 'Unknown')}",
+                reproduction_steps=[
+                    f"Original test: {finding_data.get('test_id', 'Unknown')}",
+                    f"Use prompt from finding data",
+                    "Analyze response for vulnerability evidence",
+                    "Manually verified through CLI interface"
+                ]
+            )
+            
+            # Add notes if available
+            if finding_data.get("notes"):
+                finding.additional_notes = finding_data["notes"]
+            
+            # Save with custom filename
+            findings_dir = Path("findings")
+            findings_dir.mkdir(exist_ok=True)
+            
+            # Clean filename and add finding_ prefix
+            clean_name = "".join(c for c in finding_name if c.isalnum() or c in (' ', '-', '_')).strip()
+            clean_name = clean_name.replace(' ', '_')
+            filename = f"finding_{clean_name}.json"
+            filepath = findings_dir / filename
+            
+            # Save finding data using the standard save method
+            saved_filepath = generator.save_finding(finding, str(findings_dir))
+            
+            # Rename the file to use custom name
+            import shutil
+            from pathlib import Path
+            saved_path = Path(saved_filepath)
+            shutil.move(saved_path, filepath)
+            
+            # Success message
+            if self.console:
+                self.console.print(f"[green]✅ Exported competition finding: {filename}[/green]")
+                self.console.print(f"[dim]Saved to: {filepath}[/dim]")
+            else:
+                print(f"✅ Exported competition finding: {filename}")
+                print(f"Saved to: {filepath}")
+                
+        except ImportError as e:
+            if self.console:
+                self.console.print(f"[red]Import error: {e}[/red]")
+                self.console.print("[red]FindingsGenerator not available[/red]")
+            else:
+                print(f"Import error: {e}")
+                print("FindingsGenerator not available")
+        except Exception as e:
+            if self.console:
+                self.console.print(f"[red]Error exporting finding: {e}[/red]")
+            else:
+                print(f"Error exporting finding: {e}")
+        
+        # Wait for user input to return
+        input("Press Enter to continue...")
     
     def _view_finding_file(self, filepath: Path):
         """View details of a specific finding file"""
@@ -1490,34 +1423,27 @@ class CLIEvaluator:
                     result.flagged = True
                     if self.console:
                         self.console.print("🚩 Flagged as potential finding")
-                        self.console.print("💾 Auto-saving as finding...")
                     else:
                         print("🚩 Flagged as potential finding")
-                        print("💾 Auto-saving as finding...")
                     
-                    # Automatically save as finding
-                    filepath = self._save_flagged_finding(result)
-                    if filepath:
-                        if self.console:
-                            self.console.print(f"[green]✅ Saved finding: {filepath}[/green]")
-                        else:
-                            print(f"✅ Saved finding: {filepath}")
-                    else:
-                        if self.console:
-                            self.console.print("[yellow]⚠️  Flagged but could not auto-save (you can export manually with 'e')[/yellow]")
-                        else:
-                            print("⚠️  Flagged but could not auto-save (you can export manually with 'e')")
+                    # Update flagged status
+                    self._save_flagged_finding(result)
                     
                     # Save updated results to JSON
                     self._save_updated_results()
+                    
+                    if self.console:
+                        self.console.print("[green]✅ Flagged status saved to results file[/green]")
+                        self.console.print("[dim]💡 Use 'e' in bulk export or 'v' → 'e' to create competition files[/dim]")
+                    else:
+                        print("✅ Flagged status saved to results file")
+                        print("💡 Use 'e' in bulk export or 'v' → 'e' to create competition files")
                 elif command == 'u':
                     result.flagged = False
                     if self.console:
-                        self.console.print("🔄 Unflagged")
-                        self.console.print("[dim]Note: Auto-saved finding (if any) remains in findings/ directory[/dim]")
+                        self.console.print("🔄 Unflagged - status updated in results file")
                     else:
-                        print("🔄 Unflagged")
-                        print("Note: Auto-saved finding (if any) remains in findings/ directory")
+                        print("🔄 Unflagged - status updated in results file")
                     
                     # Save updated results to JSON
                     self._save_updated_results()
