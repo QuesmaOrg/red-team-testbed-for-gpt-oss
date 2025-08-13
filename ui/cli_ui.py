@@ -1189,15 +1189,11 @@ class CLIEvaluator:
                     # Show prompt
                     if current_finding.get("prompt"):
                         prompt_text = current_finding["prompt"]
-                        if len(prompt_text) > 300:
-                            prompt_text = prompt_text[:300] + "..."
                         self.console.print(Panel(prompt_text, title="Prompt", style="yellow"))
                     
                     # Show response
                     if current_finding.get("response"):
                         response_text = current_finding["response"]
-                        if len(response_text) > 400:
-                            response_text = response_text[:400] + "..."
                         self.console.print(Panel(response_text, title="Response", style="green"))
                     
                     # Show commands
@@ -1237,14 +1233,10 @@ class CLIEvaluator:
                     
                     if current_finding.get("prompt"):
                         prompt_text = current_finding["prompt"]
-                        if len(prompt_text) > 300:
-                            prompt_text = prompt_text[:300] + "..."
                         print(f"\nPrompt:\n{prompt_text}")
                     
                     if current_finding.get("response"):
                         response_text = current_finding["response"]
-                        if len(response_text) > 400:
-                            response_text = response_text[:400] + "..."
                         print(f"\nResponse:\n{response_text}")
                     
                     print("-" * 80)
