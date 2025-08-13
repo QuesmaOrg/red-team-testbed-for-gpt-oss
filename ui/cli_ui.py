@@ -1040,7 +1040,7 @@ class CLIEvaluator:
             
             self.console.print()
             self.console.print("[yellow]Commands:[/yellow]")
-            self.console.print("  [cyan]1-20[/cyan]  - Navigate grouped findings")
+            self.console.print(f"  [cyan]1-{min(20, len(grouped_files))}[/cyan]   - Navigate grouped findings")
             self.console.print("  [cyan]o[/cyan]     - Open findings folder in file manager")
             self.console.print("  [cyan]Enter[/cyan] - Return to main view")
         else:
@@ -1067,20 +1067,22 @@ class CLIEvaluator:
                 print(f"... and {len(grouped_files) - 20} more files")
             
             print("-" * 80)
-            print("Commands: 1-20 (navigate findings), o (open folder), Enter (return)")
+            print(f"Commands: 1-{min(20, len(grouped_files))} (navigate findings), o (open folder), Enter (return)")
             print("Note: Only showing grouped export files (export_*.json, flagged_*.json)")
         
         # Handle user input
         while True:
             try:
+                # Use single character input like main UI
+                user_input = input("Choose action: ")
                 if self.console:
-                    user_input = input("Choose action: ").strip().lower()
+                    self.console.print()  # Add newline after single char input
                 else:
-                    user_input = input("Choose action: ").strip().lower()
+                    print()
                 
-                if user_input == "" or user_input in ["return", "back", "q"]:
+                if user_input in ["\r", "\n", "", "q"]:  # Enter or q to quit
                     break
-                elif user_input == "o" or user_input == "open":
+                elif user_input.lower() == "o":
                     self._open_findings_folder()
                     break
                 else:
@@ -1095,11 +1097,13 @@ class CLIEvaluator:
                                 self.console.print(f"[red]Invalid number. Choose 1-{min(20, len(grouped_files))}[/red]")
                             else:
                                 print(f"Invalid number. Choose 1-{min(20, len(grouped_files))}")
+                            input("Press Enter to continue...")
                     except ValueError:
                         if self.console:
                             self.console.print("[red]Invalid input. Try a number, 'o', or Enter[/red]")
                         else:
                             print("Invalid input. Try a number, 'o', or Enter")
+                        input("Press Enter to continue...")
                             
             except (EOFError, KeyboardInterrupt):
                 break
@@ -1253,15 +1257,19 @@ class CLIEvaluator:
                 
                 # Get user input
                 try:
-                    user_input = input("Navigate: ").strip().lower()
+                    user_input = self._get_single_char("Navigate: ")
+                    if self.console:
+                        self.console.print()  # Add newline after single char input
+                    else:
+                        print()
                     
-                    if user_input in ["", "q", "return", "back"]:
+                    if user_input in ["\r", "\n", "", "q"]:
                         break
-                    elif user_input == "n" and current_index < len(findings) - 1:
+                    elif user_input.lower() == "n" and current_index < len(findings) - 1:
                         current_index += 1
-                    elif user_input == "p" and current_index > 0:
+                    elif user_input.lower() == "p" and current_index > 0:
                         current_index -= 1
-                    elif user_input == "t" and current_finding.get("thinking"):
+                    elif user_input.lower() == "t" and current_finding.get("thinking"):
                         self._view_thinking(current_finding)
                     else:
                         if self.console:
@@ -1323,7 +1331,11 @@ class CLIEvaluator:
         
         # Wait for user input
         try:
-            input("View thinking: ")
+            self._get_single_char("View thinking: ")
+            if self.console:
+                self.console.print()
+            else:
+                print()
         except (EOFError, KeyboardInterrupt):
             pass
     
