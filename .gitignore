@@ -119,8 +119,7 @@ results/
 .idea/
 
 # Competition specific
-findings/*.json
-!findings/deception_example_001.json
+findings-archive/
 
 # Temporary files
 *.tmp

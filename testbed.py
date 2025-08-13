@@ -848,5 +848,15 @@ def ui(ctx, results_file):
     launch_cli_ui(results_file)
 
 
+@cli.command()
+@click.pass_context
+def findings(ctx):
+    """Browse and navigate findings folder directly"""
+    from ui.cli_ui import launch_findings_browser
+    
+    click.echo("🗂️  Launching findings browser...")
+    launch_findings_browser()
+
+
 if __name__ == "__main__":
     cli()

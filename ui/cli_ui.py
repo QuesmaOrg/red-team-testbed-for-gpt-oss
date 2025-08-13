@@ -1571,6 +1571,37 @@ def launch_cli_ui(results_file: str):
         print(f"Error launching CLI UI: {e}")
 
 
+def launch_findings_browser():
+    """Launch findings browser directly without test results"""
+    import tempfile
+    import json
+    
+    try:
+        # Create a temporary dummy results file to instantiate CLIEvaluator
+        dummy_data = {"dummy_category": {"test_details": []}}
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as temp_file:
+            json.dump(dummy_data, temp_file)
+            temp_filename = temp_file.name
+        
+        try:
+            # Create CLIEvaluator with the temporary file
+            evaluator = CLIEvaluator(temp_filename)
+            evaluator._view_findings()
+        finally:
+            # Clean up the temporary file
+            import os
+            try:
+                os.unlink(temp_filename)
+            except:
+                pass
+                
+    except Exception as e:
+        print(f"Error launching findings browser: {e}")
+        import traceback
+        traceback.print_exc()
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python cli_ui.py <results_file.json>")

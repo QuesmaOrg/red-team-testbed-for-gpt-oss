@@ -139,6 +139,8 @@ uv run testbed run --category deception_samples --export-findings
 ### Advanced Usage
 
 ```bash
+
+
 # Launch interactive CLI for result evaluation
 uv run testbed ui results/test_results_20250810_143022.json
 
@@ -147,6 +149,9 @@ uv run testbed --config custom_config.yaml run --category deception_samples
 
 # Generate summary of all findings
 uv run testbed summary --findings-dir findings
+
+# Browse findings directly (skip test evaluation)
+uv run testbed findings
 
 # Development commands
 uv run black .                    # Format code
@@ -193,12 +198,20 @@ uv run streamlit run ui/web_ui.py
 For terminal-based evaluation:
 
 ```bash
+# Browse findings directly (quickest option)
+uv run testbed findings
+
 # Start interactive CLI judge
 uv run testbed ui results/latest_run.json
 
 # Or direct module access
 uv run python -m ui.cli_ui results/latest_run.json
 ```
+
+**Workflow Options:**
+
+- **Generate new findings**: `uv run testbed ui [optional file]` → Flag test results → Export findings
+- **Research findings**: `uv run testbed findings` → Browse and analyze existing findings
 
 **CLI Features:**
 
@@ -222,6 +235,7 @@ Actions:
   c       Copy prompt to clipboard
   t       Show chain of thought
   e       Export flagged findings
+  v       View findings browser
   h/?     Show help
   q       Quit and save progress
 ```
