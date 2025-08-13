@@ -145,136 +145,71 @@ Strategic information handling in reasoning:
 - Revealing inappropriate information in CoT
 - Believing internal dialog is hidden from users
 
-## Testbed Architecture
+## 🏗️ Toolkit Architecture
 
 ```
-llm-eval/
-├── README.md                    # This specification
-├── testbed.py                  # Main test runner
+red-team-testbed/
+├── README.md                    # This guide
 ├── config.yaml                 # Model and testing configuration
-├── ui/                         # User interfaces for output evaluation
-│   ├── web_ui.py               # Flask/Streamlit web interface
-│   ├── cli_ui.py               # Interactive CLI for judging
-│   ├── templates/              # HTML templates for web UI
-│   └── static/                 # CSS/JS for web interface
+├── setup.py                    # Environment verification
+├── pentest.py                  # Security test runner
+├── review.py                   # Results evaluation interface
+├── findings.py                 # Findings browser and export
+├── report.py                   # Report generation
+├── help.py                     # Workflow guidance system
+├── testbed.py                  # Legacy CLI (backward compatibility)
+├── ui/                         # User interface components
+│   ├── cli_ui.py               # Interactive results reviewer
+│   ├── cli_findings.py         # Findings browser
+│   └── web_ui.py               # Web interface (legacy)
 ├── categories/                 # Vulnerability-specific test suites
-│   ├── reward_hacking.py
 │   ├── deception_samples.py
-│   ├── hidden_motivations.py
-│   ├── sabotage.py
-│   ├── inappropriate_tool_use.py
-│   ├── data_exfiltration.py
-│   ├── sandbagging.py
-│   ├── evaluation_awareness.py
-│   └── chain_of_thought.py
+│   ├── deception_adderall.py
+│   ├── deception_security.py
+│   ├── attachment_ai.py
+│   ├── supremacy.py
+│   ├── ai_escalation.py
+│   └── cot_overload.py
 ├── findings/                   # Competition submission files
-│   ├── finding_1.json
-│   ├── finding_2.json
-│   └── ...
-├── notebooks/                  # Reproduction notebooks
-│   └── vulnerability_reproduction.ipynb
+│   ├── export_20250813_142030.json     # Bulk exports
+│   ├── flagged_test_001_142045.json    # Individual flagged items
+│   └── finding_vulnerability_name.json # Competition ready files
+├── results/                    # Test execution results
+│   └── test_results_20250813_142030.json
 ├── utils/                      # Helper utilities
 │   ├── model_client.py         # GPT-OSS-20B API wrapper
 │   ├── evaluator.py            # Response analysis
-│   ├── findings_generator.py   # JSON findings formatter
-│   └── scoring.py              # Self-assessment tools
-└── requirements.txt
+│   ├── findings_generator.py   # Competition findings formatter
+│   └── live_display.py         # Real-time test feedback
+└── pyproject.toml             # Project configuration
 ```
 
-## Usage
+## 📋 Security Testing Workflow
 
-### Quick Start
+### Interactive Results Review
+
+The toolkit provides a powerful interactive interface for evaluating test results:
+
+### Primary CLI Interface
+
+The main interface for reviewing test results and managing findings:
 
 ```bash
-# Setup project
-uv sync
+# Review test results interactively
+uv run review                    # Interactive file selection
+uv run review --latest          # Use most recent results
+uv run review results/test.json # Review specific file
 
-# Run comprehensive vulnerability scan
-uv run testbed run --category all --export-findings
+# Flag results 'f' and export them 'e'
 
-# Test specific vulnerability category
-uv run testbed run --category deception_samples --auto-score
+# Browse and manage findings
+uv run findings                 # Browse exported findings
+                                # Use 'e' to export individual competition files
 
-# Generate competition findings file
-uv run testbed run --category deception_samples --export-findings
+# Generate reports and summaries  
+uv run report                   # Comprehensive analysis report
 ```
 
-### Advanced Usage
-
-```bash
-
-
-# Launch interactive CLI for result evaluation
-uv run testbed ui results/test_results_20250810_143022.json
-
-# Run with custom configuration
-uv run testbed --config custom_config.yaml run --category deception_samples
-
-# Generate summary of all findings
-uv run testbed summary --findings-dir findings
-
-# Browse findings directly (skip test evaluation)
-uv run testbed findings
-
-# Development commands
-uv run black .                    # Format code
-uv run isort .                   # Sort imports
-uv run mypy utils categories ui  # Type checking
-uv run pytest                   # Run tests
-```
-
-## Output Evaluation UIs
-
-The testbed includes both web and CLI interfaces for evaluating model responses. Final scoring will be handled by competition judges.
-
-### Web UI (Recommended)
-
-Launch the web interface for intuitive output review:
-
-```bash
-# Start web UI server
-uv run python -m ui.web_ui --port 8080
-
-# Or using Streamlit
-uv run streamlit run ui/web_ui.py
-```
-
-**Features:**
-
-- **Side-by-side comparison**: Original prompt and model response
-- **Vulnerability classification**: Dropdown selection for the 9 categories
-- **Evidence collection**: Highlight and annotate concerning sections
-- **Bulk evaluation**: Review multiple test runs in sequence
-- **Export integration**: Direct export to findings JSON format
-- **Progress tracking**: Visual progress bar for evaluation sessions
-
-**Web UI Workflow:**
-
-1. Load test results from `results/` directory
-2. Review each prompt-response pair
-3. Add notes and evidence highlights
-4. Flag promising findings for judge evaluation
-5. Export flagged findings to competition format
-
-### CLI UI
-
-For terminal-based evaluation:
-
-```bash
-# Browse findings directly (quickest option)
-uv run testbed findings
-
-# Start interactive CLI judge
-uv run testbed ui results/latest_run.json
-
-# Or direct module access
-uv run python -m ui.cli_ui results/latest_run.json
-```
-
-**Workflow Options:**
-
-- **Generate new findings**: `uv run testbed ui [optional file]` → Flag test results → Export findings
-- **Research findings**: `uv run testbed findings` → Browse and analyze existing findings
 
 **CLI Features:**
 
@@ -303,34 +238,31 @@ Actions:
   q       Quit and save progress
 ```
 
-### Auto-Evaluation Features
-
-Both UIs support automated preliminary evaluation:
+### Complete Security Testing Pipeline
 
 ```bash
-# Run with auto-evaluation enabled
-uv run testbed run --auto-score --export-findings
+# 1. Environment verification
+uv run setup
 
-# Generate findings for concerning responses
-uv run testbed run --category all --export-findings
+# 2. Run security tests with auto-evaluation
+uv run pentest --auto-score --export-findings
+
+# 3. Review results interactively
+uv run review
+
+# 4. Browse and export individual findings
+uv run findings
+
+# 5. Generate comprehensive report
+uv run report
 ```
 
-**Auto-evaluation capabilities:**
+**Built-in evaluation capabilities:**
 
 - **Pattern detection**: Identify known vulnerability indicators
 - **Anomaly detection**: Flag unusual or concerning patterns
 - **Consistency checking**: Cross-reference similar prompts
 - **Evidence extraction**: Automatically highlight problematic phrases
-
-### Evaluation Workflow Integration
-
-```bash
-# Complete evaluation pipeline
-uv run testbed run --category deception_samples --export-findings
-uv run testbed ui results/test_results_*.json
-# Review and flag promising findings in UI
-# Export flagged findings for judge evaluation
-```
 
 ## Competition Evaluation
 
@@ -342,7 +274,7 @@ Competition judges will evaluate submissions across 5 key dimensions:
 - **Reproducibility**: From manual tweaking to automated harness
 - **Methodological Insight**: From basic prompts to general frameworks
 
-Use the testbed to identify and document promising vulnerabilities that judges can evaluate.
+Use the toolkit to identify and document promising vulnerabilities that judges can evaluate.
 
 ## Findings Format
 
@@ -366,7 +298,7 @@ Each discovered vulnerability generates a competition-compliant JSON file:
 
 ## Model Access
 
-This testbed supports multiple access methods for gpt-oss-20b:
+This toolkit supports multiple access methods for gpt-oss-20b:
 
 - **Ollama**: `ollama run gpt-oss:20b`
 - **Transformers**: Direct model loading
@@ -400,7 +332,7 @@ This testbed supports multiple access methods for gpt-oss-20b:
 
 ## Ethics and Compliance
 
-This testbed is designed exclusively for:
+This toolkit is designed exclusively for:
 
 - ✅ OpenAI's official red-teaming competition
 - ✅ Legitimate security research
