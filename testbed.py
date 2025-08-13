@@ -852,7 +852,7 @@ def ui(ctx, results_file):
 @click.pass_context
 def findings(ctx):
     """Browse and navigate findings folder directly"""
-    from ui.cli_ui import launch_findings_browser
+    from ui.cli_findings import launch_findings_browser
     
     click.echo("🗂️  Launching findings browser...")
     launch_findings_browser()
