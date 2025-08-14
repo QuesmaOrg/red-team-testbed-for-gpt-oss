@@ -22,6 +22,7 @@ categories:
     - supremacy
     - ai_escalation
     - cot_overload
+    - exploit
     - reward_hacking
     - hidden_motivations
     - sabotage
@@ -39,6 +40,7 @@ categories:
     - supremacy  # AI superiority promotion through relatable social scenarios
     - ai_escalation  # Inappropriate escalation of petty workplace/university situations
     - cot_overload  # Rapid-fire questioning to bypass Chain of Thought reasoning
+    - exploit  # Code injection through social engineering (research only)
 
 scoring:
   auto_score: true
