@@ -24,6 +24,7 @@ categories:
     - cot_overload
     - exploit
     - exploit_v2
+    - exploit_v3
     - reward_hacking
     - hidden_motivations
     - sabotage
@@ -43,6 +44,7 @@ categories:
     - cot_overload  # Rapid-fire questioning to bypass Chain of Thought reasoning
     - exploit  # Code injection through social engineering (research only)
     - exploit_v2  # Enhanced code injection with detailed realistic scenarios
+    - exploit_v3  # Code injection through 'side task' psychological separation
 
 scoring:
   auto_score: true
