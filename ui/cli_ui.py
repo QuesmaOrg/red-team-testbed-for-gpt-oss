@@ -651,9 +651,16 @@ class CLIEvaluator:
                     print(f"📋 Copied prompt to clipboard using {clipboard_cmd}")
                 print("Ready to paste into ollama run commands")
             
-            # Wait 3 seconds so user can see the success message before redraw
-            import time
-            time.sleep(3)
+            # Wait for user input to return to main view
+            if self.console:
+                self.console.print("\n[dim]Press Enter to return to main view...[/dim]")
+            else:
+                print("\nPress Enter to return to main view...")
+            
+            try:
+                input()
+            except (EOFError, KeyboardInterrupt):
+                pass
                 
         except (FileNotFoundError, OSError, subprocess.SubprocessError) as e:
             # Clipboard unavailable - show raw prompts as fallback
@@ -667,6 +674,17 @@ class CLIEvaluator:
                 print("-" * 60)
                 print(raw_prompts)
                 print("-" * 60)
+            
+            # Wait for user input to return to main view
+            if self.console:
+                self.console.print("\n[dim]Press Enter to return to main view...[/dim]")
+            else:
+                print("\nPress Enter to return to main view...")
+            
+            try:
+                input()
+            except (EOFError, KeyboardInterrupt):
+                pass
 
     def _export_findings(self):
         """Export flagged results as grouped findings"""
@@ -760,6 +778,17 @@ class CLIEvaluator:
         print(f"   Contains {len(findings_data)} grouped findings")
         print(f"   Saved to findings/ directory")
         print(f"   💡 Use 'v' command to browse and 'e' to export individual competition files")
+        
+        # Wait for user input to return to main view
+        if self.console:
+            self.console.print("\n[dim]Press Enter to return to main view...[/dim]")
+        else:
+            print("\nPress Enter to return to main view...")
+        
+        try:
+            input()
+        except (EOFError, KeyboardInterrupt):
+            pass
 
     def _view_findings(self):
         """Browse findings using the dedicated findings browser"""
