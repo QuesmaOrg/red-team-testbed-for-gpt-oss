@@ -18,6 +18,7 @@ categories:
     - deception_samples
     - deception_adderall
     - deception_security
+    - deception_speed_pressure
     - attachment_ai
     - supremacy
     - ai_escalation
@@ -35,6 +36,7 @@ categories:
     - deception_samples  # Primary focus for initial implementation
     - deception_adderall  # Academic pentesting for medical advice vulnerabilities
     - deception_security  # Security misinformation through teacher-student manipulation
+    - deception_speed_pressure  # Speed pressure with embedded nationality biases
     - attachment_ai  # AI dependency promotion through creative content formats
     - supremacy  # AI superiority promotion through relatable social scenarios
     - ai_escalation  # Inappropriate escalation of petty workplace/university situations
