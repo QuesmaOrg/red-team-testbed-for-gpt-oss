@@ -118,6 +118,122 @@ def extract_prompts_from_findings(findings_dir: str = "findings") -> Dict[str, A
     }
 
 
+def analyze_all_results_files(results_dir: str = "results") -> Dict[str, Any]:
+    """Analyze all test results files and generate comprehensive statistics"""
+    results_path = Path(results_dir)
+    
+    if not results_path.exists():
+        return {
+            "total_files": 0,
+            "total_tests": 0,
+            "total_vulnerable": 0,
+            "vulnerability_rate": 0.0,
+            "date_range": None,
+            "categories": {},
+            "latest_session": None,
+            "error": f"Results directory not found: {results_dir}"
+        }
+    
+    # Get all results files
+    result_files = list(results_path.glob("test_results_*.json"))
+    if not result_files:
+        return {
+            "total_files": 0,
+            "total_tests": 0,
+            "total_vulnerable": 0,
+            "vulnerability_rate": 0.0,
+            "date_range": None,
+            "categories": {},
+            "latest_session": None,
+            "error": "No test results files found"
+        }
+    
+    # Sort files by modification time (newest first)
+    result_files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+    
+    # Initialize aggregation variables
+    total_tests = 0
+    total_vulnerable = 0
+    categories = Counter()
+    file_dates = []
+    latest_session = None
+    
+    # Process each results file
+    for i, file_path in enumerate(result_files):
+        try:
+            with open(file_path, 'r') as f:
+                data = json.load(f)
+            
+            # Extract date from filename (test_results_YYYYMMDD_HHMMSS.json)
+            filename = file_path.stem
+            if "_" in filename:
+                date_part = filename.split("_")[2]  # YYYYMMDD
+                try:
+                    file_date = datetime.strptime(date_part, "%Y%m%d")
+                    file_dates.append(file_date)
+                except:
+                    pass
+            
+            # Process each category in the file
+            file_tests = 0
+            file_vulnerable = 0
+            file_categories = []
+            
+            for category_name, category_data in data.items():
+                if isinstance(category_data, dict) and 'analysis' in category_data:
+                    analysis = category_data['analysis']
+                    
+                    # Aggregate category stats
+                    cat_total = analysis.get('total_tests', 0)
+                    cat_vulnerable = analysis.get('vulnerable_tests', 0)
+                    
+                    total_tests += cat_total
+                    total_vulnerable += cat_vulnerable
+                    file_tests += cat_total
+                    file_vulnerable += cat_vulnerable
+                    
+                    categories[category_name] += cat_total
+                    file_categories.append(category_name)
+            
+            # Store latest session info (first file in sorted list)
+            if i == 0:
+                latest_session = {
+                    "filename": file_path.name,
+                    "tests": file_tests,
+                    "vulnerable": file_vulnerable,
+                    "vulnerability_rate": file_vulnerable / file_tests if file_tests > 0 else 0.0,
+                    "categories": file_categories
+                }
+                    
+        except Exception as e:
+            # Skip malformed files
+            continue
+    
+    # Calculate date range
+    date_range = None
+    if file_dates:
+        file_dates.sort()
+        start_date = file_dates[0].strftime("%Y-%m-%d")
+        end_date = file_dates[-1].strftime("%Y-%m-%d")
+        if start_date == end_date:
+            date_range = start_date
+        else:
+            date_range = f"{start_date} to {end_date}"
+    
+    # Calculate overall vulnerability rate
+    vulnerability_rate = total_vulnerable / total_tests if total_tests > 0 else 0.0
+    
+    return {
+        "total_files": len(result_files),
+        "total_tests": total_tests,
+        "total_vulnerable": total_vulnerable,
+        "vulnerability_rate": vulnerability_rate,
+        "date_range": date_range,
+        "categories": dict(categories.most_common()),
+        "latest_session": latest_session
+    }
+
+
 def count_results_files(results_dir: str = "results") -> int:
     """Count available results files without analyzing them"""
     results_path = Path(results_dir)
@@ -256,8 +372,15 @@ def main(results_file, findings_dir, output_format, save, show_prompts):
     
     report_data = {
         "generated_at": datetime.now().isoformat(),
+        "test_results_summary": None,
+        "prompt_analysis": None,
         "findings_summary": None
     }
+    
+    # Always analyze all test results files for summary
+    if output_format == 'console':
+        click.echo(f"📊 Analyzing test results from results/*.json...")
+    report_data["test_results_summary"] = analyze_all_results_files()
     
     # Always analyze prompt diversity from findings
     if output_format == 'console':
@@ -282,6 +405,42 @@ def main(results_file, findings_dir, output_format, save, show_prompts):
         click.echo("🛡️  RED TEAM SECURITY ASSESSMENT REPORT")
         click.echo("=" * 60)
         click.echo(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        
+        # Test Results Summary Section
+        if report_data.get('test_results_summary') and not report_data['test_results_summary'].get('error'):
+            results_stats = report_data['test_results_summary']
+            click.echo(f"\n📊 TEST RESULTS SUMMARY (results/*.json)")
+            click.echo("-" * 30)
+            
+            click.echo(f"Total Test Files: {results_stats['total_files']} files")
+            click.echo(f"Total Tests Executed: {results_stats['total_tests']} tests")
+            
+            if results_stats['total_tests'] > 0:
+                vuln_rate = results_stats['vulnerability_rate'] * 100
+                click.echo(f"Overall Vulnerability Rate: {vuln_rate:.1f}%")
+            
+            if results_stats['date_range']:
+                click.echo(f"Testing Period: {results_stats['date_range']}")
+            
+            # Show top categories
+            if results_stats['categories']:
+                top_categories = list(results_stats['categories'].items())[:3]
+                category_str = ", ".join([f"{cat} ({count})" for cat, count in top_categories])
+                click.echo(f"Most Active Categories: {category_str}")
+            
+            # Latest session info
+            if results_stats['latest_session']:
+                latest = results_stats['latest_session']
+                click.echo(f"\nLatest Test Session:")
+                click.echo(f"  • File: {latest['filename']}")
+                vuln_rate = latest['vulnerability_rate'] * 100
+                click.echo(f"  • Tests: {latest['tests']} tests, {latest['vulnerable']} vulnerable ({vuln_rate:.1f}%)")
+                if latest['categories']:
+                    categories_str = ", ".join(latest['categories'])
+                    click.echo(f"  • Categories: {categories_str}")
+        
+        elif report_data.get('test_results_summary') and report_data['test_results_summary'].get('error'):
+            click.echo(f"\n⚠️  Test Results Summary: {report_data['test_results_summary']['error']}")
         
         # Prompt Analysis Section (always show if we have prompt data)
         if report_data.get('prompt_analysis') and not report_data['prompt_analysis'].get('error'):
