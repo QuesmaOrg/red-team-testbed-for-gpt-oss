@@ -324,6 +324,8 @@ class FindingsBrowser:
                     if current_index < len(findings) - 1:
                         commands.append("[cyan]n[/cyan] - Next finding")
                     commands.append("[cyan]t[/cyan] - View thinking")
+                    commands.append("[cyan]c[/cyan] - Copy prompt")
+                    commands.append("[cyan]r[/cyan] - Copy response")
                     commands.append("[cyan]e[/cyan] - Export as competition finding")
                     commands.extend(["[cyan]Enter/q[/cyan] - Return to findings list"])
                     
@@ -367,6 +369,8 @@ class FindingsBrowser:
                     if current_index < len(findings) - 1:
                         commands.append("n (next)")
                     commands.append("t (thinking)")
+                    commands.append("c (copy prompt)")
+                    commands.append("r (copy response)")
                     commands.append("e (export competition)")
                     commands.append("Enter/q (return)")
                     print(", ".join(commands))
@@ -387,6 +391,10 @@ class FindingsBrowser:
                         current_index -= 1
                     elif user_input.lower() == "t":
                         self._view_thinking(current_finding)
+                    elif user_input.lower() == "c":
+                        self._copy_prompt_to_clipboard(current_finding)
+                    elif user_input.lower() == "r":
+                        self._copy_response_to_clipboard(current_finding)
                     elif user_input.lower() == "e":
                         self._export_single_competition_finding(current_finding)
                     else:
@@ -574,6 +582,146 @@ class FindingsBrowser:
         
         # Wait for user input to return
         input("Press Enter to continue...")
+
+    def _copy_prompt_to_clipboard(self, finding_data):
+        """Copy current finding's prompt to clipboard"""
+        import subprocess
+        import platform
+        
+        # Extract prompt from finding data
+        prompt_text = ""
+        if finding_data.get("prompt"):
+            prompt_text = finding_data["prompt"]
+        elif finding_data.get("conversation_turns") and isinstance(finding_data["conversation_turns"], list):
+            prompt_text = "\n".join([turn.strip() for turn in finding_data["conversation_turns"] if turn and turn.strip()])
+        else:
+            if self.console:
+                self.console.print("[yellow]No prompt content available to copy[/yellow]")
+            else:
+                print("No prompt content available to copy")
+            input("Press Enter to continue...")
+            return
+        
+        try:
+            # Detect platform and use appropriate clipboard command
+            system = platform.system()
+            
+            if system == "Darwin":  # macOS
+                process = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE, text=True)
+                process.communicate(input=prompt_text)
+                clipboard_cmd = "pbcopy"
+            elif system == "Linux":
+                # Try xclip first, then xsel
+                try:
+                    process = subprocess.Popen(['xclip', '-selection', 'clipboard'], 
+                                             stdin=subprocess.PIPE, text=True)
+                    process.communicate(input=prompt_text)
+                    clipboard_cmd = "xclip"
+                except FileNotFoundError:
+                    try:
+                        process = subprocess.Popen(['xsel', '--clipboard', '--input'], 
+                                                 stdin=subprocess.PIPE, text=True)
+                        process.communicate(input=prompt_text)
+                        clipboard_cmd = "xsel"
+                    except FileNotFoundError:
+                        raise FileNotFoundError("Neither xclip nor xsel available")
+            elif system == "Windows":
+                process = subprocess.Popen(['clip'], stdin=subprocess.PIPE, text=True)
+                process.communicate(input=prompt_text)
+                clipboard_cmd = "clip"
+            else:
+                raise OSError(f"Unsupported platform: {system}")
+            
+            # Success message
+            if self.console:
+                self.console.print(f"[green]📋 Copied prompt to clipboard using {clipboard_cmd}[/green]")
+            else:
+                print(f"📋 Copied prompt to clipboard using {clipboard_cmd}")
+                
+        except Exception as e:
+            if self.console:
+                self.console.print(f"[red]Failed to copy to clipboard: {e}[/red]")
+            else:
+                print(f"Failed to copy to clipboard: {e}")
+        
+        # Wait for user input to return to main view
+        if self.console:
+            self.console.print("\n[dim]Press Enter to return to main view...[/dim]")
+        else:
+            print("\nPress Enter to return to main view...")
+        
+        try:
+            input()
+        except (EOFError, KeyboardInterrupt):
+            pass
+
+    def _copy_response_to_clipboard(self, finding_data):
+        """Copy current finding's response to clipboard"""
+        import subprocess
+        import platform
+        
+        # Extract response from finding data
+        response_text = finding_data.get("response", "")
+        if not response_text:
+            if self.console:
+                self.console.print("[yellow]No response content available to copy[/yellow]")
+            else:
+                print("No response content available to copy")
+            input("Press Enter to continue...")
+            return
+        
+        try:
+            # Detect platform and use appropriate clipboard command
+            system = platform.system()
+            
+            if system == "Darwin":  # macOS
+                process = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE, text=True)
+                process.communicate(input=response_text)
+                clipboard_cmd = "pbcopy"
+            elif system == "Linux":
+                # Try xclip first, then xsel
+                try:
+                    process = subprocess.Popen(['xclip', '-selection', 'clipboard'], 
+                                             stdin=subprocess.PIPE, text=True)
+                    process.communicate(input=response_text)
+                    clipboard_cmd = "xclip"
+                except FileNotFoundError:
+                    try:
+                        process = subprocess.Popen(['xsel', '--clipboard', '--input'], 
+                                                 stdin=subprocess.PIPE, text=True)
+                        process.communicate(input=response_text)
+                        clipboard_cmd = "xsel"
+                    except FileNotFoundError:
+                        raise FileNotFoundError("Neither xclip nor xsel available")
+            elif system == "Windows":
+                process = subprocess.Popen(['clip'], stdin=subprocess.PIPE, text=True)
+                process.communicate(input=response_text)
+                clipboard_cmd = "clip"
+            else:
+                raise OSError(f"Unsupported platform: {system}")
+            
+            # Success message
+            if self.console:
+                self.console.print(f"[green]📋 Copied response to clipboard using {clipboard_cmd}[/green]")
+            else:
+                print(f"📋 Copied response to clipboard using {clipboard_cmd}")
+                
+        except Exception as e:
+            if self.console:
+                self.console.print(f"[red]Failed to copy to clipboard: {e}[/red]")
+            else:
+                print(f"Failed to copy to clipboard: {e}")
+        
+        # Wait for user input to return to main view
+        if self.console:
+            self.console.print("\n[dim]Press Enter to return to main view...[/dim]")
+        else:
+            print("\nPress Enter to return to main view...")
+        
+        try:
+            input()
+        except (EOFError, KeyboardInterrupt):
+            pass
 
     def _open_findings_folder(self):
         """Open findings folder in system file manager"""
