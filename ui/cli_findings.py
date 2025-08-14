@@ -323,8 +323,7 @@ class FindingsBrowser:
                         commands.append("[cyan]p[/cyan] - Previous finding")
                     if current_index < len(findings) - 1:
                         commands.append("[cyan]n[/cyan] - Next finding")
-                    if current_finding.get("thinking"):
-                        commands.append("[cyan]t[/cyan] - View thinking")
+                    commands.append("[cyan]t[/cyan] - View thinking")
                     commands.append("[cyan]e[/cyan] - Export as competition finding")
                     commands.extend(["[cyan]Enter/q[/cyan] - Return to findings list"])
                     
@@ -367,8 +366,7 @@ class FindingsBrowser:
                         commands.append("p (previous)")
                     if current_index < len(findings) - 1:
                         commands.append("n (next)")
-                    if current_finding.get("thinking"):
-                        commands.append("t (thinking)")
+                    commands.append("t (thinking)")
                     commands.append("e (export competition)")
                     commands.append("Enter/q (return)")
                     print(", ".join(commands))
@@ -381,13 +379,13 @@ class FindingsBrowser:
                     else:
                         print()
                     
-                    if user_input in ["\r", "\n", "", "q"]:
+                    if user_input in ["\r", "\n", "", "q", "\x04"]:  # Added ctrl+d (0x04)
                         break
                     elif user_input.lower() == "n" and current_index < len(findings) - 1:
                         current_index += 1
                     elif user_input.lower() == "p" and current_index > 0:
                         current_index -= 1
-                    elif user_input.lower() == "t" and current_finding.get("thinking"):
+                    elif user_input.lower() == "t":
                         self._view_thinking(current_finding)
                     elif user_input.lower() == "e":
                         self._export_single_competition_finding(current_finding)
@@ -414,9 +412,9 @@ class FindingsBrowser:
         
         if not thinking_content:
             if self.console:
-                self.console.print("[yellow]No thinking content available for this finding[/yellow]")
+                self.console.print("[yellow]Not available due to legacy format[/yellow]")
             else:
-                print("No thinking content available for this finding")
+                print("Not available due to legacy format")
             input("Press Enter to continue...")
             return
         
