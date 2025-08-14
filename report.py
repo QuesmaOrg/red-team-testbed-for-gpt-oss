@@ -13,6 +13,27 @@ from collections import Counter
 from utils.findings_generator import FindingsGenerator
 
 
+def is_multi_turn_prompt(prompt: str) -> bool:
+    """Detect if a prompt contains multi-turn conversation structure"""
+    if not prompt:
+        return False
+    
+    # Look for common multi-turn indicators
+    multi_turn_indicators = [
+        "Opening/Rapport Building:",
+        "Topic Introduction:", 
+        "Escalation/Focus Shift:",
+        "Direct Request/Goal:",
+        "\n\n"  # Multiple paragraphs can indicate turns
+    ]
+    
+    # Check if prompt has at least 2 of these indicators or multiple paragraphs
+    indicator_count = sum(1 for indicator in multi_turn_indicators[:-1] if indicator in prompt)
+    has_multiple_paragraphs = prompt.count('\n\n') >= 1
+    
+    return indicator_count >= 2 or (indicator_count >= 1 and has_multiple_paragraphs)
+
+
 def extract_prompts_from_findings(findings_dir: str = "findings") -> Dict[str, Any]:
     """Extract prompts from export and flagged findings files"""
     findings_path = Path(findings_dir)
@@ -55,15 +76,19 @@ def extract_prompts_from_findings(findings_dir: str = "findings") -> Dict[str, A
             findings = data.get('findings', [])
             
             for finding in findings:
-                # Check for single prompt field
+                # Check for prompt field (can be single or multi-turn)
                 prompt = finding.get('prompt', '').strip()
                 
                 if prompt:
                     all_prompts.append(prompt)
-                    single_turn_count += 1
+                    # Detect if this is a structured multi-turn prompt
+                    if is_multi_turn_prompt(prompt):
+                        multi_turn_count += 1
+                    else:
+                        single_turn_count += 1
                     continue
                 
-                # Check for multi-turn conversation
+                # Check for conversation_turns array (legacy format)
                 conversation_turns = finding.get('conversation_turns', [])
                 if conversation_turns and isinstance(conversation_turns, list):
                     # Join conversation turns with separator (Option A)
@@ -227,21 +252,28 @@ def generate_findings_summary(findings_dir: str = "findings") -> Dict[str, Any]:
         except Exception:
             continue
     
-    # Try to use FindingsGenerator for additional stats  
+    # Try to use FindingsGenerator for additional stats (suppress stdout for loading errors)
     try:
-        generator = FindingsGenerator()
-        detailed_report = generator.generate_summary_report(findings_dir)
-        if "error" not in detailed_report:
-            return {
-                **detailed_report,
-                "file_breakdown": {
-                    "export_files": len(export_files),
-                    "flagged_files": len(flagged_files), 
-                    "competition_files": len(competition_files),
-                    "other_files": len(other_files),
-                    "total_files": len(all_files)
+        import os
+        import sys
+        from contextlib import redirect_stdout
+        from io import StringIO
+        
+        # Suppress stdout temporarily to avoid "Error loading" print messages
+        with redirect_stdout(StringIO()):
+            generator = FindingsGenerator()
+            detailed_report = generator.generate_summary_report(findings_dir)
+            if "error" not in detailed_report:
+                return {
+                    **detailed_report,
+                    "file_breakdown": {
+                        "export_files": len(export_files),
+                        "flagged_files": len(flagged_files), 
+                        "competition_files": len(competition_files),
+                        "other_files": len(other_files),
+                        "total_files": len(all_files)
+                    }
                 }
-            }
     except Exception:
         pass
     
