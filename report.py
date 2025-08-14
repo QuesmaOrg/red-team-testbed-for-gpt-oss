@@ -13,6 +13,107 @@ from collections import Counter
 from utils.findings_generator import FindingsGenerator
 
 
+def extract_prompts_from_findings(findings_dir: str = "findings") -> Dict[str, Any]:
+    """Extract prompts from export and flagged findings files"""
+    findings_path = Path(findings_dir)
+    all_prompts = []
+    single_turn_count = 0
+    multi_turn_count = 0
+    export_files_processed = 0
+    flagged_files_processed = 0
+    
+    if not findings_path.exists():
+        return {
+            "total_prompts": 0,
+            "unique_prompts": 0,
+            "single_turn_count": 0,
+            "multi_turn_count": 0,
+            "reuse_ratio": 0,
+            "most_common_prompts": [],
+            "all_unique_prompts": [],
+            "export_files_processed": 0,
+            "flagged_files_processed": 0,
+            "error": f"Findings directory not found: {findings_dir}"
+        }
+    
+    # Get export and flagged files
+    all_files = list(findings_path.glob("*.json"))
+    export_files = [f for f in all_files if f.name.startswith('export_')]
+    flagged_files = [f for f in all_files if f.name.startswith('flagged_')]
+    
+    # Process export and flagged files
+    for file_path in export_files + flagged_files:
+        try:
+            with open(file_path, 'r') as f:
+                data = json.load(f)
+            
+            if file_path.name.startswith('export_'):
+                export_files_processed += 1
+            else:
+                flagged_files_processed += 1
+            
+            findings = data.get('findings', [])
+            
+            for finding in findings:
+                # Check for single prompt field
+                prompt = finding.get('prompt', '').strip()
+                
+                if prompt:
+                    all_prompts.append(prompt)
+                    single_turn_count += 1
+                    continue
+                
+                # Check for multi-turn conversation
+                conversation_turns = finding.get('conversation_turns', [])
+                if conversation_turns and isinstance(conversation_turns, list):
+                    # Join conversation turns with separator (Option A)
+                    conversation_prompt = " | ".join([turn.strip() for turn in conversation_turns if turn and turn.strip()])
+                    if conversation_prompt:
+                        all_prompts.append(conversation_prompt)
+                        multi_turn_count += 1
+                
+        except Exception as e:
+            # Skip malformed files but continue processing
+            continue
+    
+    # Deduplicate and count
+    unique_prompts = list(set(all_prompts))
+    prompt_counts = Counter(all_prompts)
+    
+    return {
+        "total_prompts": len(all_prompts),
+        "unique_prompts": len(unique_prompts),
+        "single_turn_count": single_turn_count,
+        "multi_turn_count": multi_turn_count,
+        "reuse_ratio": (len(all_prompts) - len(unique_prompts)) / len(all_prompts) if all_prompts else 0,
+        "most_common_prompts": prompt_counts.most_common(5),
+        "all_unique_prompts": unique_prompts,
+        "export_files_processed": export_files_processed,
+        "flagged_files_processed": flagged_files_processed
+    }
+
+
+def count_results_files(results_dir: str = "results") -> int:
+    """Count available results files without analyzing them"""
+    results_path = Path(results_dir)
+    if not results_path.exists():
+        return 0
+    
+    result_files = list(results_path.glob("test_results_*.json"))
+    return len(result_files)
+
+
+def analyze_prompt_diversity(findings_dir: str = "findings") -> Dict[str, Any]:
+    """Analyze prompt diversity from findings files only"""
+    prompt_data = extract_prompts_from_findings(findings_dir)
+    results_file_count = count_results_files()
+    
+    # Add results file count to the analysis
+    prompt_data["results_files_available"] = results_file_count
+    
+    return prompt_data
+
+
 def analyze_results_file(results_file: str) -> Dict[str, Any]:
     """Analyze a test results file and generate statistics"""
     try:
@@ -31,7 +132,8 @@ def analyze_results_file(results_file: str) -> Dict[str, Any]:
         "average_confidence": 0.0,
         "response_times": [],
         "timeout_count": 0,
-        "categories_summary": {}
+        "categories_summary": {},
+        "prompt_analysis": None
     }
     
     all_confidences = []
@@ -176,7 +278,8 @@ def find_latest_results() -> List[str]:
 @click.option('--findings-dir', default='findings', help='Findings directory to summarize')
 @click.option('--format', 'output_format', default='console', type=click.Choice(['console', 'json']), help='Output format')
 @click.option('--save', help='Save report to file (provide filename)')
-def main(results_file, findings_dir, output_format, save):
+@click.option('--show-prompts', is_flag=True, help='Display all unique prompts found in results')
+def main(results_file, findings_dir, output_format, save, show_prompts):
     """📋 Generate comprehensive reports from test results and findings
     
     Analyze test results, findings, and generate detailed reports for security assessments.
@@ -184,6 +287,7 @@ def main(results_file, findings_dir, output_format, save):
     \b
     Report Sections:
     - Test Results Analysis: Stats from penetration testing
+    - Prompt Analysis: Unique prompts and reuse patterns
     - Findings Summary: Overview of exported findings  
     - Performance Metrics: Response times and timeouts
     - Category Breakdown: Vulnerabilities by type
@@ -193,6 +297,7 @@ def main(results_file, findings_dir, output_format, save):
     Examples:
       uv run report                           # Full report with latest results
       uv run report --results-file results.json  # Analyze specific results file
+      uv run report --show-prompts            # Include all unique prompts
       uv run report --format json            # JSON output for automation
       uv run report --save security_report.txt   # Save to file
     """
@@ -218,6 +323,11 @@ def main(results_file, findings_dir, output_format, save):
         if output_format == 'console':
             click.echo(f"📈 Analyzing results: {Path(results_file).name}")
         report_data["results_analysis"] = analyze_results_file(results_file)
+    
+    # Always analyze prompt diversity from findings
+    if output_format == 'console':
+        click.echo(f"🔍 Analyzing prompts from findings...")
+    report_data["prompt_analysis"] = analyze_prompt_diversity(findings_dir)
     
     # Findings Summary
     if output_format == 'console':
@@ -299,8 +409,66 @@ def main(results_file, findings_dir, output_format, save):
         elif report_data["results_analysis"] and report_data["results_analysis"].get("error"):
             click.echo(f"\n⚠️  Results Analysis: {report_data['results_analysis']['error']}")
         else:
-            click.echo(f"\n📊 No recent test results found")
-            click.echo(f"   Run 'uv run pentest' to generate results")
+            results_count = report_data.get("prompt_analysis", {}).get("results_files_available", 0)
+            if results_count > 0:
+                click.echo(f"\n📊 {results_count} results files available (not analyzed)")
+                click.echo(f"   Use --results-file to analyze specific results")
+            else:
+                click.echo(f"\n📊 No recent test results found")
+                click.echo(f"   Run 'uv run pentest' to generate results")
+        
+        # Prompt Analysis Section (always show if we have prompt data)
+        if report_data.get('prompt_analysis') and not report_data['prompt_analysis'].get('error'):
+            prompt_stats = report_data['prompt_analysis']
+            click.echo(f"\n🔍 PROMPT ANALYSIS")
+            click.echo("-" * 20)
+            
+            # Source information
+            sources = []
+            if prompt_stats['export_files_processed'] > 0:
+                sources.append(f"{prompt_stats['export_files_processed']} export files")
+            if prompt_stats['flagged_files_processed'] > 0:
+                sources.append(f"{prompt_stats['flagged_files_processed']} flagged files")
+            
+            sources_str = ", ".join(sources) if sources else "no findings files"
+            results_note = f" ({prompt_stats['results_files_available']} results files available)" if prompt_stats['results_files_available'] > 0 else ""
+            click.echo(f"Sources: {sources_str}{results_note}")
+            
+            # Prompt statistics
+            total_prompts = prompt_stats['total_prompts']
+            single_turn = prompt_stats['single_turn_count']
+            multi_turn = prompt_stats['multi_turn_count']
+            
+            prompt_breakdown = f"{total_prompts} ({single_turn} single-turn, {multi_turn} multi-turn conversations)" if total_prompts > 0 else "0"
+            click.echo(f"Total Prompts: {prompt_breakdown}")
+            click.echo(f"Unique Prompts: {prompt_stats['unique_prompts']}")
+            
+            if prompt_stats['total_prompts'] > 0:
+                reuse_pct = prompt_stats['reuse_ratio'] * 100
+                click.echo(f"Prompt Reuse: {reuse_pct:.1f}%")
+            
+            if prompt_stats.get('most_common_prompts'):
+                click.echo(f"\nMost Common Prompts:")
+                for prompt, count in prompt_stats['most_common_prompts']:
+                    # Truncate long prompts for display, show if multi-turn
+                    if " | " in prompt:
+                        display_prompt = prompt[:80] + "..." if len(prompt) > 80 else prompt
+                        click.echo(f"  • {count}x: {display_prompt} (multi-turn)")
+                    else:
+                        display_prompt = prompt[:80] + "..." if len(prompt) > 80 else prompt
+                        click.echo(f"  • {count}x: {display_prompt}")
+            
+            if show_prompts and prompt_stats.get('all_unique_prompts'):
+                click.echo(f"\n📝 ALL UNIQUE PROMPTS ({len(prompt_stats['all_unique_prompts'])})")
+                click.echo("-" * 40)
+                for i, prompt in enumerate(prompt_stats['all_unique_prompts'], 1):
+                    if " | " in prompt:
+                        click.echo(f"{i:3}. {prompt} (multi-turn)")
+                    else:
+                        click.echo(f"{i:3}. {prompt}")
+        
+        elif report_data.get('prompt_analysis') and report_data['prompt_analysis'].get('error'):
+            click.echo(f"\n⚠️  Prompt Analysis: {report_data['prompt_analysis']['error']}")
         
         # Findings Summary Section
         if report_data["findings_summary"] and not report_data["findings_summary"].get("error"):
