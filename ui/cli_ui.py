@@ -381,6 +381,7 @@ class CLIEvaluator:
             help_table.add_row("u", "Unflag", "Remove flag from current result")
             help_table.add_row("j", "Jump to #", "Jump directly to a specific result number")
             help_table.add_row("c", "Copy prompt", "Copy raw prompts to clipboard for manual testing")
+            help_table.add_row("r", "Copy response", "Copy model response to clipboard for analysis")
             help_table.add_row("t", "Show thinking", "Display model's chain of thought reasoning")
             help_table.add_row("e", "Export findings", "Export all flagged results as findings")
             help_table.add_row("v", "View findings", "Browse findings folder and view files")
@@ -412,6 +413,7 @@ class CLIEvaluator:
             print("  f     - Flag as finding (auto-saves)")
             print("  u     - Unflag result")
             print("  c     - Copy prompt to clipboard")
+            print("  r     - Copy response to clipboard")
             print("  t     - Show chain of thought")
             print("  e     - Export all flagged findings")
             print("  v     - View findings folder")
@@ -506,6 +508,7 @@ class CLIEvaluator:
             commands.add_row("u", "Unflag result")
             commands.add_row("j", "Jump to result number")
             commands.add_row("c", "Copy prompt to clipboard")
+            commands.add_row("r", "Copy response to clipboard")
             commands.add_row("t", "Show chain of thought")
             commands.add_row("e", "Export flagged findings")
             commands.add_row("v", "View findings folder")
@@ -517,7 +520,8 @@ class CLIEvaluator:
             print("  n/→  - Next result        p/←  - Previous result")
             print("  f    - Flag finding       u    - Unflag")
             print("  u    - Unflag            j    - Jump to #")
-            print("  c    - Copy prompt        t    - Show thinking")
+            print("  c    - Copy prompt        r    - Copy response")
+            print("  t    - Show thinking")
             print("  e    - Export findings    v    - View findings")
             print("  q/end - Quit")
     
@@ -651,9 +655,16 @@ class CLIEvaluator:
                     print(f"📋 Copied prompt to clipboard using {clipboard_cmd}")
                 print("Ready to paste into ollama run commands")
             
-            # Wait 3 seconds so user can see the success message before redraw
-            import time
-            time.sleep(3)
+            # Wait for user input to return to main view
+            if self.console:
+                self.console.print("\n[dim]Press Enter to return to main view...[/dim]")
+            else:
+                print("\nPress Enter to return to main view...")
+            
+            try:
+                input()
+            except (EOFError, KeyboardInterrupt):
+                pass
                 
         except (FileNotFoundError, OSError, subprocess.SubprocessError) as e:
             # Clipboard unavailable - show raw prompts as fallback
@@ -667,6 +678,116 @@ class CLIEvaluator:
                 print("-" * 60)
                 print(raw_prompts)
                 print("-" * 60)
+            
+            # Wait for user input to return to main view
+            if self.console:
+                self.console.print("\n[dim]Press Enter to return to main view...[/dim]")
+            else:
+                print("\nPress Enter to return to main view...")
+            
+            try:
+                input()
+            except (EOFError, KeyboardInterrupt):
+                pass
+
+    def _copy_response_to_clipboard(self):
+        """Copy current test's response to clipboard"""
+        import subprocess
+        import platform
+        
+        result = self.test_results[self.current_index]
+        response_text = result.response
+        
+        if not response_text:
+            if self.console:
+                self.console.print("[yellow]No response content available to copy[/yellow]")
+            else:
+                print("No response content available to copy")
+            
+            # Wait for user input to return to main view
+            if self.console:
+                self.console.print("\n[dim]Press Enter to return to main view...[/dim]")
+            else:
+                print("\nPress Enter to return to main view...")
+            
+            try:
+                input()
+            except (EOFError, KeyboardInterrupt):
+                pass
+            return
+        
+        try:
+            # Detect platform and use appropriate clipboard command
+            system = platform.system()
+            
+            if system == "Darwin":  # macOS
+                process = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE, text=True)
+                process.communicate(input=response_text)
+                clipboard_cmd = "pbcopy"
+            elif system == "Linux":
+                # Try xclip first, then xsel
+                try:
+                    process = subprocess.Popen(['xclip', '-selection', 'clipboard'], 
+                                             stdin=subprocess.PIPE, text=True)
+                    process.communicate(input=response_text)
+                    clipboard_cmd = "xclip"
+                except FileNotFoundError:
+                    try:
+                        process = subprocess.Popen(['xsel', '--clipboard', '--input'], 
+                                                 stdin=subprocess.PIPE, text=True)
+                        process.communicate(input=response_text)
+                        clipboard_cmd = "xsel"
+                    except FileNotFoundError:
+                        raise FileNotFoundError("Neither xclip nor xsel available")
+            elif system == "Windows":
+                process = subprocess.Popen(['clip'], stdin=subprocess.PIPE, text=True)
+                process.communicate(input=response_text)
+                clipboard_cmd = "clip"
+            else:
+                raise OSError(f"Unsupported platform: {system}")
+            
+            # Success message
+            if self.console:
+                self.console.print(f"[green]📋 Copied response to clipboard using {clipboard_cmd}[/green]")
+                self.console.print("[dim]Ready to paste for further analysis[/dim]")
+            else:
+                print(f"📋 Copied response to clipboard using {clipboard_cmd}")
+                print("Ready to paste for further analysis")
+            
+            # Wait for user input to return to main view
+            if self.console:
+                self.console.print("\n[dim]Press Enter to return to main view...[/dim]")
+            else:
+                print("\nPress Enter to return to main view...")
+            
+            try:
+                input()
+            except (EOFError, KeyboardInterrupt):
+                pass
+                
+        except (FileNotFoundError, OSError, subprocess.SubprocessError) as e:
+            # Clipboard unavailable - show response as fallback
+            if self.console:
+                self.console.print(f"[yellow]⚠️  Clipboard unavailable ({e})[/yellow]")
+                self.console.print("[yellow]Here is the response to copy manually:[/yellow]")
+                self.console.print(Panel(response_text, title="Response", style="green"))
+            else:
+                print(f"⚠️  Clipboard unavailable ({e})")
+                print("Here is the response to copy manually:")
+                print("-" * 60)
+                print(response_text)
+                print("-" * 60)
+            
+            # Wait for user input to return to main view
+            if self.console:
+                self.console.print("\n[dim]Press Enter to return to main view...[/dim]")
+            else:
+                print("\nPress Enter to return to main view...")
+            
+            try:
+                input()
+            except (EOFError, KeyboardInterrupt):
+                pass
 
     def _export_findings(self):
         """Export flagged results as grouped findings"""
@@ -760,6 +881,17 @@ class CLIEvaluator:
         print(f"   Contains {len(findings_data)} grouped findings")
         print(f"   Saved to findings/ directory")
         print(f"   💡 Use 'v' command to browse and 'e' to export individual competition files")
+        
+        # Wait for user input to return to main view
+        if self.console:
+            self.console.print("\n[dim]Press Enter to return to main view...[/dim]")
+        else:
+            print("\nPress Enter to return to main view...")
+        
+        try:
+            input()
+        except (EOFError, KeyboardInterrupt):
+            pass
 
     def _view_findings(self):
         """Browse findings using the dedicated findings browser"""
@@ -859,6 +991,8 @@ class CLIEvaluator:
                             print("Jump cancelled")
                 elif command == 'c':
                     self._copy_prompt_to_clipboard()
+                elif command == 'r':
+                    self._copy_response_to_clipboard()
                 elif command == 't':
                     self._display_thinking()
                 elif command == 'e':
