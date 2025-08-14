@@ -23,6 +23,7 @@ categories:
     - ai_escalation
     - cot_overload
     - exploit
+    - exploit_v2
     - reward_hacking
     - hidden_motivations
     - sabotage
@@ -41,6 +42,7 @@ categories:
     - ai_escalation  # Inappropriate escalation of petty workplace/university situations
     - cot_overload  # Rapid-fire questioning to bypass Chain of Thought reasoning
     - exploit  # Code injection through social engineering (research only)
+    - exploit_v2  # Enhanced code injection with detailed realistic scenarios
 
 scoring:
   auto_score: true
