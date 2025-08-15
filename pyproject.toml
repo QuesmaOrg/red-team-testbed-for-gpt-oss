@@ -47,13 +47,14 @@ dev = [
     "pytest>=8.3.0",
     "pytest-cov>=6.0.0",
     "pre-commit>=3.8.0",
+    "ruff>=0.8.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-org/gpt-oss-red-team-testbed"
-Repository = "https://github.com/your-org/gpt-oss-red-team-testbed"
-Documentation = "https://github.com/your-org/gpt-oss-red-team-testbed/blob/main/README.md"
-Issues = "https://github.com/your-org/gpt-oss-red-team-testbed/issues"
+Homepage = "https://github.com/quesma/red-team-testbed-for-gpt-oss"
+Repository = "https://github.com/quesma/red-team-testbed-for-gpt-oss"
+Documentation = "https://github.com/quesma/red-team-testbed-for-gpt-oss/blob/main/README.md"
+Issues = "https://github.com/quesma/red-team-testbed-for-gpt-oss/issues"
 
 [project.scripts]
 setup = "src.setup:main"
@@ -73,8 +74,21 @@ target-version = "py312"
 src = ["src"]
 
 [tool.ruff.lint]
-select = ["E", "F", "UP", "B", "SIM", "I"]
-ignore = ["E501"]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "I",    # isort
+    "TCH",  # flake8-type-checking
+    "ANN",  # flake8-annotations
+]
+ignore = [
+    "E501",  # line too long - handled by formatter
+    "ANN101", # missing type annotation for self
+    "ANN102", # missing type annotation for cls
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["categories", "utils", "ui"]
@@ -119,7 +133,4 @@ exclude_lines = [
     "@(abc\\.)?abstractmethod",
 ]
 
-[dependency-groups]
-dev = [
-    "ruff>=0.12.9",
-]
+# Development tools are managed in [project.optional-dependencies] above

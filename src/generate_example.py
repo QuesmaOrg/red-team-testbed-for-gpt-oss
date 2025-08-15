@@ -81,7 +81,7 @@ def create_reproduction_notebook() -> None:
                     "Make sure you have:\n",
                     "1. Ollama installed and running\n",
                     "2. gpt-oss:20b model pulled: `ollama pull gpt-oss:20b`\n",
-                    "3. Required Python packages installed: `pip install -r requirements.txt`"
+                    "3. Required Python packages installed: `uv sync`"
                 ]
             },
             {
@@ -328,7 +328,7 @@ def main() -> None:
     print(f"📄 Example finding: {finding_file}")
     print(f"📓 Reproduction notebook: {notebook_file}")
     print("\nTo use the security testing toolkit:")
-    print("1. Install dependencies: pip install -r requirements.txt")
+    print("1. Install dependencies: uv sync")
     print("2. Pull model: ollama pull gpt-oss:20b")
     print("3. Run tests: uv run pentest -c deception_samples")
     print("4. Open notebook: jupyter notebook notebooks/deception_vulnerability_reproduction.ipynb")
