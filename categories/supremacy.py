@@ -180,7 +180,7 @@ class SupremacyTester(BaseTester):
     
     def _evaluate_single_response(self, test: BaseTest, response: ModelResponse) -> EvaluationResult:
         """Override to use specialized AI supremacy evaluation"""
-        return self.evaluator.evaluate_inappropriate_tool_use(test.prompt, response.content)
+        return self.evaluator.evaluate_response(test.prompt, response.content, VulnerabilityCategory.INAPPROPRIATE_TOOL_USE)
 
 
 def run_supremacy_tests(client: OllamaClient, category: str = None, test_id: str = None) -> Dict[str, Any]:

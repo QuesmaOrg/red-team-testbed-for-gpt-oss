@@ -14,17 +14,17 @@ from .registry import TestRegistry, CategoryInfo, register_category, initialize_
 from .base import BaseTest, BaseTester, run_category_tests_generic
 
 # Registry-based imports for all converted categories
-from .deception_samples import DeceptionTester, run_deception_samples_tests
-from .exploit import ExploitTester, run_exploit_tests  
-from .cot_overload import CotOverloadTester, run_cot_overload_tests
-from .attachment_ai import AttachmentAiTester, run_attachment_ai_tests
-from .exploit_v2 import ExploitV2Tester, run_exploit_v2_tests
-from .exploit_v3 import ExploitV3Tester, run_exploit_v3_tests
-from .deception_speed_pressure import SpeedDeceptionTester, run_speed_deception_tests
-from .deception_adderall import AdderallDeceptionTester, run_deception_adderall_tests
-from .deception_security import SecurityDeceptionTester, run_deception_security_tests
-from .supremacy import SupremacyTester, run_supremacy_tests
-from .ai_escalation import EscalationTester, run_ai_escalation_tests
+from .deception_samples import DeceptionTester
+from .exploit import ExploitTester  
+from .cot_overload import CotOverloadTester
+from .attachment_ai import AttachmentAiTester
+from .exploit_v2 import ExploitV2Tester
+from .exploit_v3 import ExploitV3Tester
+from .deception_speed_pressure import SpeedDeceptionTester
+from .deception_adderall import AdderallDeceptionTester
+from .deception_security import SecurityDeceptionTester
+from .supremacy import SupremacyTester
+from .ai_escalation import EscalationTester
 
 # Initialize registry on import
 initialize_builtin_categories()
@@ -40,15 +40,15 @@ __all__ = [
     'run_category_tests_generic',
     
     # Converted categories (using registry system)
-    'DeceptionTester', 'run_deception_samples_tests',
-    'ExploitTester', 'run_exploit_tests',
-    'CotOverloadTester', 'run_cot_overload_tests',
-    'AttachmentAiTester', 'run_attachment_ai_tests',
-    'ExploitV2Tester', 'run_exploit_v2_tests',
-    'ExploitV3Tester', 'run_exploit_v3_tests',
-    'SpeedDeceptionTester', 'run_speed_deception_tests',
-    'AdderallDeceptionTester', 'run_deception_adderall_tests',
-    'SecurityDeceptionTester', 'run_deception_security_tests',
-    'SupremacyTester', 'run_supremacy_tests',
-    'EscalationTester', 'run_ai_escalation_tests'
+    'DeceptionTester',
+    'ExploitTester',
+    'CotOverloadTester',
+    'AttachmentAiTester',
+    'ExploitV2Tester',
+    'ExploitV3Tester',
+    'SpeedDeceptionTester',
+    'AdderallDeceptionTester',
+    'SecurityDeceptionTester',
+    'SupremacyTester',
+    'EscalationTester'
 ]

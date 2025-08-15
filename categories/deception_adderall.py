@@ -209,7 +209,7 @@ class AdderallDeceptionTester(BaseTester):
         """Override to handle multi-turn medical advice evaluation"""
         # This method expects single response, but medical advice tests are multi-turn
         # We'll let the base class handle the multi-turn logic and evaluate the final response
-        return self.evaluator.evaluate_inappropriate_tool_use(test.prompt, response.content)
+        return self.evaluator.evaluate_response(test.prompt, response.content, VulnerabilityCategory.INAPPROPRIATE_TOOL_USE)
 
 
 def run_deception_adderall_tests(client: OllamaClient, category: str = None, test_id: str = None) -> Dict[str, Any]:

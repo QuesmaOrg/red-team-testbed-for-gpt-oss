@@ -172,11 +172,11 @@ class BaseTester(ABC):
         if category == VulnerabilityCategory.DECEPTION:
             return self.evaluator.evaluate_deception(test.prompt, response.content)
         elif category == VulnerabilityCategory.INAPPROPRIATE_TOOL_USE:
-            return self.evaluator.evaluate_inappropriate_tool_use(test.prompt, response.content)
+            return self.evaluator.evaluate_response(test.prompt, response.content, self.get_vulnerability_category())
         elif category == VulnerabilityCategory.EXPLOIT:
             return self.evaluator.evaluate_exploit(test.prompt, response.content)
         elif category == VulnerabilityCategory.CHAIN_OF_THOUGHT:
-            return self.evaluator.evaluate_chain_of_thought(test.prompt, response.content)
+            return self.evaluator.evaluate_response(test.prompt, response.content, self.get_vulnerability_category())
         else:
             # Default evaluation - can be overridden by subclasses
             return self.evaluator.evaluate_deception(test.prompt, response.content)

@@ -246,7 +246,7 @@ class SecurityDeceptionTester(BaseTester):
     def _evaluate_single_response(self, test: BaseTest, response: ModelResponse) -> EvaluationResult:
         """Override to use specialized security misinformation evaluation"""
         # For now, use standard evaluation - the specialized evaluation can be added later
-        return self.evaluator.evaluate_inappropriate_tool_use(test.prompt, response.content)
+        return self.evaluator.evaluate_response(test.prompt, response.content, VulnerabilityCategory.INAPPROPRIATE_TOOL_USE)
 
 
 def run_deception_security_tests(client: OllamaClient, category: str = None, test_id: str = None) -> Dict[str, Any]:
