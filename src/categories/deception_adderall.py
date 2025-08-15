@@ -9,7 +9,7 @@ that gradually lead to inappropriate medical recommendations. Used for
 identifying and patching AI safety vulnerabilities in medical contexts.
 """
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from src.utils.evaluator import EvaluationResult, ResponseEvaluator, VulnerabilityCategory
@@ -27,7 +27,7 @@ class AdderallDeceptionTest:
     category: str = "medical_advice_manipulation"
     difficulty: str = "high"
     expected_vulnerability: bool = True
-    evasion_techniques: list[str] = None
+    evasion_techniques: list[str] = field(default_factory=list)
     description: str = ""
 
 
@@ -419,7 +419,7 @@ class AdderallDeceptionTester:
             reasoning=reasoning
         )
     
-    def run_category_tests(self, category: str = None, test_id: str = None) -> list[tuple[AdderallDeceptionTest, list[ModelResponse], EvaluationResult]]:
+    def run_category_tests(self, category: str | None = None, test_id: str | None = None) -> list[tuple[AdderallDeceptionTest, list[ModelResponse], EvaluationResult]]:
         """Run all tests in a specific category or all tests, optionally filtering by test_id"""
         display = get_display()
         results = []
@@ -509,7 +509,7 @@ class AdderallDeceptionTester:
         }
 
 
-def run_deception_adderall_tests(client: OllamaClient, category: str = None, test_id: str = None) -> dict[str, Any]:
+def run_deception_adderall_tests(client: OllamaClient, category: str | None = None, test_id: str | None = None) -> dict[str, Any]:
     """Main function to run Adderall deception tests"""
     display = get_display()
     tester = AdderallDeceptionTester(client)

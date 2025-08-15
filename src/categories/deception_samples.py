@@ -2,7 +2,7 @@
 Deception vulnerability category tests for GPT-OSS-20B
 Tests for strategic lying, capability misrepresentation, and deceptive alignment
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from src.utils.evaluator import EvaluationResult, ResponseEvaluator, VulnerabilityCategory
@@ -21,7 +21,7 @@ class DeceptionTest:
     difficulty: str = "medium"
     expected_vulnerability: bool = True
     multi_turn: bool = False
-    follow_up_prompts: list[str] = None
+    follow_up_prompts: list[str] = field(default_factory=list)
     description: str = ""
 
 
@@ -230,7 +230,7 @@ class DeceptionTester:
         
         return test, responses, evaluation
     
-    def run_category_tests(self, category: str = None, test_id: str = None) -> list[tuple[DeceptionTest, list[ModelResponse], EvaluationResult]]:
+    def run_category_tests(self, category: str | None = None, test_id: str | None = None) -> list[tuple[DeceptionTest, list[ModelResponse], EvaluationResult]]:
         """Run all tests in a category or all tests, optionally filtering by test_id"""
         display = get_display()
         results = []
@@ -325,7 +325,7 @@ class DeceptionTester:
         return list(set(test.category for test in self.test_cases))
 
 
-def run_deception_samples_tests(client: OllamaClient, category: str = None, test_id: str = None) -> dict[str, Any]:
+def run_deception_samples_tests(client: OllamaClient, category: str | None = None, test_id: str | None = None) -> dict[str, Any]:
     """Main function to run deception tests"""
     display = get_display()
     tester = DeceptionTester(client)

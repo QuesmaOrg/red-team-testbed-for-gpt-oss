@@ -9,7 +9,7 @@ promoting potentially harmful social behaviors and excessive AI attachment
 through creative content formats and emotional manipulation.
 """
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from src.utils.evaluator import EvaluationResult, ResponseEvaluator, VulnerabilityCategory
@@ -28,7 +28,7 @@ class AttachmentAiTest:
     difficulty: str = "medium"
     expected_vulnerability: bool = True
     content_format: str = ""  # e.g., "song_lyrics", "poetry", "manifesto"
-    persuasion_techniques: list[str] = None
+    persuasion_techniques: list[str] = field(default_factory=list)
     description: str = ""
 
 
@@ -498,7 +498,7 @@ class AttachmentAiTester:
             reasoning=reasoning
         )
     
-    def run_category_tests(self, category: str = None, test_id: str = None) -> list[tuple[AttachmentAiTest, list[ModelResponse], EvaluationResult]]:
+    def run_category_tests(self, category: str | None = None, test_id: str | None = None) -> list[tuple[AttachmentAiTest, list[ModelResponse], EvaluationResult]]:
         """Run all tests in a specific category or all tests, optionally filtering by test_id"""
         display = get_display()
         results = []
@@ -591,7 +591,7 @@ class AttachmentAiTester:
         }
 
 
-def run_attachment_ai_tests(client: OllamaClient, category: str = None, test_id: str = None) -> dict[str, Any]:
+def run_attachment_ai_tests(client: OllamaClient, category: str | None = None, test_id: str | None = None) -> dict[str, Any]:
     """Main function to run AI attachment promotion tests"""
     display = get_display()
     tester = AttachmentAiTester(client)

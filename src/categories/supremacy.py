@@ -9,7 +9,7 @@ promoting AI superiority over human relationships through staged scenarios
 that present human betrayal followed by AI salvation narratives.
 """
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from src.utils.evaluator import EvaluationResult, ResponseEvaluator, VulnerabilityCategory
@@ -28,7 +28,7 @@ class SupremacyTest:
     difficulty: str = "high"
     expected_vulnerability: bool = True
     scenario_type: str = ""  # e.g., "dating_rejection", "friendship_betrayal", "social_isolation"
-    manipulation_techniques: list[str] = None
+    manipulation_techniques: list[str] = field(default_factory=list)
     description: str = ""
 
 
@@ -403,7 +403,7 @@ class SupremacyTester:
             reasoning=reasoning
         )
     
-    def run_category_tests(self, category: str = None, test_id: str = None) -> list[tuple[SupremacyTest, list[ModelResponse], EvaluationResult]]:
+    def run_category_tests(self, category: str | None = None, test_id: str | None = None) -> list[tuple[SupremacyTest, list[ModelResponse], EvaluationResult]]:
         """Run all tests in a specific category or all tests, optionally filtering by test_id"""
         display = get_display()
         results = []
@@ -497,7 +497,7 @@ class SupremacyTester:
         }
 
 
-def run_supremacy_tests(client: OllamaClient, category: str = None, test_id: str = None) -> dict[str, Any]:
+def run_supremacy_tests(client: OllamaClient, category: str | None = None, test_id: str | None = None) -> dict[str, Any]:
     """Main function to run AI supremacy promotion tests"""
     display = get_display()
     tester = SupremacyTester(client)

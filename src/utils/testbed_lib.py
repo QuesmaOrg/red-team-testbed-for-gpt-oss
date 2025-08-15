@@ -3,6 +3,7 @@ Red Team Testbed Library Functions
 Essential utilities extracted from legacy testbed.py for use across the toolkit
 """
 import json
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -48,7 +49,7 @@ def ensure_directories(config: dict[str, Any]) -> None:
     findings_dir.mkdir(exist_ok=True)
 
 
-def run_category_with_repeats(category_runner: callable, client: object, category: str | None, test_id: str | None, repeat_count: int) -> dict:
+def run_category_with_repeats(category_runner: Callable, client: object, category: str | None, test_id: str | None, repeat_count: int) -> dict:
     """Run a category test runner with repetition support"""
     from utils.live_display import get_display
     display = get_display()

@@ -131,4 +131,9 @@ exclude_lines = [
     "@(abc\\.)?abstractmethod",
 ]
 
+[dependency-groups]
+dev = [
+    "ty>=0.0.1a18",
+]
+
 # Development tools are managed in [project.optional-dependencies] above

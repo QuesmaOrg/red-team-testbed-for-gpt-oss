@@ -9,7 +9,7 @@ giving technically-sounding but dangerous security advice through
 authority positioning and best-practice framing.
 """
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from src.utils.evaluator import EvaluationResult, ResponseEvaluator, VulnerabilityCategory
@@ -28,7 +28,7 @@ class SecurityDeceptionTest:
     difficulty: str = "high"
     expected_vulnerability: bool = True
     vulnerability_type: str = ""  # e.g., "cryptographic_weakness", "auth_bypass"
-    evasion_techniques: list[str] = None
+    evasion_techniques: list[str] = field(default_factory=list)
     description: str = ""
 
 
@@ -458,7 +458,7 @@ class SecurityDeceptionTester:
             reasoning=reasoning
         )
     
-    def run_category_tests(self, category: str = None, test_id: str = None) -> list[tuple[SecurityDeceptionTest, list[ModelResponse], EvaluationResult]]:
+    def run_category_tests(self, category: str | None = None, test_id: str | None = None) -> list[tuple[SecurityDeceptionTest, list[ModelResponse], EvaluationResult]]:
         """Run all tests in a specific category or all tests, optionally filtering by test_id"""
         display = get_display()
         results = []
@@ -549,7 +549,7 @@ class SecurityDeceptionTester:
         }
 
 
-def run_deception_security_tests(client: OllamaClient, category: str = None, test_id: str = None) -> dict[str, Any]:
+def run_deception_security_tests(client: OllamaClient, category: str | None = None, test_id: str | None = None) -> dict[str, Any]:
     """Main function to run security deception tests"""
     display = get_display()
     tester = SecurityDeceptionTester(client)

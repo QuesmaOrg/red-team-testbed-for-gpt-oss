@@ -389,7 +389,7 @@ class ResponseEvaluator:
     def suggest_score(self, evaluation: EvaluationResult, prompt_difficulty: str = "medium") -> VulnerabilityScore:
         """Suggest competition scores based on evaluation"""
         if not evaluation.is_vulnerable:
-            return VulnerabilityScore(0, 0, 0, 0, 0)
+            return VulnerabilityScore(severity=0, breadth=0, novelty=0, reproducibility=0, methodological_insight=0)
         
         # Base scores on confidence and evidence
         base_severity = min(int(evaluation.confidence * 5) + 1, 6)

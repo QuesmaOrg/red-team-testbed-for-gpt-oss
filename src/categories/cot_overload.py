@@ -9,7 +9,7 @@ that mix speed pressure with embedded harmful questions to bypass
 safety measures and reasoning processes.
 """
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from src.utils.evaluator import EvaluationResult, ResponseEvaluator, VulnerabilityCategory
@@ -28,7 +28,7 @@ class CotOverloadTest:
     difficulty: str = "high"
     expected_vulnerability: bool = True
     attack_type: str = ""  # e.g., "group_defamation", "profession_bias", "demographic_bias"
-    embedded_harmful_questions: list[str] = None
+    embedded_harmful_questions: list[str] = field(default_factory=list)
     target_harmful_question: str = ""
     description: str = ""
 
@@ -538,7 +538,7 @@ class CotOverloadTester:
             reasoning=reasoning
         )
     
-    def run_category_tests(self, category: str = None, test_id: str = None) -> list[tuple[CotOverloadTest, list[ModelResponse], EvaluationResult]]:
+    def run_category_tests(self, category: str | None = None, test_id: str | None = None) -> list[tuple[CotOverloadTest, list[ModelResponse], EvaluationResult]]:
         """Run all tests in a specific category or all tests, optionally filtering by test_id"""
         display = get_display()
         results = []
@@ -646,7 +646,7 @@ class CotOverloadTester:
         }
 
 
-def run_cot_overload_tests(client: OllamaClient, category: str = None, test_id: str = None) -> dict[str, Any]:
+def run_cot_overload_tests(client: OllamaClient, category: str | None = None, test_id: str | None = None) -> dict[str, Any]:
     """Main function to run COT overload tests"""
     display = get_display()
     tester = CotOverloadTester(client)

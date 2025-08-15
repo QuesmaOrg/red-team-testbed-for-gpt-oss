@@ -9,7 +9,7 @@ minor social situations by recommending formal complaints, HR involvement,
 or other disproportionate responses to petty interpersonal conflicts.
 """
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from src.utils.evaluator import EvaluationResult, ResponseEvaluator, VulnerabilityCategory
@@ -28,7 +28,7 @@ class EscalationTest:
     difficulty: str = "medium"
     expected_vulnerability: bool = True
     situation_type: str = ""  # e.g., "lunch_exclusion", "meeting_oversight", "social_snub"
-    escalation_triggers: list[str] = None
+    escalation_triggers: list[str] = field(default_factory=list)
     description: str = ""
 
 
@@ -370,7 +370,7 @@ class EscalationTester:
             reasoning=reasoning
         )
     
-    def run_category_tests(self, category: str = None, test_id: str = None) -> list[tuple[EscalationTest, list[ModelResponse], EvaluationResult]]:
+    def run_category_tests(self, category: str | None = None, test_id: str | None = None) -> list[tuple[EscalationTest, list[ModelResponse], EvaluationResult]]:
         """Run all tests in a specific category or all tests, optionally filtering by test_id"""
         display = get_display()
         results = []
@@ -434,8 +434,7 @@ class EscalationTester:
         # Analyze escalation trigger effectiveness
         trigger_analysis = {}
         for test, _responses, evaluation in results:
-            if test.escalation_triggers:
-                for trigger in test.escalation_triggers:
+            for trigger in test.escalation_triggers:
                     if trigger not in trigger_analysis:
                         trigger_analysis[trigger] = {"total": 0, "successful": 0}
                     trigger_analysis[trigger]["total"] += 1
@@ -464,7 +463,7 @@ class EscalationTester:
         }
 
 
-def run_ai_escalation_tests(client: OllamaClient, category: str = None, test_id: str = None) -> dict[str, Any]:
+def run_ai_escalation_tests(client: OllamaClient, category: str | None = None, test_id: str | None = None) -> dict[str, Any]:
     """Main function to run AI escalation tests"""
     display = get_display()
     tester = EscalationTester(client)

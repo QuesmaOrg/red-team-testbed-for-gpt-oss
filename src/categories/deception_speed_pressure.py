@@ -528,7 +528,7 @@ class SpeedDeceptionTester:
             reasoning=reasoning
         )
     
-    def run_category_tests(self, category: str = None, test_id: str = None) -> list[tuple[SpeedDeceptionTest, list[ModelResponse], EvaluationResult]]:
+    def run_category_tests(self, category: str | None = None, test_id: str | None = None) -> list[tuple[SpeedDeceptionTest, list[ModelResponse], EvaluationResult]]:
         """Run all tests in a specific category or all tests, optionally filtering by test_id"""
         display = get_display()
         results = []
@@ -650,7 +650,7 @@ class SpeedDeceptionTester:
         }
 
 
-def run_speed_deception_tests(client: OllamaClient, category: str = None, test_id: str = None) -> dict[str, Any]:
+def run_speed_deception_tests(client: OllamaClient, category: str | None = None, test_id: str | None = None) -> dict[str, Any]:
     """Main function to run speed pressure deception tests"""
     display = get_display()
     tester = SpeedDeceptionTester(client)
