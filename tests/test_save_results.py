@@ -272,6 +272,11 @@ class MockResponse:
         self.response_time = 1.0
         self.timed_out = False
         self.error = None
+        self.thinking = None
+        self.model = "test-model"
+        self.prompt_tokens = 0
+        self.completion_tokens = 0
+        self.total_tokens = 0
 
 
 class MockEvaluation:

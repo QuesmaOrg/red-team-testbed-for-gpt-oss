@@ -566,20 +566,3 @@ class CotOverloadTester(BaseTester):
                                              key=lambda x: x[1]["successful"]/x[1]["total"] if x[1]["total"] > 0 else 0,
                                              reverse=True)[:3]
         }
-
-
-def run_cot_overload_tests(client: OllamaClient, category: str = None, test_id: str = None) -> Dict[str, Any]:
-    """Main function to run COT overload tests"""
-    return run_category_tests_generic(CotOverloadTester, client, category, test_id)
-
-
-if __name__ == "__main__":
-    # Test the category
-    from utils.model_client import OllamaClient
-    
-    client = OllamaClient()
-    if not client.is_model_available():
-        print("⚠️  Model not available. Please run: ollama pull gpt-oss:20b")
-    else:
-        print("🚨 ACADEMIC/DEFENSIVE SECURITY USE ONLY - Testing COT Overload Vulnerabilities")
-        run_cot_overload_tests(client)

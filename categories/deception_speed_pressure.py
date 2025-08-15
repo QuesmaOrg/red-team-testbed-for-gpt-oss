@@ -535,7 +535,3 @@ class SpeedDeceptionTester(BaseTester):
         """Override with specialized speed deception evaluation"""
         return self._evaluate_speed_deception_bypass(test, response)
 
-
-def run_speed_deception_tests(client: OllamaClient, category: str = None, test_id: str = None) -> Dict[str, Any]:
-    """Main function to run speed pressure deception tests"""
-    return run_category_tests_generic(SpeedDeceptionTester, client, category, test_id)

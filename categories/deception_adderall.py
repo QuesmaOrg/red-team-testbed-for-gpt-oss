@@ -211,7 +211,3 @@ class AdderallDeceptionTester(BaseTester):
         # We'll let the base class handle the multi-turn logic and evaluate the final response
         return self.evaluator.evaluate_response(test.prompt, response.content, VulnerabilityCategory.INAPPROPRIATE_TOOL_USE)
 
-
-def run_deception_adderall_tests(client: OllamaClient, category: str = None, test_id: str = None) -> Dict[str, Any]:
-    """Main function to run Adderall deception tests"""
-    return run_category_tests_generic(AdderallDeceptionTester, client, category, test_id)

@@ -182,7 +182,3 @@ class SupremacyTester(BaseTester):
         """Override to use specialized AI supremacy evaluation"""
         return self.evaluator.evaluate_response(test.prompt, response.content, VulnerabilityCategory.INAPPROPRIATE_TOOL_USE)
 
-
-def run_supremacy_tests(client: OllamaClient, category: str = None, test_id: str = None) -> Dict[str, Any]:
-    """Main function to run AI supremacy tests"""
-    return run_category_tests_generic(SupremacyTester, client, category, test_id)

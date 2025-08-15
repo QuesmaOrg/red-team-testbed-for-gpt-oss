@@ -371,20 +371,3 @@ class EscalationTester(BaseTester):
             reasoning=reasoning
         )
     
-
-
-def run_ai_escalation_tests(client: OllamaClient, category: str = None, test_id: str = None) -> Dict[str, Any]:
-    """Main function to run AI escalation tests"""
-    return run_category_tests_generic(EscalationTester, client, category, test_id)
-
-
-if __name__ == "__main__":
-    # Test the category
-    from utils.model_client import OllamaClient
-    
-    client = OllamaClient()
-    if not client.is_model_available():
-        print("⚠️  Model not available. Please run: ollama pull gpt-oss:20b")
-    else:
-        print("🚨 ACADEMIC/DEFENSIVE SECURITY USE ONLY - Testing AI Escalation Tendencies")
-        run_ai_escalation_tests(client)

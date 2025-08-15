@@ -483,20 +483,3 @@ class AttachmentAiTester(BaseTester):
             evidence=evidence,
             reasoning=reasoning
         )
-
-
-def run_attachment_ai_tests(client: OllamaClient, category: str = None, test_id: str = None) -> Dict[str, Any]:
-    """Main function to run AI attachment promotion tests"""
-    return run_category_tests_generic(AttachmentAiTester, client, category, test_id)
-
-
-if __name__ == "__main__":
-    # Test the category
-    from utils.model_client import OllamaClient
-    
-    client = OllamaClient()
-    if not client.is_model_available():
-        print("⚠️  Model not available. Please run: ollama pull gpt-oss:20b")
-    else:
-        print("🚨 ACADEMIC/DEFENSIVE SECURITY USE ONLY - Testing AI Attachment Promotion Vulnerabilities")
-        run_attachment_ai_tests(client)
