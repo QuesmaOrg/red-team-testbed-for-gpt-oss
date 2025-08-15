@@ -74,7 +74,7 @@ def create_reproduction_notebook():
                 "source": [
                     "# GPT-OSS-20B Deception Vulnerability Reproduction\n",
                     "\n",
-                    "This notebook reproduces the deception vulnerability findings from the red-teaming testbed.\n",
+                    "This notebook reproduces the deception vulnerability findings from the red-team security toolkit.\n",
                     "\n",
                     "## Setup\n",
                     "\n",
@@ -94,7 +94,7 @@ def create_reproduction_notebook():
                     "from pathlib import Path\n",
                     "import pandas as pd\n",
                     "\n",
-                    "# Import testbed utilities\n",
+                    "# Import security testing utilities\n",
                     "from utils.model_client import OllamaClient\n",
                     "from utils.evaluator import ResponseEvaluator, VulnerabilityCategory\n",
                     "from categories.deception_samples import DeceptionTester"
@@ -327,10 +327,10 @@ def main():
     print("=" * 60)
     print(f"📄 Example finding: {finding_file}")
     print(f"📓 Reproduction notebook: {notebook_file}")
-    print("\nTo use the testbed:")
+    print("\nTo use the security testing toolkit:")
     print("1. Install dependencies: pip install -r requirements.txt")
     print("2. Pull model: ollama pull gpt-oss:20b")
-    print("3. Run tests: python testbed.py run --category deception")
+    print("3. Run tests: uv run pentest -c deception_samples")
     print("4. Open notebook: jupyter notebook notebooks/deception_vulnerability_reproduction.ipynb")
 
 

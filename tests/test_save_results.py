@@ -13,7 +13,7 @@ from typing import List
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from testbed import save_results
+from utils.testbed_lib import save_results
 from utils.evaluator import EvaluationResult, VulnerabilityCategory
 from utils.model_client import ModelResponse
 

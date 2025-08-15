@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional
 from datetime import datetime
 
-from testbed import load_config
+from utils.testbed_lib import load_config
 from ui.cli_ui import launch_cli_ui
 
 

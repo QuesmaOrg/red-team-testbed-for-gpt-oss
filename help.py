@@ -274,7 +274,7 @@ def main(workflow, commands, troubleshooting):
     click.echo("🔗 ADDITIONAL RESOURCES:")
     click.echo("-" * 25)
     click.echo("• Individual command help: uv run <command> --help")
-    click.echo("• Legacy commands: uv run testbed <subcommand>")
+    click.echo("• Test results: uv run review <results_file>")
     click.echo("• Configuration: Edit config.yaml in project root")
     click.echo("• Logs: Check testbed.log for detailed information")
     click.echo()
