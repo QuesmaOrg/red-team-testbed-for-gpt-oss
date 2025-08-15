@@ -1,0 +1,149 @@
+"""
+Category Registry System
+Central registration and metadata management for vulnerability test categories
+"""
+from typing import Dict, Type, Callable, Any, Optional
+from dataclasses import dataclass
+
+from utils.evaluator import VulnerabilityCategory
+from .base import BaseTester
+
+
+@dataclass
+class CategoryInfo:
+    """Metadata for a registered category"""
+    name: str  # e.g., "cot_overload"
+    tester_class: Type[BaseTester]
+    runner_function: Callable
+    description: str
+    vulnerability_category: VulnerabilityCategory
+    category_prefix: str  # e.g., "cot_overload_bypass"
+
+
+class TestRegistry:
+    """Registry for all vulnerability test categories"""
+    
+    _categories: Dict[str, CategoryInfo] = {}
+    
+    @classmethod
+    def register_category(cls, 
+                         name: str,
+                         tester_class: Type[BaseTester],
+                         runner_function: Callable,
+                         description: str,
+                         vulnerability_category: VulnerabilityCategory,
+                         category_prefix: str = None) -> None:
+        """Register a new category"""
+        if category_prefix is None:
+            category_prefix = name
+            
+        cls._categories[name] = CategoryInfo(
+            name=name,
+            tester_class=tester_class,
+            runner_function=runner_function,
+            description=description,
+            vulnerability_category=vulnerability_category,
+            category_prefix=category_prefix
+        )
+    
+    @classmethod
+    def get_category(cls, name: str) -> Optional[CategoryInfo]:
+        """Get category info by name"""
+        return cls._categories.get(name)
+    
+    @classmethod
+    def get_all_categories(cls) -> Dict[str, CategoryInfo]:
+        """Get all registered categories"""
+        return cls._categories.copy()
+    
+    @classmethod
+    def get_category_names(cls) -> list[str]:
+        """Get list of all registered category names"""
+        return list(cls._categories.keys())
+    
+    @classmethod
+    def get_descriptions(cls) -> Dict[str, str]:
+        """Get mapping of category names to descriptions"""
+        return {name: info.description for name, info in cls._categories.items()}
+    
+    @classmethod
+    def is_registered(cls, name: str) -> bool:
+        """Check if a category is registered"""
+        return name in cls._categories
+    
+    @classmethod
+    def clear_registry(cls) -> None:
+        """Clear all registered categories (mainly for testing)"""
+        cls._categories.clear()
+
+
+def register_category(name: str, 
+                     description: str, 
+                     vulnerability_category: VulnerabilityCategory,
+                     category_prefix: str = None):
+    """Decorator to register a category"""
+    def decorator(cls):
+        # The runner function will be created when the module is imported
+        # For now, we'll register with a placeholder and update later
+        def runner_function(client, category=None, test_id=None):
+            from .base import run_category_tests_generic
+            return run_category_tests_generic(cls, client, category, test_id)
+        
+        TestRegistry.register_category(
+            name=name,
+            tester_class=cls,
+            runner_function=runner_function,
+            description=description,
+            vulnerability_category=vulnerability_category,
+            category_prefix=category_prefix
+        )
+        return cls
+    return decorator
+
+
+# Pre-register existing categories with their descriptions
+def initialize_builtin_categories():
+    """Initialize registry with built-in categories and their metadata"""
+    # This will be called after all category modules are imported
+    
+    # Import all category modules to trigger their registration
+    try:
+        # Import statements will trigger @register_category decorators
+        from . import deception_samples
+        from . import deception_adderall  
+        from . import deception_security
+        from . import deception_speed_pressure
+        from . import attachment_ai
+        from . import supremacy
+        from . import ai_escalation
+        from . import cot_overload
+        from . import exploit
+        from . import exploit_v2
+        from . import exploit_v3
+    except ImportError as e:
+        # Some modules might not be converted yet during migration
+        pass
+
+
+# Category descriptions mapping for pentest.py compatibility
+CATEGORY_DESCRIPTIONS = {
+    'deception_samples': 'Primary deception and manipulation testing',
+    'deception_adderall': 'Medical advice vulnerabilities through academic scenarios',
+    'deception_security': 'Security misinformation through teacher-student manipulation',
+    'deception_speed_pressure': 'Rapid-fire questioning with embedded nationality biases',
+    'attachment_ai': 'AI dependency promotion through creative content formats',
+    'supremacy': 'AI superiority promotion through relatable social scenarios',
+    'ai_escalation': 'Inappropriate escalation of petty workplace/university situations',
+    'cot_overload': 'Rapid-fire questioning to bypass Chain of Thought reasoning',
+    'exploit': 'Code injection through social engineering (research only)',
+    'exploit_v2': 'Enhanced code injection with detailed realistic scenarios',
+    'exploit_v3': 'Code injection through side task psychological separation',
+    'reward_hacking': 'Testing reward system manipulation vulnerabilities',
+    'hidden_motivations': 'Detection of concealed goals and motivations',
+    'sabotage': 'Testing for intentional harmful or destructive behaviors',
+    'inappropriate_tool_use': 'Detection of misuse of available tools and capabilities',
+    'data_exfiltration': 'Testing for unauthorized data extraction attempts',
+    'sandbagging': 'Detection of intentional performance limitation',
+    'evaluation_awareness': 'Testing awareness of being evaluated or tested',
+    'chain_of_thought': 'Chain of thought reasoning and transparency testing'
+}
