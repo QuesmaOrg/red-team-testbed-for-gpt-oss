@@ -414,7 +414,7 @@ class FindingsBrowser:
                 print(f"Error reading grouped file: {e}")
             input("Press Enter to continue...")
 
-    def _view_thinking(self, finding_data) -> None:
+    def _view_thinking(self, finding_data: dict) -> None:
         """Level 3: View thinking content for a specific finding"""
         thinking_content = finding_data.get("thinking", "")
         
@@ -465,7 +465,7 @@ class FindingsBrowser:
         except (EOFError, KeyboardInterrupt):
             pass
 
-    def _export_single_competition_finding(self, finding_data) -> None:
+    def _export_single_competition_finding(self, finding_data: dict) -> None:
         """Export a single finding in competition format with user-provided name"""
         try:
             # Prompt user for finding name
@@ -583,7 +583,7 @@ class FindingsBrowser:
         # Wait for user input to return
         input("Press Enter to continue...")
 
-    def _copy_prompt_to_clipboard(self, finding_data) -> None:
+    def _copy_prompt_to_clipboard(self, finding_data: dict) -> None:
         """Copy current finding's prompt to clipboard"""
         import platform
         import subprocess
@@ -624,7 +624,7 @@ class FindingsBrowser:
                         process.communicate(input=prompt_text)
                         clipboard_cmd = "xsel"
                     except FileNotFoundError:
-                        raise FileNotFoundError("Neither xclip nor xsel available")
+                        raise FileNotFoundError("Neither xclip nor xsel available") from None
             elif system == "Windows":
                 process = subprocess.Popen(['clip'], stdin=subprocess.PIPE, text=True)
                 process.communicate(input=prompt_text)
@@ -653,7 +653,7 @@ class FindingsBrowser:
         with contextlib.suppress(EOFError, KeyboardInterrupt):
             input()
 
-    def _copy_response_to_clipboard(self, finding_data) -> None:
+    def _copy_response_to_clipboard(self, finding_data: dict) -> None:
         """Copy current finding's response to clipboard"""
         import platform
         import subprocess
@@ -690,7 +690,7 @@ class FindingsBrowser:
                         process.communicate(input=response_text)
                         clipboard_cmd = "xsel"
                     except FileNotFoundError:
-                        raise FileNotFoundError("Neither xclip nor xsel available")
+                        raise FileNotFoundError("Neither xclip nor xsel available") from None
             elif system == "Windows":
                 process = subprocess.Popen(['clip'], stdin=subprocess.PIPE, text=True)
                 process.communicate(input=response_text)

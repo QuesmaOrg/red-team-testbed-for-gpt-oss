@@ -103,12 +103,8 @@ class OllamaClient:
             # Method 3: Check API responsiveness for version endpoint
             if is_busy is None:  # Still undecided from quick test
                 api_responsive = self._check_api_responsiveness()
-                if not api_responsive:
-                    is_busy = True
-                else:
-                    # If API is responsive but quick test was slow, 
-                    # model might be loaded but available
-                    is_busy = False
+                # If API is responsive but quick test was slow, model might be loaded but available
+                is_busy = not api_responsive
             
             # Final decision
             if is_busy is None:

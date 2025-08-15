@@ -66,7 +66,7 @@ def list_available_results(results_dir: str = "results") -> list:
                 data = json.load(f)
             categories = list(data.keys())
             test_count = sum(len(cat_data.get('test_details', [])) for cat_data in data.values() if isinstance(cat_data, dict))
-        except:
+        except (KeyError, AttributeError, TypeError):
             categories = ["Unknown"]
             test_count = 0
         

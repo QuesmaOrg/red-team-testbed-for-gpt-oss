@@ -90,7 +90,7 @@ class LiveDisplay:
     
     def _setup_signal_handlers(self) -> None:
         """Set up signal handlers for graceful cleanup"""
-        def signal_handler(signum, frame) -> None:
+        def signal_handler(signum: int, frame: object) -> None:
             """Handle interrupt signals (Ctrl+C, etc.)"""
             self._cleanup_display()
             # Re-raise the KeyboardInterrupt to maintain normal behavior
@@ -311,7 +311,7 @@ class LiveDisplay:
                     try:
                         self._live_context.stop()
                         self._live_context = None
-                    except:
+                    except Exception:
                         pass
         else:
             # Fallback for non-Rich terminals

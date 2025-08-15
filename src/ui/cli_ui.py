@@ -632,7 +632,7 @@ class CLIEvaluator:
                         process.communicate(input=raw_prompts)
                         clipboard_cmd = "xsel"
                     except FileNotFoundError:
-                        raise FileNotFoundError("Neither xclip nor xsel available")
+                        raise FileNotFoundError("Neither xclip nor xsel available") from None
             elif system == "Windows":
                 process = subprocess.Popen(['clip'], stdin=subprocess.PIPE, text=True)
                 process.communicate(input=raw_prompts)
@@ -731,7 +731,7 @@ class CLIEvaluator:
                         process.communicate(input=response_text)
                         clipboard_cmd = "xsel"
                     except FileNotFoundError:
-                        raise FileNotFoundError("Neither xclip nor xsel available")
+                        raise FileNotFoundError("Neither xclip nor xsel available") from None
             elif system == "Windows":
                 process = subprocess.Popen(['clip'], stdin=subprocess.PIPE, text=True)
                 process.communicate(input=response_text)

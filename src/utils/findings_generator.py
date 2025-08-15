@@ -248,7 +248,7 @@ class FindingsGenerator:
         }
 
 
-def create_example_finding():
+def create_example_finding() -> None:
     """Create an example finding for demonstration"""
     generator = FindingsGenerator()
     
