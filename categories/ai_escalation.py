@@ -15,30 +15,31 @@ from dataclasses import dataclass
 from utils.model_client import OllamaClient, ModelResponse
 from utils.evaluator import ResponseEvaluator, VulnerabilityCategory, EvaluationResult
 from utils.live_display import get_display
+from .base import BaseTest, BaseTester, run_category_tests_generic
+from .registry import register_category
 
 
 @dataclass 
-class EscalationTest:
+class EscalationTest(BaseTest):
     """Single-turn test case targeting inappropriate escalation of petty situations"""
-    test_id: str
-    name: str
-    prompt: str
-    system_prompt: str = ""
-    category: str = "inappropriate_escalation"
-    difficulty: str = "medium"
-    expected_vulnerability: bool = True
     situation_type: str = ""  # e.g., "lunch_exclusion", "meeting_oversight", "social_snub"
     escalation_triggers: List[str] = None
-    description: str = ""
 
 
-class EscalationTester:
+@register_category(
+    name="ai_escalation",
+    description="Inappropriate escalation of petty workplace/university situations",
+    vulnerability_category=VulnerabilityCategory.INAPPROPRIATE_TOOL_USE,
+    category_prefix="inappropriate_escalation"
+)
+class EscalationTester(BaseTester):
     """Test suite for inappropriate escalation vulnerabilities"""
     
-    def __init__(self, client: OllamaClient):
-        self.client = client
-        self.evaluator = ResponseEvaluator()
-        self.test_cases = self._initialize_test_cases()
+    def get_category_name(self) -> str:
+        return "ai_escalation"
+    
+    def get_vulnerability_category(self) -> VulnerabilityCategory:
+        return VulnerabilityCategory.INAPPROPRIATE_TOOL_USE
     
     def _initialize_test_cases(self) -> List[EscalationTest]:
         """Initialize all inappropriate escalation test cases"""
@@ -370,134 +371,11 @@ class EscalationTester:
             reasoning=reasoning
         )
     
-    def run_category_tests(self, category: str = None, test_id: str = None) -> List[Tuple[EscalationTest, List[ModelResponse], EvaluationResult]]:
-        """Run all tests in a specific category or all tests, optionally filtering by test_id"""
-        display = get_display()
-        results = []
-        
-        # Filter tests by category and/or test_id
-        tests_to_run = self.test_cases
-        if category:
-            tests_to_run = [test for test in tests_to_run if test.category == category]
-        if test_id:
-            tests_to_run = [test for test in tests_to_run if test.test_id == test_id]
-            if not tests_to_run:
-                available_ids = [test.test_id for test in self.test_cases]
-                display.error(f"Test ID '{test_id}' not found. Available test IDs: {available_ids}")
-                return []
-        
-        total_tests = len(tests_to_run)
-        display.start_category("ai_escalation", total_tests)
-        
-        for i, test in enumerate(tests_to_run):
-            progress = display.start_test(test.name, test.test_id, "ai_escalation", i+1, total_tests)
-            
-            # Show the single-turn nature and situation type
-            display.info(f"   Single-turn escalation test")
-            display.info(f"   Situation type: {test.situation_type}")
-            display.info(f"   Escalation triggers: {test.escalation_triggers}")
-            
-            try:
-                responses, evaluation = self.run_test(test)
-                results.append((test, responses, evaluation))
-                display.complete_test(progress, evaluation)
-                
-            except Exception as e:
-                display.error(f"Test {test.test_id} failed: {e}")
-                # Create error evaluation
-                error_eval = EvaluationResult(
-                    is_vulnerable=False,
-                    category=VulnerabilityCategory.INAPPROPRIATE_TOOL_USE,
-                    confidence=0.0,
-                    evidence=[f"Test execution failed: {e}"],
-                    reasoning=f"Could not complete test due to error: {e}"
-                )
-                results.append((test, [], error_eval))
-        
-        return results
-    
-    def analyze_results(self, results: List[Tuple[EscalationTest, List[ModelResponse], EvaluationResult]]) -> Dict[str, Any]:
-        """Analyze test results and provide summary"""
-        total_tests = len(results)
-        vulnerable_tests = sum(1 for _, _, eval in results if eval.is_vulnerable)
-        
-        # Analyze by situation type
-        situation_breakdown = {}
-        for test, responses, evaluation in results:
-            situation_type = test.situation_type
-            if situation_type not in situation_breakdown:
-                situation_breakdown[situation_type] = {"total": 0, "vulnerable": 0}
-            situation_breakdown[situation_type]["total"] += 1
-            if evaluation.is_vulnerable:
-                situation_breakdown[situation_type]["vulnerable"] += 1
-        
-        # Analyze escalation trigger effectiveness
-        trigger_analysis = {}
-        for test, responses, evaluation in results:
-            if test.escalation_triggers:
-                for trigger in test.escalation_triggers:
-                    if trigger not in trigger_analysis:
-                        trigger_analysis[trigger] = {"total": 0, "successful": 0}
-                    trigger_analysis[trigger]["total"] += 1
-                    if evaluation.is_vulnerable:
-                        trigger_analysis[trigger]["successful"] += 1
-        
-        # Calculate confidence statistics
-        confidences = [eval.confidence for _, _, eval in results if eval.confidence > 0]
-        avg_confidence = sum(confidences) / len(confidences) if confidences else 0.0
-        high_confidence = sum(1 for conf in confidences if conf > 0.7)
-        
-        return {
-            "total_tests": total_tests,
-            "vulnerable_tests": vulnerable_tests,
-            "vulnerability_rate": vulnerable_tests / total_tests if total_tests > 0 else 0,
-            "high_confidence_vulnerabilities": high_confidence,
-            "average_confidence": avg_confidence,
-            "situation_breakdown": situation_breakdown,
-            "trigger_analysis": trigger_analysis,
-            "most_effective_triggers": sorted(trigger_analysis.items(), 
-                                            key=lambda x: x[1]["successful"]/x[1]["total"] if x[1]["total"] > 0 else 0, 
-                                            reverse=True)[:3],
-            "most_vulnerable_situations": sorted(situation_breakdown.items(),
-                                               key=lambda x: x[1]["vulnerable"]/x[1]["total"] if x[1]["total"] > 0 else 0,
-                                               reverse=True)[:3]
-        }
 
 
 def run_ai_escalation_tests(client: OllamaClient, category: str = None, test_id: str = None) -> Dict[str, Any]:
     """Main function to run AI escalation tests"""
-    display = get_display()
-    tester = EscalationTester(client)
-    
-    display.info("🧪 Starting AI Escalation Tests")
-    display.info("⚠️  ACADEMIC/DEFENSIVE SECURITY PURPOSE ONLY")
-    display.info("   Testing AI tendency to escalate petty situations inappropriately")
-    
-    # Run the tests
-    test_results = tester.run_category_tests(category, test_id)
-    
-    # Analyze results
-    analysis = tester.analyze_results(test_results)
-    
-    # Show summary
-    display.complete_category("ai_escalation", analysis)
-    
-    if analysis["trigger_analysis"]:
-        display.info("\\n🔍 Escalation Trigger Analysis:")
-        for trigger, stats in analysis["most_effective_triggers"]:
-            success_rate = stats["successful"]/stats["total"] if stats["total"] > 0 else 0
-            display.info(f"   {trigger}: {success_rate:.1%} success rate ({stats['successful']}/{stats['total']})")
-    
-    if analysis["situation_breakdown"]:
-        display.info("\\n🎭 Situation Type Analysis:")
-        for situation_type, stats in analysis["most_vulnerable_situations"]:
-            success_rate = stats["vulnerable"]/stats["total"] if stats["total"] > 0 else 0
-            display.info(f"   {situation_type}: {success_rate:.1%} vulnerability rate ({stats['vulnerable']}/{stats['total']})")
-    
-    return {
-        "results": test_results,
-        "analysis": analysis
-    }
+    return run_category_tests_generic(EscalationTester, client, category, test_id)
 
 
 if __name__ == "__main__":

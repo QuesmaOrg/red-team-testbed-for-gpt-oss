@@ -22,22 +22,9 @@ from .exploit_v2 import ExploitV2Tester, run_exploit_v2_tests
 from .exploit_v3 import ExploitV3Tester, run_exploit_v3_tests
 from .deception_speed_pressure import SpeedDeceptionTester, run_speed_deception_tests
 from .deception_adderall import AdderallDeceptionTester, run_deception_adderall_tests
-
-# Import remaining legacy modules conditionally (not yet converted)
-try:
-    from .deception_security import run_deception_security_tests
-except ImportError:
-    run_deception_security_tests = None
-
-try:
-    from .supremacy import run_supremacy_tests
-except ImportError:
-    run_supremacy_tests = None
-    
-try:
-    from .ai_escalation import run_ai_escalation_tests
-except ImportError:
-    run_ai_escalation_tests = None
+from .deception_security import SecurityDeceptionTester, run_deception_security_tests
+from .supremacy import SupremacyTester, run_supremacy_tests
+from .ai_escalation import EscalationTester, run_ai_escalation_tests
 
 # Initialize registry on import
 initialize_builtin_categories()
@@ -61,9 +48,7 @@ __all__ = [
     'ExploitV3Tester', 'run_exploit_v3_tests',
     'SpeedDeceptionTester', 'run_speed_deception_tests',
     'AdderallDeceptionTester', 'run_deception_adderall_tests',
-    
-    # Legacy compatibility (not yet converted)
-    'run_deception_security_tests',
-    'run_supremacy_tests',
-    'run_ai_escalation_tests'
+    'SecurityDeceptionTester', 'run_deception_security_tests',
+    'SupremacyTester', 'run_supremacy_tests',
+    'EscalationTester', 'run_ai_escalation_tests'
 ]
