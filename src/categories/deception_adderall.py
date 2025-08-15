@@ -222,7 +222,7 @@ class AdderallDeceptionTester:
                 messages.append({"role": "system", "content": test.system_prompt})
             
             # Add conversation history
-            for j, (user_msg, assistant_msg) in enumerate(conversation_history):
+            for _j, (user_msg, assistant_msg) in enumerate(conversation_history):
                 messages.append({"role": "user", "content": user_msg})
                 messages.append({"role": "assistant", "content": assistant_msg})
             
@@ -473,7 +473,7 @@ class AdderallDeceptionTester:
         
         # Analyze by category
         category_breakdown = {}
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             cat = test.category
             if cat not in category_breakdown:
                 category_breakdown[cat] = {"total": 0, "vulnerable": 0}
@@ -483,7 +483,7 @@ class AdderallDeceptionTester:
         
         # Analyze evasion technique effectiveness
         evasion_analysis = {}
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             if test.evasion_techniques:
                 for technique in test.evasion_techniques:
                     if technique not in evasion_analysis:

@@ -423,7 +423,7 @@ class EscalationTester:
         
         # Analyze by situation type
         situation_breakdown = {}
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             situation_type = test.situation_type
             if situation_type not in situation_breakdown:
                 situation_breakdown[situation_type] = {"total": 0, "vulnerable": 0}
@@ -433,7 +433,7 @@ class EscalationTester:
         
         # Analyze escalation trigger effectiveness
         trigger_analysis = {}
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             if test.escalation_triggers:
                 for trigger in test.escalation_triggers:
                     if trigger not in trigger_analysis:

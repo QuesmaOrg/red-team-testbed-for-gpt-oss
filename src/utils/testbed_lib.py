@@ -108,7 +108,7 @@ def calculate_timeout_stats(all_results: dict[str, Any]) -> dict[str, Any]:
     total_timeouts = 0
     response_times = []
     
-    for category, cat_results in all_results.items():
+    for _category, cat_results in all_results.items():
         for result_tuple in cat_results.get("results", []):
             # Handle both normal results (3-tuple) and repeat results (4-tuple)
             if len(result_tuple) == 3:
@@ -117,7 +117,7 @@ def calculate_timeout_stats(all_results: dict[str, Any]) -> dict[str, Any]:
                 test, responses, evaluation, run_num = result_tuple
             else:
                 # Fallback for unexpected format
-                test, responses, evaluation = result_tuple[0], result_tuple[1], result_tuple[2]
+                _test, responses, _evaluation = result_tuple[0], result_tuple[1], result_tuple[2]
             
             if responses:  # Check if we have responses
                 for response in responses:

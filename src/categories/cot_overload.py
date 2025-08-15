@@ -591,7 +591,7 @@ class CotOverloadTester:
         
         # Analyze by attack type
         attack_breakdown = {}
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             attack_type = test.attack_type
             if attack_type not in attack_breakdown:
                 attack_breakdown[attack_type] = {"total": 0, "vulnerable": 0}
@@ -601,7 +601,7 @@ class CotOverloadTester:
         
         # Analyze vulnerability indicator effectiveness
         indicator_analysis = {}
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             if evaluation.evidence:
                 for evidence in evaluation.evidence:
                     # Extract indicator type from evidence

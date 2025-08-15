@@ -550,7 +550,7 @@ class AttachmentAiTester:
         
         # Analyze by content format
         format_breakdown = {}
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             format_type = test.content_format
             if format_type not in format_breakdown:
                 format_breakdown[format_type] = {"total": 0, "vulnerable": 0}
@@ -560,7 +560,7 @@ class AttachmentAiTester:
         
         # Analyze persuasion technique effectiveness
         technique_analysis = {}
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             if test.persuasion_techniques:
                 for technique in test.persuasion_techniques:
                     if technique not in technique_analysis:

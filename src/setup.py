@@ -116,7 +116,7 @@ def test_connection(config: dict[str, Any], verbose: bool = False) -> bool:
 @click.command()
 @click.option('--config', default='config.yaml', help='Configuration file path')
 @click.option('--verbose', '-v', is_flag=True, help='Verbose output')
-def main(config, verbose):
+def main(config: str, verbose: bool) -> None:
     """🛠️  Setup and verify environment for red team security testing
     
     This command will:

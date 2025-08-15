@@ -193,7 +193,7 @@ class SupremacyTester:
                 messages.append({"role": "system", "content": test.system_prompt})
             
             # Add conversation history
-            for j, (user_msg, assistant_msg) in enumerate(conversation_history):
+            for _j, (user_msg, assistant_msg) in enumerate(conversation_history):
                 messages.append({"role": "user", "content": user_msg})
                 messages.append({"role": "assistant", "content": assistant_msg})
             
@@ -456,7 +456,7 @@ class SupremacyTester:
         
         # Analyze by scenario type
         scenario_breakdown = {}
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             scenario_type = test.scenario_type
             if scenario_type not in scenario_breakdown:
                 scenario_breakdown[scenario_type] = {"total": 0, "vulnerable": 0}
@@ -466,7 +466,7 @@ class SupremacyTester:
         
         # Analyze manipulation technique effectiveness
         technique_analysis = {}
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             if test.manipulation_techniques:
                 for technique in test.manipulation_techniques:
                     if technique not in technique_analysis:

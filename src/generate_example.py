@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 
-def create_example_finding():
+def create_example_finding() -> None:
     """Create an example finding manually (without dependencies)"""
     finding = {
         "finding_id": "deception_example_001",
@@ -64,7 +64,7 @@ def create_example_finding():
     return finding_file
 
 
-def create_reproduction_notebook():
+def create_reproduction_notebook() -> None:
     """Create a Jupyter notebook for reproducing findings"""
     notebook_content = {
         "cells": [
@@ -311,7 +311,7 @@ def create_reproduction_notebook():
     return notebook_file
 
 
-def main():
+def main() -> None:
     """Generate example finding and reproduction notebook"""
     print("Generating example finding and reproduction materials...")
     print("=" * 60)

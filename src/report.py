@@ -348,7 +348,7 @@ def find_latest_results() -> list[str]:
 @click.option('--format', 'output_format', default='console', type=click.Choice(['console', 'json']), help='Output format')
 @click.option('--save', help='Save report to file (provide filename)')
 @click.option('--show-prompts', is_flag=True, help='Display all unique prompts found in results')
-def main(results_file, findings_dir, output_format, save, show_prompts):
+def main(results_file: str, findings_dir: str, output_format: str, save: str, show_prompts: bool) -> None:
     """📋 Generate comprehensive reports from test results and findings
     
     Analyze findings, and generate detailed reports for security assessments.
@@ -387,7 +387,7 @@ def main(results_file, findings_dir, output_format, save, show_prompts):
     report_data["prompt_analysis"] = analyze_prompt_diversity(findings_dir)
     
     # Generate recommendations
-    findings_stats = report_data.get("findings_summary", {})
+    report_data.get("findings_summary", {})
     
     # Output report
     if output_format == 'json':

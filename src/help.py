@@ -8,7 +8,7 @@ from pathlib import Path
 import click
 
 
-def check_environment_status():
+def check_environment_status() -> dict[str, Any]:
     """Check current environment setup status"""
     status = {
         "config_exists": Path("config.yaml").exists(),
@@ -31,7 +31,7 @@ def check_environment_status():
     return status
 
 
-def show_workflow_guide():
+def show_workflow_guide() -> None:
     """Show the complete security testing workflow"""
     click.echo("🛡️  RED TEAM SECURITY TESTING WORKFLOW")
     click.echo("=" * 60)
@@ -98,7 +98,7 @@ def show_workflow_guide():
     click.echo()
 
 
-def show_command_details():
+def show_command_details() -> None:
     """Show detailed information about each command"""
     click.echo("📚 DETAILED COMMAND REFERENCE")
     click.echo("=" * 50)
@@ -178,7 +178,7 @@ def show_command_details():
         click.echo()
 
 
-def show_troubleshooting():
+def show_troubleshooting() -> None:
     """Show common issues and solutions"""
     click.echo("🔧 TROUBLESHOOTING GUIDE")
     click.echo("=" * 40)
@@ -244,7 +244,7 @@ def show_troubleshooting():
 @click.option('--workflow', is_flag=True, help='Show workflow guide')
 @click.option('--commands', is_flag=True, help='Show detailed command reference')
 @click.option('--troubleshooting', is_flag=True, help='Show troubleshooting guide')
-def main(workflow, commands, troubleshooting):
+def main(workflow: bool, commands: bool, troubleshooting: bool) -> None:
     """🆘 Comprehensive help and workflow guidance
     
     Your complete guide to red team security testing with this toolkit.

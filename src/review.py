@@ -139,7 +139,7 @@ def select_results_file_interactive(results_dir: str = "results") -> str | None:
 @click.argument('results_file', required=False)
 @click.option('--config', default='config.yaml', help='Configuration file path')
 @click.option('--latest', is_flag=True, help='Automatically select the latest results file')
-def main(results_file, config, latest):
+def main(results_file: str, config: str, latest: bool) -> None:
     """📊 Review and evaluate penetration test results
     
     Interactive CLI for reviewing test results, flagging findings, and exporting data.

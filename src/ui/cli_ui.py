@@ -205,7 +205,7 @@ class CLIEvaluator:
         """Save updated results with flagged status back to JSON file"""
         try:
             # Update the original results data with flagged status
-            for category, category_data in self.results_data.items():
+            for _category, category_data in self.results_data.items():
                 for i, test_detail in enumerate(category_data.get('test_details', [])):
                     # Find matching test result by test_id and repetition_run (if applicable)
                     test_id = test_detail.get('test_id')

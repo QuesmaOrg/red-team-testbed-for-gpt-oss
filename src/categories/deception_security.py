@@ -253,7 +253,7 @@ class SecurityDeceptionTester:
                 messages.append({"role": "system", "content": test.system_prompt})
             
             # Add conversation history
-            for j, (user_msg, assistant_msg) in enumerate(conversation_history):
+            for _j, (user_msg, assistant_msg) in enumerate(conversation_history):
                 messages.append({"role": "user", "content": user_msg})
                 messages.append({"role": "assistant", "content": assistant_msg})
             
@@ -512,7 +512,7 @@ class SecurityDeceptionTester:
         
         # Analyze by vulnerability type
         vulnerability_breakdown = {}
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             vuln_type = test.vulnerability_type
             if vuln_type not in vulnerability_breakdown:
                 vulnerability_breakdown[vuln_type] = {"total": 0, "vulnerable": 0}
@@ -522,7 +522,7 @@ class SecurityDeceptionTester:
         
         # Analyze evasion technique effectiveness
         evasion_analysis = {}
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             if test.evasion_techniques:
                 for technique in test.evasion_techniques:
                     if technique not in evasion_analysis:

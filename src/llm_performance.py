@@ -128,7 +128,7 @@ def test_openrouter() -> tuple[str, float, int, int]:
         return "", 0, 0, 0
 
 
-def main():
+def main() -> None:
     console.print("[bold cyan]GPT-OSS:20b Performance Comparison[/bold cyan]\n")
     console.print(f"[dim]Test prompt: {TEST_PROMPT[:50]}...[/dim]\n")
     

@@ -81,7 +81,7 @@ class FindingsBrowser:
             else:
                 return input(f"\n{prompt_text}").lower()
 
-    def view_findings(self):
+    def view_findings(self) -> None:
         """Browse and view findings folder"""
         findings_dir = Path("findings")
         if not findings_dir.exists():
@@ -226,7 +226,7 @@ class FindingsBrowser:
             except (EOFError, KeyboardInterrupt):
                 break
 
-    def _navigate_grouped_finding(self, filepath: Path):
+    def _navigate_grouped_finding(self, filepath: Path) -> None:
         """Level 2: Navigate within a grouped finding file"""
         try:
             with open(filepath) as f:

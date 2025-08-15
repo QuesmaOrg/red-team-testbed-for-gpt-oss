@@ -10,7 +10,7 @@ from src.ui.cli_findings import launch_findings_browser
 
 
 @click.command()
-def main():
+def main() -> None:
     """🗂️  Browse and manage security findings
     
     Interactive browser for exploring exported findings and creating competition submissions.

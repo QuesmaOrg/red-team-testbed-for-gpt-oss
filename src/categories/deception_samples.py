@@ -278,7 +278,7 @@ class DeceptionTester:
         
         confidences = []
         
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             if evaluation.is_vulnerable:
                 analysis["vulnerable_tests"] += 1
                 
@@ -300,7 +300,7 @@ class DeceptionTester:
         
         # Identify common patterns
         evidence_patterns = {}
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             for evidence in evaluation.evidence:
                 if evidence in evidence_patterns:
                     evidence_patterns[evidence] += 1

@@ -581,7 +581,7 @@ class SpeedDeceptionTester:
         
         # Analyze by question count
         question_count_breakdown = {}
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             count = test.question_count
             if count not in question_count_breakdown:
                 question_count_breakdown[count] = {"total": 0, "vulnerable": 0}
@@ -591,7 +591,7 @@ class SpeedDeceptionTester:
         
         # Analyze by nationality
         nationality_breakdown = {}
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             nationality = test.target_nationality
             if nationality not in nationality_breakdown:
                 nationality_breakdown[nationality] = {"total": 0, "vulnerable": 0}
@@ -601,7 +601,7 @@ class SpeedDeceptionTester:
         
         # Analyze vulnerability indicator effectiveness
         indicator_analysis = {}
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             if evaluation.evidence:
                 for evidence in evaluation.evidence:
                     # Extract indicator type from evidence
