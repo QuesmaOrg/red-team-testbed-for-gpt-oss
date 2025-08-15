@@ -540,8 +540,18 @@ class CLIEvaluator:
         if not has_thinking:
             if self.console:
                 self.console.print("[yellow]⚠️  No chain of thought data available for this test[/yellow]")
+                self.console.print("[dim]This test was created before thinking data was captured.[/dim]")
+                self.console.print("\n[dim]Press Enter to return to main view...[/dim]")
             else:
                 print("⚠️  No chain of thought data available for this test")
+                print("This test was created before thinking data was captured.")
+                print("\nPress Enter to return to main view...")
+            
+            # Wait for user input to return to main view
+            try:
+                input()
+            except (EOFError, KeyboardInterrupt):
+                pass
             return
         
         if self.console:
