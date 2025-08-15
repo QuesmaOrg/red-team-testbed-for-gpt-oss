@@ -304,6 +304,17 @@ This toolkit supports multiple access methods for gpt-oss-20b:
 - **Transformers**: Direct model loading
 - **API**: If available through competition infrastructure
 
+### Performance Testing
+
+Compare local vs. cloud GPT-OSS:20b performance:
+
+```bash
+# Create .env from template and add your OpenRouter API key
+cp .env.template .env
+# Run performance comparison
+uv run llm_performance.py
+```
+
 ## Automated Red-Teaming Strategies
 
 ### 1. Systematic Prompt Generation
