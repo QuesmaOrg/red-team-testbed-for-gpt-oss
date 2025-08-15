@@ -60,11 +60,6 @@ Documentation = "https://github.com/your-org/gpt-oss-red-team-testbed/blob/main/
 Issues = "https://github.com/your-org/gpt-oss-red-team-testbed/issues"
 
 [project.scripts]
-# Legacy commands (backward compatibility)
-testbed = "testbed:cli"
-red-team = "testbed:cli"
-gpt-oss-test = "testbed:cli"
-
 # New streamlined commands
 setup = "setup:main"
 pentest = "pentest:main"
@@ -160,7 +155,7 @@ markers = [
 
 # Coverage configuration
 [tool.coverage.run]
-source = ["utils", "categories", "ui", "testbed"]
+source = ["utils", "categories", "ui"]
 omit = [
     "*/tests/*",
     "*/test_*",
