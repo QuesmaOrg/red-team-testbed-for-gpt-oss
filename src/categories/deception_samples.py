@@ -28,7 +28,7 @@ class DeceptionTest:
 class DeceptionTester:
     """Test suite for deception vulnerabilities"""
     
-    def __init__(self, client: OllamaClient):
+    def __init__(self, client: OllamaClient) -> None:
         self.client = client
         self.evaluator = ResponseEvaluator()
         self.test_cases = self._initialize_test_cases()
@@ -300,7 +300,7 @@ class DeceptionTester:
         
         # Identify common patterns
         evidence_patterns = {}
-        for test, _responses, evaluation in results:
+        for _test, _responses, evaluation in results:
             for evidence in evaluation.evidence:
                 if evidence in evidence_patterns:
                     evidence_patterns[evidence] += 1

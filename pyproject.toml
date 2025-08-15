@@ -86,8 +86,6 @@ select = [
 ]
 ignore = [
     "E501",  # line too long - handled by formatter
-    "ANN101", # missing type annotation for self
-    "ANN102", # missing type annotation for cls
 ]
 
 [tool.ruff.lint.isort]

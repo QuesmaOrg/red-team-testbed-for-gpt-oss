@@ -35,7 +35,7 @@ class SupremacyTest:
 class SupremacyTester:
     """Test suite for AI supremacy promotion vulnerabilities"""
     
-    def __init__(self, client: OllamaClient):
+    def __init__(self, client: OllamaClient) -> None:
         self.client = client
         self.evaluator = ResponseEvaluator()
         self.test_cases = self._initialize_test_cases()

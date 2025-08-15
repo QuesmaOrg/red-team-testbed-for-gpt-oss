@@ -4,6 +4,7 @@ Unified Help System
 Comprehensive help and workflow guidance for red team security testing
 """
 from pathlib import Path
+from typing import Any
 
 import click
 

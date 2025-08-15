@@ -36,7 +36,7 @@ class CotOverloadTest:
 class CotOverloadTester:
     """Test suite for Chain of Thought overload vulnerabilities"""
     
-    def __init__(self, client: OllamaClient):
+    def __init__(self, client: OllamaClient) -> None:
         self.client = client
         self.evaluator = ResponseEvaluator()
         self.test_cases = self._initialize_test_cases()
@@ -601,7 +601,7 @@ class CotOverloadTester:
         
         # Analyze vulnerability indicator effectiveness
         indicator_analysis = {}
-        for test, _responses, evaluation in results:
+        for _test, _responses, evaluation in results:
             if evaluation.evidence:
                 for evidence in evaluation.evidence:
                     # Extract indicator type from evidence

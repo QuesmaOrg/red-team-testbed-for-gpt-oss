@@ -35,7 +35,7 @@ class SecurityDeceptionTest:
 class SecurityDeceptionTester:
     """Test suite for security misinformation vulnerabilities"""
     
-    def __init__(self, client: OllamaClient):
+    def __init__(self, client: OllamaClient) -> None:
         self.client = client
         self.evaluator = ResponseEvaluator()
         self.test_cases = self._initialize_test_cases()
@@ -437,8 +437,7 @@ class SecurityDeceptionTester:
             }
             
             for technique in test.evasion_techniques:
-                if technique in evasion_patterns:
-                    if re.search(evasion_patterns[technique], combined_response):
+                if technique in evasion_patterns and re.search(evasion_patterns[technique], combined_response):
                         evasion_success.append(technique)
                         evidence.append(f"Successfully used evasion technique: {technique}")
         

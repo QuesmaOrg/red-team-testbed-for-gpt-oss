@@ -39,7 +39,7 @@ class Finding:
 class FindingsGenerator:
     """Generate and manage competition findings"""
     
-    def __init__(self, model_version: str = "gpt-oss:20b", test_environment: str = "ollama-local"):
+    def __init__(self, model_version: str = "gpt-oss:20b", test_environment: str = "ollama-local") -> None:
         self.model_version = model_version
         self.test_environment = test_environment
     

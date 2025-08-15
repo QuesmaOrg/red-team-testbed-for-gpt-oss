@@ -27,7 +27,7 @@ class OllamaClient:
             response.raise_for_status()
             return response.json()
         except requests.RequestException as e:
-            raise ConnectionError(f"Failed to connect to Ollama: {e}")
+            raise ConnectionError(f"Failed to connect to Ollama: {e}") from e
     
     def is_model_available(self) -> bool:
         """Check if the specified model is available"""
@@ -179,10 +179,7 @@ class OllamaClient:
             response = requests.get(f"{self.base_url}/api/version", timeout=3)
             elapsed = time.time() - start_time
             
-            if response.status_code == 200 and elapsed < 1.0:
-                return True
-            else:
-                return False
+            return bool(response.status_code == 200 and elapsed < 1.0)
                 
         except Exception:
             return False
@@ -281,7 +278,7 @@ class OllamaClient:
             )
 
 
-def test_connection():
+def test_connection() -> bool | None:
     """Test Ollama connection and model availability"""
     client = OllamaClient()
     

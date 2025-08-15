@@ -48,7 +48,7 @@ def ensure_directories(config: dict[str, Any]) -> None:
     findings_dir.mkdir(exist_ok=True)
 
 
-def run_category_with_repeats(category_runner, client, category, test_id, repeat_count):
+def run_category_with_repeats(category_runner: callable, client: object, category: str | None, test_id: str | None, repeat_count: int) -> dict:
     """Run a category test runner with repetition support"""
     from utils.live_display import get_display
     display = get_display()

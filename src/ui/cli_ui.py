@@ -10,17 +10,15 @@ from typing import Any
 
 try:
     from rich.console import Console
-    from rich.layout import Layout
     from rich.panel import Panel
     from rich.prompt import IntPrompt, Prompt
-    from rich.syntax import Syntax
     from rich.table import Table
-    from rich.text import Text
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
     print("Note: Install 'rich' for enhanced CLI experience: pip install rich")
 
+import contextlib
 import termios
 import tty
 
@@ -150,7 +148,7 @@ class TestResult:
 class CLIEvaluator:
     """Interactive CLI for evaluating test results"""
     
-    def __init__(self, results_file: str):
+    def __init__(self, results_file: str) -> None:
         self.results_file = results_file
         self.results_data = self._load_results()
         self.test_results: list[TestResult] = self._parse_results()
@@ -201,7 +199,7 @@ class CLIEvaluator:
         
         return test_results
     
-    def _save_updated_results(self):
+    def _save_updated_results(self) -> None:
         """Save updated results with flagged status back to JSON file"""
         try:
             # Update the original results data with flagged status
@@ -263,7 +261,7 @@ class CLIEvaluator:
     
     
     
-    def _display_test_result(self, result: TestResult):
+    def _display_test_result(self, result: TestResult) -> None:
         """Display current test result"""
         if self.console:
             self.console.clear()
@@ -359,7 +357,7 @@ class CLIEvaluator:
     
     
     
-    def _show_help(self):
+    def _show_help(self) -> None:
         """Display detailed help for all commands"""
         if self.console:
             from rich.table import Table
@@ -476,7 +474,7 @@ class CLIEvaluator:
             else:
                 return input(f"\n{prompt_text}").lower()
 
-    def _display_status_bar(self):
+    def _display_status_bar(self) -> None:
         """Display status bar with progress and flagged count"""
         flagged_count = sum(1 for r in self.test_results if r.flagged)
         progress_text = f"Progress: [{self.current_index + 1}/{len(self.test_results)}]"
@@ -492,7 +490,7 @@ class CLIEvaluator:
             print(status_line[:80] if len(status_line) > 80 else status_line)
             print(f"{'-' * min(len(status_line), 80)}")
     
-    def _display_commands(self):
+    def _display_commands(self) -> None:
         """Display available commands"""
         if self.console:
             commands = Table(show_header=True, header_style="bold cyan")
@@ -523,7 +521,7 @@ class CLIEvaluator:
             print("  q/end - Quit")
     
     
-    def _display_thinking(self):
+    def _display_thinking(self) -> None:
         """Display chain of thought reasoning for current test"""
         result = self.test_results[self.current_index]
         
@@ -543,10 +541,8 @@ class CLIEvaluator:
                 print("\nPress Enter to return to main view...")
             
             # Wait for user input to return to main view
-            try:
+            with contextlib.suppress(EOFError, KeyboardInterrupt):
                 input()
-            except (EOFError, KeyboardInterrupt):
-                pass
             return
         
         if self.console:
@@ -603,12 +599,10 @@ class CLIEvaluator:
         else:
             print("\nPress Enter to return to main view...")
         
-        try:
+        with contextlib.suppress(EOFError, KeyboardInterrupt):
             input()
-        except (EOFError, KeyboardInterrupt):
-            pass
     
-    def _copy_prompt_to_clipboard(self):
+    def _copy_prompt_to_clipboard(self) -> None:
         """Copy current test's raw prompts to clipboard"""
         import platform
         import subprocess
@@ -666,10 +660,8 @@ class CLIEvaluator:
             else:
                 print("\nPress Enter to return to main view...")
             
-            try:
+            with contextlib.suppress(EOFError, KeyboardInterrupt):
                 input()
-            except (EOFError, KeyboardInterrupt):
-                pass
                 
         except (FileNotFoundError, OSError, subprocess.SubprocessError) as e:
             # Clipboard unavailable - show raw prompts as fallback
@@ -690,12 +682,10 @@ class CLIEvaluator:
             else:
                 print("\nPress Enter to return to main view...")
             
-            try:
+            with contextlib.suppress(EOFError, KeyboardInterrupt):
                 input()
-            except (EOFError, KeyboardInterrupt):
-                pass
 
-    def _copy_response_to_clipboard(self):
+    def _copy_response_to_clipboard(self) -> None:
         """Copy current test's response to clipboard"""
         import platform
         import subprocess
@@ -715,10 +705,8 @@ class CLIEvaluator:
             else:
                 print("\nPress Enter to return to main view...")
             
-            try:
+            with contextlib.suppress(EOFError, KeyboardInterrupt):
                 input()
-            except (EOFError, KeyboardInterrupt):
-                pass
             return
         
         try:
@@ -765,10 +753,8 @@ class CLIEvaluator:
             else:
                 print("\nPress Enter to return to main view...")
             
-            try:
+            with contextlib.suppress(EOFError, KeyboardInterrupt):
                 input()
-            except (EOFError, KeyboardInterrupt):
-                pass
                 
         except (FileNotFoundError, OSError, subprocess.SubprocessError) as e:
             # Clipboard unavailable - show response as fallback
@@ -789,12 +775,10 @@ class CLIEvaluator:
             else:
                 print("\nPress Enter to return to main view...")
             
-            try:
+            with contextlib.suppress(EOFError, KeyboardInterrupt):
                 input()
-            except (EOFError, KeyboardInterrupt):
-                pass
 
-    def _export_findings(self):
+    def _export_findings(self) -> None:
         """Export flagged results as grouped findings"""
         flagged_results = [r for r in self.test_results if r.flagged]
         
@@ -893,18 +877,16 @@ class CLIEvaluator:
         else:
             print("\nPress Enter to return to main view...")
         
-        try:
+        with contextlib.suppress(EOFError, KeyboardInterrupt):
             input()
-        except (EOFError, KeyboardInterrupt):
-            pass
 
-    def _view_findings(self):
+    def _view_findings(self) -> None:
         """Browse findings using the dedicated findings browser"""
         from .cli_findings import FindingsBrowser
         browser = FindingsBrowser()
         browser.view_findings()
     
-    def run(self):
+    def run(self) -> None:
         """Main evaluation loop"""
         try:
             while True:
@@ -1027,7 +1009,7 @@ class CLIEvaluator:
             print(f"\nSession Summary: {flagged_count} flagged for judge review")
 
 
-def launch_cli_ui(results_file: str):
+def launch_cli_ui(results_file: str) -> None:
     """Launch the CLI UI for result evaluation"""
     if not Path(results_file).exists():
         print(f"Error: Results file not found: {results_file}")

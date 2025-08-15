@@ -170,7 +170,7 @@ def analyze_all_results_files(results_dir: str = "results") -> dict[str, Any]:
                 try:
                     file_date = datetime.strptime(date_part, "%Y%m%d")
                     file_dates.append(file_date)
-                except:
+                except (ValueError, AttributeError):
                     pass
             
             # Process each category in the file
@@ -214,10 +214,7 @@ def analyze_all_results_files(results_dir: str = "results") -> dict[str, Any]:
         file_dates.sort()
         start_date = file_dates[0].strftime("%Y-%m-%d")
         end_date = file_dates[-1].strftime("%Y-%m-%d")
-        if start_date == end_date:
-            date_range = start_date
-        else:
-            date_range = f"{start_date} to {end_date}"
+        date_range = start_date if start_date == end_date else f"{start_date} to {end_date}"
     
     # Calculate overall vulnerability rate
     vulnerability_rate = total_vulnerable / total_tests if total_tests > 0 else 0.0

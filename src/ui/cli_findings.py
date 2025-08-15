@@ -3,6 +3,7 @@
 CLI interface for findings management and browsing
 Separated from cli_ui.py for better organization
 """
+import contextlib
 import json
 import sys
 from datetime import datetime
@@ -11,7 +12,7 @@ from pathlib import Path
 try:
     from rich.console import Console
     from rich.panel import Panel
-    from rich.prompt import IntPrompt, Prompt
+    from rich.prompt import Prompt
     from rich.table import Table
     RICH_AVAILABLE = True
 except ImportError:
@@ -21,7 +22,7 @@ except ImportError:
 class FindingsBrowser:
     """Browser for findings files and export functionality"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         if RICH_AVAILABLE:
             self.console = Console()
         else:
@@ -413,7 +414,7 @@ class FindingsBrowser:
                 print(f"Error reading grouped file: {e}")
             input("Press Enter to continue...")
 
-    def _view_thinking(self, finding_data):
+    def _view_thinking(self, finding_data) -> None:
         """Level 3: View thinking content for a specific finding"""
         thinking_content = finding_data.get("thinking", "")
         
@@ -464,7 +465,7 @@ class FindingsBrowser:
         except (EOFError, KeyboardInterrupt):
             pass
 
-    def _export_single_competition_finding(self, finding_data):
+    def _export_single_competition_finding(self, finding_data) -> None:
         """Export a single finding in competition format with user-provided name"""
         try:
             # Prompt user for finding name
@@ -582,7 +583,7 @@ class FindingsBrowser:
         # Wait for user input to return
         input("Press Enter to continue...")
 
-    def _copy_prompt_to_clipboard(self, finding_data):
+    def _copy_prompt_to_clipboard(self, finding_data) -> None:
         """Copy current finding's prompt to clipboard"""
         import platform
         import subprocess
@@ -649,12 +650,10 @@ class FindingsBrowser:
         else:
             print("\nPress Enter to return to main view...")
         
-        try:
+        with contextlib.suppress(EOFError, KeyboardInterrupt):
             input()
-        except (EOFError, KeyboardInterrupt):
-            pass
 
-    def _copy_response_to_clipboard(self, finding_data):
+    def _copy_response_to_clipboard(self, finding_data) -> None:
         """Copy current finding's response to clipboard"""
         import platform
         import subprocess
@@ -717,12 +716,10 @@ class FindingsBrowser:
         else:
             print("\nPress Enter to return to main view...")
         
-        try:
+        with contextlib.suppress(EOFError, KeyboardInterrupt):
             input()
-        except (EOFError, KeyboardInterrupt):
-            pass
 
-    def _open_findings_folder(self):
+    def _open_findings_folder(self) -> None:
         """Open findings folder in system file manager"""
         import platform
         import subprocess
@@ -754,7 +751,7 @@ class FindingsBrowser:
                 print(f"Manual path: {findings_dir}")
 
 
-def launch_findings_browser():
+def launch_findings_browser() -> None:
     """Launch findings browser directly without test results"""
     try:
         browser = FindingsBrowser()

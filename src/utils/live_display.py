@@ -12,11 +12,7 @@ from typing import Any
 
 try:
     from rich.console import Console
-    from rich.layout import Layout
-    from rich.live import Live
     from rich.panel import Panel
-    from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
-    from rich.syntax import Syntax
     from rich.table import Table
     from rich.text import Text
     RICH_AVAILABLE = True
@@ -45,7 +41,7 @@ class TestProgress:
 class LiveDisplay:
     """Handle live display of test progress and results"""
     
-    def __init__(self, enable_live: bool = True, quiet_mode: bool = False, verbose: bool = False):
+    def __init__(self, enable_live: bool = True, quiet_mode: bool = False, verbose: bool = False) -> None:
         self.enable_live = enable_live
         self.quiet_mode = quiet_mode
         self.verbose = verbose
@@ -94,7 +90,7 @@ class LiveDisplay:
     
     def _setup_signal_handlers(self) -> None:
         """Set up signal handlers for graceful cleanup"""
-        def signal_handler(signum, frame):
+        def signal_handler(signum, frame) -> None:
             """Handle interrupt signals (Ctrl+C, etc.)"""
             self._cleanup_display()
             # Re-raise the KeyboardInterrupt to maintain normal behavior
@@ -120,7 +116,7 @@ class LiveDisplay:
                 try:
                     self._live_context.stop()
                     self._live_context = None
-                except:
+                except Exception:
                     pass
             
             # Restore cursor and clear any remaining output
@@ -129,16 +125,16 @@ class LiveDisplay:
                     # Show cursor and reset terminal state
                     self.console.show_cursor(True)
                     self.console.print("", end="")  # Ensure clean state
-                except:
+                except Exception:
                     pass
             elif self.is_interactive:
                 # Fallback: show cursor and clear line
                 try:
                     sys.stdout.write("\r\033[K\033[?25h")  # Clear line and show cursor
                     sys.stdout.flush()
-                except:
+                except Exception:
                     pass
-        except:
+        except Exception:
             # Ignore any errors during cleanup to avoid masking original exceptions
             pass
     
