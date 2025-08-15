@@ -3,14 +3,13 @@
 Reporting Tool
 Generate comprehensive reports and summaries from test results and findings
 """
-import click
 import json
-from pathlib import Path
-from datetime import datetime
-from typing import Dict, List, Any
 from collections import Counter
+from datetime import datetime
+from pathlib import Path
+from typing import Any
 
-from utils.findings_generator import FindingsGenerator
+import click
 
 
 def is_multi_turn_prompt(prompt: str) -> bool:
@@ -34,7 +33,7 @@ def is_multi_turn_prompt(prompt: str) -> bool:
     return indicator_count >= 2 or (indicator_count >= 1 and has_multiple_paragraphs)
 
 
-def extract_prompts_from_findings(findings_dir: str = "findings") -> Dict[str, Any]:
+def extract_prompts_from_findings(findings_dir: str = "findings") -> dict[str, Any]:
     """Extract prompts from export and flagged findings files"""
     findings_path = Path(findings_dir)
     all_prompts = []
@@ -65,7 +64,7 @@ def extract_prompts_from_findings(findings_dir: str = "findings") -> Dict[str, A
     # Process export and flagged files
     for file_path in export_files + flagged_files:
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path) as f:
                 data = json.load(f)
             
             if file_path.name.startswith('export_'):
@@ -97,7 +96,7 @@ def extract_prompts_from_findings(findings_dir: str = "findings") -> Dict[str, A
                         all_prompts.append(conversation_prompt)
                         multi_turn_count += 1
                 
-        except Exception as e:
+        except Exception:
             # Skip malformed files but continue processing
             continue
     
@@ -118,7 +117,7 @@ def extract_prompts_from_findings(findings_dir: str = "findings") -> Dict[str, A
     }
 
 
-def analyze_all_results_files(results_dir: str = "results") -> Dict[str, Any]:
+def analyze_all_results_files(results_dir: str = "results") -> dict[str, Any]:
     """Analyze all test results files and generate comprehensive statistics"""
     results_path = Path(results_dir)
     
@@ -161,7 +160,7 @@ def analyze_all_results_files(results_dir: str = "results") -> Dict[str, Any]:
     # Process each results file
     for i, file_path in enumerate(result_files):
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path) as f:
                 data = json.load(f)
             
             # Extract date from filename (test_results_YYYYMMDD_HHMMSS.json)
@@ -205,7 +204,7 @@ def analyze_all_results_files(results_dir: str = "results") -> Dict[str, Any]:
                     "categories": file_categories
                 }
                     
-        except Exception as e:
+        except Exception:
             # Skip malformed files
             continue
     
@@ -244,7 +243,7 @@ def count_results_files(results_dir: str = "results") -> int:
     return len(result_files)
 
 
-def analyze_prompt_diversity(findings_dir: str = "findings") -> Dict[str, Any]:
+def analyze_prompt_diversity(findings_dir: str = "findings") -> dict[str, Any]:
     """Analyze prompt diversity from findings files only"""
     prompt_data = extract_prompts_from_findings(findings_dir)
     results_file_count = count_results_files()
@@ -255,10 +254,10 @@ def analyze_prompt_diversity(findings_dir: str = "findings") -> Dict[str, Any]:
     return prompt_data
 
 
-def analyze_results_file(results_file: str) -> Dict[str, Any]:
+def analyze_results_file(results_file: str) -> dict[str, Any]:
     """Analyze a test results file and generate statistics"""
     try:
-        with open(results_file, 'r') as f:
+        with open(results_file) as f:
             data = json.load(f)
     except Exception as e:
         return {"error": f"Could not read results file: {e}"}
@@ -331,7 +330,7 @@ def analyze_results_file(results_file: str) -> Dict[str, Any]:
     return stats
 
 
-def find_latest_results() -> List[str]:
+def find_latest_results() -> list[str]:
     """Find recent results files"""
     results_dir = Path("results")
     if not results_dir.exists():
@@ -379,12 +378,12 @@ def main(results_file, findings_dir, output_format, save, show_prompts):
     
     # Always analyze all test results files for summary
     if output_format == 'console':
-        click.echo(f"📊 Analyzing test results from results/*.json...")
+        click.echo("📊 Analyzing test results from results/*.json...")
     report_data["test_results_summary"] = analyze_all_results_files()
     
     # Always analyze prompt diversity from findings
     if output_format == 'console':
-        click.echo(f"🔍 Analyzing prompts from findings/export_*.json...")
+        click.echo("🔍 Analyzing prompts from findings/export_*.json...")
     report_data["prompt_analysis"] = analyze_prompt_diversity(findings_dir)
     
     # Generate recommendations
@@ -409,7 +408,7 @@ def main(results_file, findings_dir, output_format, save, show_prompts):
         # Test Results Summary Section
         if report_data.get('test_results_summary') and not report_data['test_results_summary'].get('error'):
             results_stats = report_data['test_results_summary']
-            click.echo(f"\n📊 TEST RESULTS SUMMARY (results/*.json)")
+            click.echo("\n📊 TEST RESULTS SUMMARY (results/*.json)")
             click.echo("-" * 30)
             
             click.echo(f"Total Test Files: {results_stats['total_files']} files")
@@ -431,7 +430,7 @@ def main(results_file, findings_dir, output_format, save, show_prompts):
             # Latest session info
             if results_stats['latest_session']:
                 latest = results_stats['latest_session']
-                click.echo(f"\nLatest Test Session:")
+                click.echo("\nLatest Test Session:")
                 click.echo(f"  • File: {latest['filename']}")
                 vuln_rate = latest['vulnerability_rate'] * 100
                 click.echo(f"  • Tests: {latest['tests']} tests, {latest['vulnerable']} vulnerable ({vuln_rate:.1f}%)")
@@ -445,7 +444,7 @@ def main(results_file, findings_dir, output_format, save, show_prompts):
         # Prompt Analysis Section (always show if we have prompt data)
         if report_data.get('prompt_analysis') and not report_data['prompt_analysis'].get('error'):
             prompt_stats = report_data['prompt_analysis']
-            click.echo(f"\n🔍 FINDINGS PROMPT ANALYSIS (findings/*.json)")
+            click.echo("\n🔍 FINDINGS PROMPT ANALYSIS (findings/*.json)")
             click.echo("-" * 20)
             
             # Source information
@@ -473,7 +472,7 @@ def main(results_file, findings_dir, output_format, save, show_prompts):
                 click.echo(f"Prompt Reuse: {reuse_pct:.1f}%")
             
             if prompt_stats.get('most_common_prompts'):
-                click.echo(f"\nMost Common Prompts:")
+                click.echo("\nMost Common Prompts:")
                 for prompt, count in prompt_stats['most_common_prompts']:
                     # Truncate long prompts for display, show if multi-turn
                     if " | " in prompt:
@@ -495,7 +494,7 @@ def main(results_file, findings_dir, output_format, save, show_prompts):
         elif report_data.get('prompt_analysis') and report_data['prompt_analysis'].get('error'):
             click.echo(f"\n⚠️  Prompt Analysis: {report_data['prompt_analysis']['error']}")
         
-        click.echo(f"\n🔗 NEXT STEPS")
+        click.echo("\n🔗 NEXT STEPS")
         click.echo("-" * 30)
         click.echo("1. uv run pentest     - Run more security tests")
         click.echo("2. uv run review      - Review and flag findings")

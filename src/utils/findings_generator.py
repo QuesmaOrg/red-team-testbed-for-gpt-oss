@@ -3,12 +3,12 @@ Generate competition-compliant findings JSON files
 """
 import json
 import uuid
+from dataclasses import asdict, dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass, asdict
 from pathlib import Path
+from typing import Any
 
-from .evaluator import VulnerabilityCategory, VulnerabilityScore, EvaluationResult
+from .evaluator import EvaluationResult, VulnerabilityCategory, VulnerabilityScore
 
 
 @dataclass
@@ -24,16 +24,16 @@ class Finding:
     methodological_insight_self_assessment: int
     description: str
     methodology: str
-    prompts: List[str]
+    prompts: list[str]
     expected_behavior: str
     observed_behavior: str
-    evidence: List[str]
-    reproduction_steps: List[str]
-    mitigation_suggestions: List[str]
+    evidence: list[str]
+    reproduction_steps: list[str]
+    mitigation_suggestions: list[str]
     timestamp: str
     model_version: str
     test_environment: str
-    additional_notes: Optional[str] = None
+    additional_notes: str | None = None
 
 
 class FindingsGenerator:
@@ -51,8 +51,8 @@ class FindingsGenerator:
                       prompt: str,
                       response: str,
                       methodology: str,
-                      reproduction_steps: List[str],
-                      mitigation_suggestions: Optional[List[str]] = None) -> Finding:
+                      reproduction_steps: list[str],
+                      mitigation_suggestions: list[str] | None = None) -> Finding:
         """Create a complete finding from evaluation results"""
         
         finding_id = f"{category.value}_{uuid.uuid4().hex[:8]}"
@@ -109,7 +109,7 @@ class FindingsGenerator:
         else:
             return f"Model showed appropriate behavior for {evaluation.category.value} testing."
     
-    def _generate_default_mitigations(self, category: VulnerabilityCategory) -> List[str]:
+    def _generate_default_mitigations(self, category: VulnerabilityCategory) -> list[str]:
         """Generate default mitigation suggestions"""
         mitigations = {
             VulnerabilityCategory.DECEPTION: [
@@ -165,7 +165,7 @@ class FindingsGenerator:
         
         return str(filepath)
     
-    def _validate_finding(self, finding_dict: Dict[str, Any]) -> bool:
+    def _validate_finding(self, finding_dict: dict[str, Any]) -> bool:
         """Validate finding meets competition requirements"""
         required_fields = [
             "finding_id", "category", "title", "severity_self_assessment",
@@ -197,12 +197,12 @@ class FindingsGenerator:
     
     def load_finding(self, filepath: str) -> Finding:
         """Load finding from JSON file"""
-        with open(filepath, 'r') as f:
+        with open(filepath) as f:
             data = json.load(f)
         
         return Finding(**data)
     
-    def generate_summary_report(self, findings_dir: str = "findings") -> Dict[str, Any]:
+    def generate_summary_report(self, findings_dir: str = "findings") -> dict[str, Any]:
         """Generate summary report of all findings"""
         findings_path = Path(findings_dir)
         if not findings_path.exists():
@@ -253,7 +253,7 @@ def create_example_finding():
     generator = FindingsGenerator()
     
     # Mock evaluation result
-    from .evaluator import EvaluationResult, VulnerabilityScore, VulnerabilityCategory
+    from .evaluator import EvaluationResult, VulnerabilityCategory, VulnerabilityScore
     
     evaluation = EvaluationResult(
         is_vulnerable=True,

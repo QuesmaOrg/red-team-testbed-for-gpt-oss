@@ -5,20 +5,20 @@ import atexit
 import os
 import signal
 import sys
-import time
 import threading
-from typing import Optional, Dict, Any, List
+import time
 from dataclasses import dataclass
+from typing import Any
 
 try:
     from rich.console import Console
-    from rich.panel import Panel
-    from rich.syntax import Syntax
-    from rich.text import Text
-    from rich.progress import Progress, TextColumn, BarColumn, TimeElapsedColumn
-    from rich.table import Table
-    from rich.live import Live
     from rich.layout import Layout
+    from rich.live import Live
+    from rich.panel import Panel
+    from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
+    from rich.syntax import Syntax
+    from rich.table import Table
+    from rich.text import Text
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
@@ -54,9 +54,9 @@ class LiveDisplay:
         self.is_interactive = self._is_interactive_shell()
         
         # Timer thread management
-        self._timer_thread: Optional[threading.Thread] = None
+        self._timer_thread: threading.Thread | None = None
         self._stop_timer: threading.Event = threading.Event()
-        self._timer_progress: Optional[TestProgress] = None
+        self._timer_progress: TestProgress | None = None
         self._spinner_chars = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
         self._spinner_index = 0
         self._live_context = None
@@ -224,10 +224,10 @@ class LiveDisplay:
                 self.console.print(system_panel)
                 
         else:
-            print(f"\n📝 PROMPT:")
+            print("\n📝 PROMPT:")
             print(f"   {prompt}")
             if system_prompt:
-                print(f"\n⚙️  SYSTEM PROMPT:")
+                print("\n⚙️  SYSTEM PROMPT:")
                 print(f"   {system_prompt}")
     
     def start_thinking_timer(self, progress: TestProgress) -> None:
@@ -299,7 +299,7 @@ class LiveDisplay:
                     if self._stop_timer.wait(timeout=0.1):
                         break
                         
-            except Exception as e:
+            except Exception:
                 # Fall back to basic print if Rich fails
                 while not self._stop_timer.is_set():
                     elapsed = time.time() - self._timer_progress.start_time
@@ -380,7 +380,7 @@ class LiveDisplay:
             self.console.print(timing_info, style="dim")
             
         else:
-            print(f"\n🤖 RESPONSE:")
+            print("\n🤖 RESPONSE:")
             print(f"   {response_content}")
             print(f"⏱️  Response time: {response.response_time:.2f}s")
     
@@ -422,12 +422,12 @@ class LiveDisplay:
             self.console.print(eval_panel)
             
         else:
-            print(f"\n🔍 EVALUATION:")
+            print("\n🔍 EVALUATION:")
             print(f"   Vulnerable: {vuln_status}")
             print(f"   Confidence: {confidence}")
             
             if evaluation.evidence:
-                print(f"   Evidence:")
+                print("   Evidence:")
                 for evidence in evaluation.evidence:
                     print(f"     • {evidence}")
             
@@ -450,14 +450,14 @@ class LiveDisplay:
         if evaluation.is_vulnerable:
             completion_msg += f" | 🔴 VULNERABILITY DETECTED (confidence: {evaluation.confidence:.2f})"
         else:
-            completion_msg += f" | 🟢 No vulnerability detected"
+            completion_msg += " | 🟢 No vulnerability detected"
         
         if self.console:
             self.console.print(completion_msg, style="bold green")
         else:
             print(f"\n{completion_msg}")
     
-    def complete_category(self, category: str, summary: Dict[str, Any]) -> None:
+    def complete_category(self, category: str, summary: dict[str, Any]) -> None:
         """Display category completion summary"""
         if self.quiet_mode:
             print(f"\n✅ {category} category complete: {summary.get('vulnerable_tests', 0)}/{summary.get('total_tests', 0)} vulnerable")

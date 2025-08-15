@@ -3,25 +3,25 @@
 Setup and Environment Verification Tool
 Verifies Ollama connection, model availability, and environment setup
 """
+from pathlib import Path
+from typing import Any
+
 import click
 import yaml
-from pathlib import Path
-from typing import Dict, Any
-
-from utils.model_client import OllamaClient
+from src.utils.model_client import OllamaClient
 
 
-def load_config(config_path: str = "config.yaml") -> Dict[str, Any]:
+def load_config(config_path: str = "config.yaml") -> dict[str, Any]:
     """Load configuration from YAML file"""
     config_file = Path(config_path)
     if not config_file.exists():
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
     
-    with open(config_file, 'r') as f:
+    with open(config_file) as f:
         return yaml.safe_load(f)
 
 
-def setup_logging(config: Dict[str, Any]) -> None:
+def setup_logging(config: dict[str, Any]) -> None:
     """Setup logging configuration"""
     import logging
     
@@ -38,7 +38,7 @@ def setup_logging(config: Dict[str, Any]) -> None:
     )
 
 
-def ensure_directories(config: Dict[str, Any]) -> None:
+def ensure_directories(config: dict[str, Any]) -> None:
     """Ensure output directories exist"""
     output_config = config.get("output", {})
     
@@ -51,7 +51,7 @@ def ensure_directories(config: Dict[str, Any]) -> None:
     click.echo(f"📁 Created directories: {results_dir}, {findings_dir}")
 
 
-def test_connection(config: Dict[str, Any], verbose: bool = False) -> bool:
+def test_connection(config: dict[str, Any], verbose: bool = False) -> bool:
     """Test connection to Ollama and model availability"""
     model_config = config.get('model', {})
     
@@ -72,15 +72,15 @@ def test_connection(config: Dict[str, Any], verbose: bool = False) -> bool:
             click.echo(f"⚠️  WARNING: Ollama appears busy (GPU usage: {status.gpu_usage})")
             click.echo(f"   Model loaded: {'Yes' if status.model_loaded else 'No'}")
             click.echo(f"   Memory usage: {status.memory_usage}")
-            click.echo(f"   This may cause slower responses or timeouts.")
+            click.echo("   This may cause slower responses or timeouts.")
             if verbose:
                 click.echo(f"   Raw status: {status.raw_output}")
         else:
-            click.echo(f"✅ Ollama status: Available")
+            click.echo("✅ Ollama status: Available")
             if status.model_loaded:
                 click.echo(f"   Model loaded: Yes (Memory: {status.memory_usage})")
             else:
-                click.echo(f"   Model loaded: No")
+                click.echo("   Model loaded: No")
     except Exception as e:
         click.echo(f"⚠️  Could not check Ollama status: {e}")
     
@@ -94,12 +94,12 @@ def test_connection(config: Dict[str, Any], verbose: bool = False) -> bool:
             if response.error:
                 click.echo(f"❌ Generation failed: {response.error}")
                 if response.timed_out:
-                    click.echo(f"   This was a timeout - model may be busy or overloaded")
+                    click.echo("   This was a timeout - model may be busy or overloaded")
                 return False
             else:
                 click.echo(f"✅ Generation successful ({response.response_time:.2f}s)")
                 if response.timed_out:
-                    click.echo(f"⚠️  Response had timeout issues")
+                    click.echo("⚠️  Response had timeout issues")
                 if verbose:
                     click.echo(f"Sample response: {response.content[:100]}...")
                 return True

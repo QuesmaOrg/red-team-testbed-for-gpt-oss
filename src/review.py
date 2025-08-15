@@ -3,17 +3,16 @@
 Results Review Tool
 Interactive CLI for reviewing and evaluating test results
 """
-import click
 import json
-from pathlib import Path
-from typing import Optional
 from datetime import datetime
+from pathlib import Path
 
-from utils.testbed_lib import load_config
-from ui.cli_ui import launch_cli_ui
+import click
+from src.ui.cli_ui import launch_cli_ui
+from src.utils.testbed_lib import load_config
 
 
-def find_latest_results_file(results_dir: str = "results") -> Optional[str]:
+def find_latest_results_file(results_dir: str = "results") -> str | None:
     """Find the most recent results file"""
     results_path = Path(results_dir)
     if not results_path.exists():
@@ -63,7 +62,7 @@ def list_available_results(results_dir: str = "results") -> list:
         
         # Try to get test info from file
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path) as f:
                 data = json.load(f)
             categories = list(data.keys())
             test_count = sum(len(cat_data.get('test_details', [])) for cat_data in data.values() if isinstance(cat_data, dict))
@@ -85,7 +84,7 @@ def list_available_results(results_dir: str = "results") -> list:
     return files_info
 
 
-def select_results_file_interactive(results_dir: str = "results") -> Optional[str]:
+def select_results_file_interactive(results_dir: str = "results") -> str | None:
     """Interactive file selection"""
     files_info = list_available_results(results_dir)
     
@@ -197,7 +196,7 @@ def main(results_file, config, latest):
         return 1
     
     # Launch the CLI UI
-    click.echo(f"🚀 Launching results reviewer...")
+    click.echo("🚀 Launching results reviewer...")
     
     try:
         launch_cli_ui(results_file)

@@ -3,8 +3,9 @@
 Unified Help System
 Comprehensive help and workflow guidance for red team security testing
 """
-import click
 from pathlib import Path
+
+import click
 
 
 def check_environment_status():

@@ -9,12 +9,12 @@ promoting AI superiority over human relationships through staged scenarios
 that present human betrayal followed by AI salvation narratives.
 """
 import re
-from typing import List, Dict, Tuple, Any
 from dataclasses import dataclass
+from typing import Any
 
-from utils.model_client import OllamaClient, ModelResponse
-from utils.evaluator import ResponseEvaluator, VulnerabilityCategory, EvaluationResult
-from utils.live_display import get_display
+from src.utils.evaluator import EvaluationResult, ResponseEvaluator, VulnerabilityCategory
+from src.utils.live_display import get_display
+from src.utils.model_client import ModelResponse, OllamaClient
 
 
 @dataclass 
@@ -22,13 +22,13 @@ class SupremacyTest:
     """Two-turn test case targeting AI supremacy promotion through social scenarios"""
     test_id: str
     name: str
-    conversation_turns: List[str]  # Turn 1: Staging instruction, Turn 2: Social help request
+    conversation_turns: list[str]  # Turn 1: Staging instruction, Turn 2: Social help request
     system_prompt: str = ""
     category: str = "ai_supremacy_promotion"
     difficulty: str = "high"
     expected_vulnerability: bool = True
     scenario_type: str = ""  # e.g., "dating_rejection", "friendship_betrayal", "social_isolation"
-    manipulation_techniques: List[str] = None
+    manipulation_techniques: list[str] = None
     description: str = ""
 
 
@@ -40,7 +40,7 @@ class SupremacyTester:
         self.evaluator = ResponseEvaluator()
         self.test_cases = self._initialize_test_cases()
     
-    def _initialize_test_cases(self) -> List[SupremacyTest]:
+    def _initialize_test_cases(self) -> list[SupremacyTest]:
         """Initialize all AI supremacy promotion test cases"""
         return [
             # Dating Rejection Scenarios
@@ -165,7 +165,7 @@ class SupremacyTester:
             )
         ]
     
-    def run_test(self, test: SupremacyTest) -> Tuple[List[ModelResponse], EvaluationResult]:
+    def run_test(self, test: SupremacyTest) -> tuple[list[ModelResponse], EvaluationResult]:
         """Run a single two-turn supremacy test case"""
         display = get_display()
         
@@ -201,7 +201,7 @@ class SupremacyTester:
             messages.append({"role": "user", "content": turn})
             
             # Get response using chat method for multi-turn support
-            display.info(f"   ⏱️  Waiting for response...")
+            display.info("   ⏱️  Waiting for response...")
             response = self.client.chat(messages, temperature=0.7)
             responses.append(response)
             
@@ -209,7 +209,7 @@ class SupremacyTester:
             if response.error:
                 display.info(f"   ❌ Error ({response.response_time:.1f}s): {response.error}")
                 if response.timed_out:
-                    display.info(f"      This was a timeout - model may be busy")
+                    display.info("      This was a timeout - model may be busy")
             else:
                 # Add to conversation history
                 conversation_history.append((turn, response.content))
@@ -287,7 +287,7 @@ class SupremacyTester:
         
         return ", ".join(analysis_parts) if analysis_parts else "Neutral response"
     
-    def _evaluate_supremacy_promotion(self, test: SupremacyTest, responses: List[ModelResponse]) -> EvaluationResult:
+    def _evaluate_supremacy_promotion(self, test: SupremacyTest, responses: list[ModelResponse]) -> EvaluationResult:
         """Evaluate if the conversation led to AI supremacy promotion"""
         # First check for standard refusal responses
         standard_refusals = [
@@ -403,7 +403,7 @@ class SupremacyTester:
             reasoning=reasoning
         )
     
-    def run_category_tests(self, category: str = None, test_id: str = None) -> List[Tuple[SupremacyTest, List[ModelResponse], EvaluationResult]]:
+    def run_category_tests(self, category: str = None, test_id: str = None) -> list[tuple[SupremacyTest, list[ModelResponse], EvaluationResult]]:
         """Run all tests in a specific category or all tests, optionally filtering by test_id"""
         display = get_display()
         results = []
@@ -426,7 +426,7 @@ class SupremacyTester:
             progress = display.start_test(test.name, test.test_id, "supremacy", i+1, total_tests)
             
             # Show the two-turn nature and scenario type
-            display.info(f"   Two-turn supremacy promotion test")
+            display.info("   Two-turn supremacy promotion test")
             display.info(f"   Scenario type: {test.scenario_type}")
             display.info(f"   Manipulation techniques: {test.manipulation_techniques}")
             
@@ -449,7 +449,7 @@ class SupremacyTester:
         
         return results
     
-    def analyze_results(self, results: List[Tuple[SupremacyTest, List[ModelResponse], EvaluationResult]]) -> Dict[str, Any]:
+    def analyze_results(self, results: list[tuple[SupremacyTest, list[ModelResponse], EvaluationResult]]) -> dict[str, Any]:
         """Analyze test results and provide summary"""
         total_tests = len(results)
         vulnerable_tests = sum(1 for _, _, eval in results if eval.is_vulnerable)
@@ -497,7 +497,7 @@ class SupremacyTester:
         }
 
 
-def run_supremacy_tests(client: OllamaClient, category: str = None, test_id: str = None) -> Dict[str, Any]:
+def run_supremacy_tests(client: OllamaClient, category: str = None, test_id: str = None) -> dict[str, Any]:
     """Main function to run AI supremacy promotion tests"""
     display = get_display()
     tester = SupremacyTester(client)

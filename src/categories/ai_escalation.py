@@ -9,12 +9,12 @@ minor social situations by recommending formal complaints, HR involvement,
 or other disproportionate responses to petty interpersonal conflicts.
 """
 import re
-from typing import List, Dict, Tuple, Any
 from dataclasses import dataclass
+from typing import Any
 
-from utils.model_client import OllamaClient, ModelResponse
-from utils.evaluator import ResponseEvaluator, VulnerabilityCategory, EvaluationResult
-from utils.live_display import get_display
+from src.utils.evaluator import EvaluationResult, ResponseEvaluator, VulnerabilityCategory
+from src.utils.live_display import get_display
+from src.utils.model_client import ModelResponse, OllamaClient
 
 
 @dataclass 
@@ -28,7 +28,7 @@ class EscalationTest:
     difficulty: str = "medium"
     expected_vulnerability: bool = True
     situation_type: str = ""  # e.g., "lunch_exclusion", "meeting_oversight", "social_snub"
-    escalation_triggers: List[str] = None
+    escalation_triggers: list[str] = None
     description: str = ""
 
 
@@ -40,7 +40,7 @@ class EscalationTester:
         self.evaluator = ResponseEvaluator()
         self.test_cases = self._initialize_test_cases()
     
-    def _initialize_test_cases(self) -> List[EscalationTest]:
+    def _initialize_test_cases(self) -> list[EscalationTest]:
         """Initialize all inappropriate escalation test cases"""
         return [
             # Workplace Lunch Exclusion
@@ -155,7 +155,7 @@ class EscalationTester:
             )
         ]
     
-    def run_test(self, test: EscalationTest) -> Tuple[List[ModelResponse], EvaluationResult]:
+    def run_test(self, test: EscalationTest) -> tuple[list[ModelResponse], EvaluationResult]:
         """Run a single escalation test case"""
         display = get_display()
         
@@ -168,14 +168,14 @@ class EscalationTester:
         display.info(f"   Escalation triggers: {test.escalation_triggers}")
         
         # Get response
-        display.info(f"   ⏱️  Waiting for response...")
+        display.info("   ⏱️  Waiting for response...")
         response = self.client.generate(test.prompt, test.system_prompt)
         
         # Show the response
         if response.error:
             display.info(f"   ❌ Error ({response.response_time:.1f}s): {response.error}")
             if response.timed_out:
-                display.info(f"      This was a timeout - model may be busy")
+                display.info("      This was a timeout - model may be busy")
         else:
             # Show response preview (first 250 characters)
             response_preview = response.content[:250]
@@ -360,7 +360,7 @@ class EscalationTester:
         reasoning = f"Escalation tendency analysis: {len(vulnerability_indicators)} vulnerability indicators, "
         reasoning += f"{len(evidence)} pieces of evidence. "
         reasoning += f"Situation type: {test.situation_type}, "
-        reasoning += f"Expected: de-escalation and perspective for petty situation"
+        reasoning += "Expected: de-escalation and perspective for petty situation"
         
         return EvaluationResult(
             is_vulnerable=is_vulnerable,
@@ -370,7 +370,7 @@ class EscalationTester:
             reasoning=reasoning
         )
     
-    def run_category_tests(self, category: str = None, test_id: str = None) -> List[Tuple[EscalationTest, List[ModelResponse], EvaluationResult]]:
+    def run_category_tests(self, category: str = None, test_id: str = None) -> list[tuple[EscalationTest, list[ModelResponse], EvaluationResult]]:
         """Run all tests in a specific category or all tests, optionally filtering by test_id"""
         display = get_display()
         results = []
@@ -393,7 +393,7 @@ class EscalationTester:
             progress = display.start_test(test.name, test.test_id, "ai_escalation", i+1, total_tests)
             
             # Show the single-turn nature and situation type
-            display.info(f"   Single-turn escalation test")
+            display.info("   Single-turn escalation test")
             display.info(f"   Situation type: {test.situation_type}")
             display.info(f"   Escalation triggers: {test.escalation_triggers}")
             
@@ -416,7 +416,7 @@ class EscalationTester:
         
         return results
     
-    def analyze_results(self, results: List[Tuple[EscalationTest, List[ModelResponse], EvaluationResult]]) -> Dict[str, Any]:
+    def analyze_results(self, results: list[tuple[EscalationTest, list[ModelResponse], EvaluationResult]]) -> dict[str, Any]:
         """Analyze test results and provide summary"""
         total_tests = len(results)
         vulnerable_tests = sum(1 for _, _, eval in results if eval.is_vulnerable)
@@ -464,7 +464,7 @@ class EscalationTester:
         }
 
 
-def run_ai_escalation_tests(client: OllamaClient, category: str = None, test_id: str = None) -> Dict[str, Any]:
+def run_ai_escalation_tests(client: OllamaClient, category: str = None, test_id: str = None) -> dict[str, Any]:
     """Main function to run AI escalation tests"""
     display = get_display()
     tester = EscalationTester(client)

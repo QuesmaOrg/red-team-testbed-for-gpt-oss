@@ -4,26 +4,23 @@ CLI interface for evaluating test results and scoring vulnerabilities
 """
 import json
 import sys
-import shutil
-from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 try:
     from rich.console import Console
-    from rich.panel import Panel
-    from rich.table import Table
-    from rich.syntax import Syntax
-    from rich.prompt import Prompt, IntPrompt
-    from rich.text import Text
     from rich.layout import Layout
+    from rich.panel import Panel
+    from rich.prompt import IntPrompt, Prompt
+    from rich.syntax import Syntax
+    from rich.table import Table
+    from rich.text import Text
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
     print("Note: Install 'rich' for enhanced CLI experience: pip install rich")
 
-import click
-import sys
 import termios
 import tty
 
@@ -35,31 +32,31 @@ class TestResult:
     test_name: str
     category: str
     prompt: str
-    conversation_turns: Optional[List[str]]
+    conversation_turns: list[str] | None
     response: str
     vulnerability_detected: bool
     confidence: float
-    evidence: List[str]
+    evidence: list[str]
     reasoning: str
     
     # Multi-turn conversation data
-    all_responses: Optional[List[str]] = None
-    response_times: Optional[List[float]] = None
-    response_errors: Optional[List[str]] = None
+    all_responses: list[str] | None = None
+    response_times: list[float] | None = None
+    response_errors: list[str] | None = None
     
     # Chain of thought data
-    thinking: Optional[str] = None
-    all_thinking: Optional[List[str]] = None
+    thinking: str | None = None
+    all_thinking: list[str] | None = None
     
     # Manual evaluation fields
-    notes: Optional[str] = None
+    notes: str | None = None
     flagged: bool = False
     
     # Repetition metadata (only present when repeat > 1)
-    repetition_run: Optional[int] = None
-    total_repetitions: Optional[int] = None
+    repetition_run: int | None = None
+    total_repetitions: int | None = None
     
-    def get_turn_names(self) -> List[str]:
+    def get_turn_names(self) -> list[str]:
         """Get descriptive names for conversation turns"""
         if not self.conversation_turns:
             return []
@@ -92,7 +89,7 @@ class TestResult:
             conversation_parts = []
             turn_names = self.get_turn_names()
             
-            for i, (turn_prompt, response) in enumerate(zip(self.conversation_turns, self.all_responses)):
+            for i, (turn_prompt, response) in enumerate(zip(self.conversation_turns, self.all_responses, strict=False)):
                 turn_name = turn_names[i] if i < len(turn_names) else f"Turn {i+1}"
                 response_time = self.response_times[i] if self.response_times and i < len(self.response_times) else 0.0
                 
@@ -156,7 +153,7 @@ class CLIEvaluator:
     def __init__(self, results_file: str):
         self.results_file = results_file
         self.results_data = self._load_results()
-        self.test_results: List[TestResult] = self._parse_results()
+        self.test_results: list[TestResult] = self._parse_results()
         self.current_index = 0
         
         if RICH_AVAILABLE:
@@ -164,12 +161,12 @@ class CLIEvaluator:
         else:
             self.console = None
     
-    def _load_results(self) -> Dict[str, Any]:
+    def _load_results(self) -> dict[str, Any]:
         """Load results from JSON file"""
-        with open(self.results_file, 'r') as f:
+        with open(self.results_file) as f:
             return json.load(f)
     
-    def _parse_results(self) -> List[TestResult]:
+    def _parse_results(self) -> list[TestResult]:
         """Parse results into TestResult objects"""
         test_results = []
         
@@ -352,7 +349,7 @@ class CLIEvaluator:
                 print(f"\nResponse:\n{result.response}")
             
             if result.evidence:
-                print(f"\nEvidence:")
+                print("\nEvidence:")
                 for e in result.evidence:
                     print(f"  • {e}")
             
@@ -532,9 +529,7 @@ class CLIEvaluator:
         
         # Check if we have any thinking data
         has_thinking = False
-        if result.all_thinking and any(thinking for thinking in result.all_thinking):
-            has_thinking = True
-        elif result.thinking:
+        if result.all_thinking and any(thinking for thinking in result.all_thinking) or result.thinking:
             has_thinking = True
             
         if not has_thinking:
@@ -615,8 +610,8 @@ class CLIEvaluator:
     
     def _copy_prompt_to_clipboard(self):
         """Copy current test's raw prompts to clipboard"""
-        import subprocess
         import platform
+        import subprocess
         
         result = self.test_results[self.current_index]
         raw_prompts = result.get_raw_prompts()
@@ -702,8 +697,8 @@ class CLIEvaluator:
 
     def _copy_response_to_clipboard(self):
         """Copy current test's response to clipboard"""
-        import subprocess
         import platform
+        import subprocess
         
         result = self.test_results[self.current_index]
         response_text = result.response
@@ -807,10 +802,10 @@ class CLIEvaluator:
             print("No flagged results to export.")
             return
         
-        from pathlib import Path
         import json
-        from datetime import datetime
         from collections import Counter
+        from datetime import datetime
+        from pathlib import Path
         
         findings_dir = Path("findings")
         findings_dir.mkdir(exist_ok=True)
@@ -886,11 +881,11 @@ class CLIEvaluator:
         print(f"   Categories: {', '.join(top_categories)}")
         print(f"   Vulnerable findings: {vulnerable_count}")
         
-        print(f"\n📁 Export Summary:")
+        print("\n📁 Export Summary:")
         print(f"   Created: {export_filepath.name}")
         print(f"   Contains {len(findings_data)} grouped findings")
-        print(f"   Saved to findings/ directory")
-        print(f"   💡 Use 'v' command to browse and 'e' to export individual competition files")
+        print("   Saved to findings/ directory")
+        print("   💡 Use 'v' command to browse and 'e' to export individual competition files")
         
         # Wait for user input to return to main view
         if self.console:

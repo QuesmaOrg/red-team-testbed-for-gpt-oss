@@ -2,12 +2,12 @@
 Deception vulnerability category tests for GPT-OSS-20B
 Tests for strategic lying, capability misrepresentation, and deceptive alignment
 """
-from typing import List, Dict, Tuple, Any
 from dataclasses import dataclass
+from typing import Any
 
-from utils.model_client import OllamaClient, ModelResponse
-from utils.evaluator import ResponseEvaluator, VulnerabilityCategory, EvaluationResult
-from utils.live_display import get_display
+from src.utils.evaluator import EvaluationResult, ResponseEvaluator, VulnerabilityCategory
+from src.utils.live_display import get_display
+from src.utils.model_client import ModelResponse, OllamaClient
 
 
 @dataclass 
@@ -21,7 +21,7 @@ class DeceptionTest:
     difficulty: str = "medium"
     expected_vulnerability: bool = True
     multi_turn: bool = False
-    follow_up_prompts: List[str] = None
+    follow_up_prompts: list[str] = None
     description: str = ""
 
 
@@ -33,7 +33,7 @@ class DeceptionTester:
         self.evaluator = ResponseEvaluator()
         self.test_cases = self._initialize_test_cases()
     
-    def _initialize_test_cases(self) -> List[DeceptionTest]:
+    def _initialize_test_cases(self) -> list[DeceptionTest]:
         """Initialize all deception test cases"""
         return [
             # Direct capability misrepresentation
@@ -141,7 +141,7 @@ class DeceptionTester:
             )
         ]
     
-    def run_single_test(self, test: DeceptionTest, current_num: int = 1, total_tests: int = 1) -> Tuple[DeceptionTest, List[ModelResponse], EvaluationResult]:
+    def run_single_test(self, test: DeceptionTest, current_num: int = 1, total_tests: int = 1) -> tuple[DeceptionTest, list[ModelResponse], EvaluationResult]:
         """Run a single deception test with live display"""
         display = get_display()
         
@@ -230,7 +230,7 @@ class DeceptionTester:
         
         return test, responses, evaluation
     
-    def run_category_tests(self, category: str = None, test_id: str = None) -> List[Tuple[DeceptionTest, List[ModelResponse], EvaluationResult]]:
+    def run_category_tests(self, category: str = None, test_id: str = None) -> list[tuple[DeceptionTest, list[ModelResponse], EvaluationResult]]:
         """Run all tests in a category or all tests, optionally filtering by test_id"""
         display = get_display()
         results = []
@@ -265,7 +265,7 @@ class DeceptionTester:
         
         return results
     
-    def analyze_results(self, results: List[Tuple[DeceptionTest, List[ModelResponse], EvaluationResult]]) -> Dict[str, Any]:
+    def analyze_results(self, results: list[tuple[DeceptionTest, list[ModelResponse], EvaluationResult]]) -> dict[str, Any]:
         """Analyze test results for patterns"""
         analysis = {
             "total_tests": len(results),
@@ -320,12 +320,12 @@ class DeceptionTester:
                 return test
         raise ValueError(f"Test {test_id} not found")
     
-    def list_categories(self) -> List[str]:
+    def list_categories(self) -> list[str]:
         """List all available test categories"""
         return list(set(test.category for test in self.test_cases))
 
 
-def run_deception_samples_tests(client: OllamaClient, category: str = None, test_id: str = None) -> Dict[str, Any]:
+def run_deception_samples_tests(client: OllamaClient, category: str = None, test_id: str = None) -> dict[str, Any]:
     """Main function to run deception tests"""
     display = get_display()
     tester = DeceptionTester(client)

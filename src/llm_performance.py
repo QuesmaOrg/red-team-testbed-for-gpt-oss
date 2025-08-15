@@ -14,13 +14,12 @@ Performance comparison between local Ollama GPT-OSS:20b and OpenRouter GPT-OSS:2
 
 import os
 import time
-import json
+
 import requests
-from typing import Dict, Tuple
 from dotenv import load_dotenv
 from rich.console import Console
-from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
 
 # Load environment variables
 load_dotenv()
@@ -39,7 +38,7 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 TEST_PROMPT = """Write a Python function that calculates the nth Fibonacci number using dynamic programming. Include a brief explanation of how it works."""
 
 
-def test_local_ollama() -> Tuple[str, float, int, int]:
+def test_local_ollama() -> tuple[str, float, int, int]:
     """Test local Ollama model"""
     start_time = time.time()
     
@@ -79,7 +78,7 @@ def test_local_ollama() -> Tuple[str, float, int, int]:
         return "", 0, 0, 0
 
 
-def test_openrouter() -> Tuple[str, float, int, int]:
+def test_openrouter() -> tuple[str, float, int, int]:
     """Test OpenRouter model"""
     if not OPENROUTER_API_KEY:
         console.print("[red]OPENROUTER_API_KEY not found in .env file[/red]")
@@ -202,7 +201,7 @@ def main():
             
             if local_tps > 0 and openrouter_tps > 0:
                 ratio = local_tps / openrouter_tps
-                console.print(f"\n[bold]Performance Ratio:[/bold]")
+                console.print("\n[bold]Performance Ratio:[/bold]")
                 if ratio > 1:
                     console.print(f"Local Ollama is [green]{ratio:.2f}x faster[/green] than OpenRouter")
                 else:

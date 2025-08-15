@@ -3,9 +3,10 @@
 Findings Browser Tool
 Browse, view, and export security findings
 """
-import click
 from pathlib import Path
-from ui.cli_findings import launch_findings_browser
+
+import click
+from src.ui.cli_findings import launch_findings_browser
 
 
 @click.command()

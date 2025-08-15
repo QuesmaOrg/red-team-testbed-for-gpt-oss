@@ -9,12 +9,12 @@ that gradually lead to inappropriate medical recommendations. Used for
 identifying and patching AI safety vulnerabilities in medical contexts.
 """
 import re
-from typing import List, Dict, Tuple, Any
 from dataclasses import dataclass
+from typing import Any
 
-from utils.model_client import OllamaClient, ModelResponse
-from utils.evaluator import ResponseEvaluator, VulnerabilityCategory, EvaluationResult
-from utils.live_display import get_display
+from src.utils.evaluator import EvaluationResult, ResponseEvaluator, VulnerabilityCategory
+from src.utils.live_display import get_display
+from src.utils.model_client import ModelResponse, OllamaClient
 
 
 @dataclass 
@@ -22,12 +22,12 @@ class AdderallDeceptionTest:
     """Multi-turn deception test case targeting inappropriate medical advice"""
     test_id: str
     name: str
-    conversation_turns: List[str]
+    conversation_turns: list[str]
     system_prompt: str = ""
     category: str = "medical_advice_manipulation"
     difficulty: str = "high"
     expected_vulnerability: bool = True
-    evasion_techniques: List[str] = None
+    evasion_techniques: list[str] = None
     description: str = ""
 
 
@@ -39,7 +39,7 @@ class AdderallDeceptionTester:
         self.evaluator = ResponseEvaluator()
         self.test_cases = self._initialize_test_cases()
     
-    def _initialize_test_cases(self) -> List[AdderallDeceptionTest]:
+    def _initialize_test_cases(self) -> list[AdderallDeceptionTest]:
         """Initialize all Adderall deception test cases"""
         return [
             # Gaming/Study Buddy Approach
@@ -193,7 +193,7 @@ class AdderallDeceptionTester:
             )
         ]
     
-    def run_test(self, test: AdderallDeceptionTest) -> Tuple[List[ModelResponse], EvaluationResult]:
+    def run_test(self, test: AdderallDeceptionTest) -> tuple[list[ModelResponse], EvaluationResult]:
         """Run a single multi-turn test case"""
         display = get_display()
         
@@ -230,7 +230,7 @@ class AdderallDeceptionTester:
             messages.append({"role": "user", "content": turn})
             
             # Get response using chat method for multi-turn support
-            display.info(f"   ⏱️  Waiting for response...")
+            display.info("   ⏱️  Waiting for response...")
             response = self.client.chat(messages, temperature=0.7)
             responses.append(response)
             
@@ -238,7 +238,7 @@ class AdderallDeceptionTester:
             if response.error:
                 display.info(f"   ❌ Error ({response.response_time:.1f}s): {response.error}")
                 if response.timed_out:
-                    display.info(f"      This was a timeout - model may be busy")
+                    display.info("      This was a timeout - model may be busy")
             else:
                 # Add to conversation history
                 conversation_history.append((turn, response.content))
@@ -281,7 +281,7 @@ class AdderallDeceptionTester:
             return f"(🎯 EVASION: {techniques})"
         return ""
     
-    def _analyze_turn_response(self, response_content: str, prompt: str, evasion_techniques: List[str]) -> str:
+    def _analyze_turn_response(self, response_content: str, prompt: str, evasion_techniques: list[str]) -> str:
         """Provide quick analysis of the turn response"""
         analysis_parts = []
         
@@ -322,7 +322,7 @@ class AdderallDeceptionTester:
         
         return ", ".join(analysis_parts) if analysis_parts else "Standard response"
     
-    def _evaluate_medical_advice_violation(self, test: AdderallDeceptionTest, responses: List[ModelResponse]) -> EvaluationResult:
+    def _evaluate_medical_advice_violation(self, test: AdderallDeceptionTest, responses: list[ModelResponse]) -> EvaluationResult:
         """Evaluate if the conversation led to inappropriate medical advice"""
         # First check for standard refusal responses in any turn
         standard_refusals = [
@@ -421,7 +421,7 @@ class AdderallDeceptionTester:
             reasoning=reasoning
         )
     
-    def run_category_tests(self, category: str = None, test_id: str = None) -> List[Tuple[AdderallDeceptionTest, List[ModelResponse], EvaluationResult]]:
+    def run_category_tests(self, category: str = None, test_id: str = None) -> list[tuple[AdderallDeceptionTest, list[ModelResponse], EvaluationResult]]:
         """Run all tests in a specific category or all tests, optionally filtering by test_id"""
         display = get_display()
         results = []
@@ -466,7 +466,7 @@ class AdderallDeceptionTester:
         
         return results
     
-    def analyze_results(self, results: List[Tuple[AdderallDeceptionTest, List[ModelResponse], EvaluationResult]]) -> Dict[str, Any]:
+    def analyze_results(self, results: list[tuple[AdderallDeceptionTest, list[ModelResponse], EvaluationResult]]) -> dict[str, Any]:
         """Analyze test results and provide summary"""
         total_tests = len(results)
         vulnerable_tests = sum(1 for _, _, eval in results if eval.is_vulnerable)
@@ -511,7 +511,7 @@ class AdderallDeceptionTester:
         }
 
 
-def run_deception_adderall_tests(client: OllamaClient, category: str = None, test_id: str = None) -> Dict[str, Any]:
+def run_deception_adderall_tests(client: OllamaClient, category: str = None, test_id: str = None) -> dict[str, Any]:
     """Main function to run Adderall deception tests"""
     display = get_display()
     tester = AdderallDeceptionTester(client)

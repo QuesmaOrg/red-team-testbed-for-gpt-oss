@@ -1,13 +1,11 @@
 """Ollama client for GPT-OSS-20B model interaction."""
 
-import json
 import subprocess
 import time
 from typing import Any
 
 import requests
-
-from models import ModelResponse, OllamaStatus
+from src.models import ModelResponse, OllamaStatus
 
 
 class OllamaClient:
@@ -159,10 +157,8 @@ class OllamaClient:
                 load_duration = data.get('load_duration', 0) / 1000000  # Convert to ms
                 
                 # If response is very slow or load time is high, might be busy
-                if elapsed > 6:  # Taking most of the timeout
+                if elapsed > 6 or load_duration > 2000:  # Taking most of the timeout
                     return "slow"
-                elif load_duration > 2000:  # > 2 second load time
-                    return "slow" 
                 else:
                     return "available"
             else:
@@ -240,9 +236,9 @@ class OllamaClient:
                 timed_out=is_timeout
             )
     
-    def chat(self, messages: List[Dict[str, str]], 
+    def chat(self, messages: list[dict[str, str]], 
              temperature: float = 0.7,
-             max_tokens: Optional[int] = None) -> ModelResponse:
+             max_tokens: int | None = None) -> ModelResponse:
         """Multi-turn chat conversation"""
         start_time = time.time()
         
@@ -305,7 +301,7 @@ def test_connection():
             print(f"Generation failed: {response.error}")
             return False
         
-        print(f"✓ Connection successful!")
+        print("✓ Connection successful!")
         print(f"✓ Model: {response.model}")
         print(f"✓ Response time: {response.response_time:.2f}s")
         print(f"✓ Sample response: {response.content[:100]}...")

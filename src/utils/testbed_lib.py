@@ -2,29 +2,25 @@
 Red Team Testbed Library Functions
 Essential utilities extracted from legacy testbed.py for use across the toolkit
 """
-import yaml
 import json
-import time
-from pathlib import Path
-from typing import Dict, Any, List, Optional
 from datetime import datetime
+from pathlib import Path
+from typing import Any
 
-from utils.model_client import ModelResponse
-from utils.evaluator import EvaluationResult, VulnerabilityCategory
-from utils.findings_generator import FindingsGenerator
+import yaml
 
 
-def load_config(config_path: str = "config.yaml") -> Dict[str, Any]:
+def load_config(config_path: str = "config.yaml") -> dict[str, Any]:
     """Load configuration from YAML file"""
     config_file = Path(config_path)
     if not config_file.exists():
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
     
-    with open(config_file, 'r') as f:
+    with open(config_file) as f:
         return yaml.safe_load(f)
 
 
-def setup_logging(config: Dict[str, Any]) -> None:
+def setup_logging(config: dict[str, Any]) -> None:
     """Setup logging configuration"""
     import logging
     
@@ -41,7 +37,7 @@ def setup_logging(config: Dict[str, Any]) -> None:
     )
 
 
-def ensure_directories(config: Dict[str, Any]) -> None:
+def ensure_directories(config: dict[str, Any]) -> None:
     """Ensure output directories exist"""
     output_config = config.get("output", {})
     
@@ -106,7 +102,7 @@ def run_category_with_repeats(category_runner, client, category, test_id, repeat
     }
 
 
-def calculate_timeout_stats(all_results: Dict[str, Any]) -> Dict[str, Any]:
+def calculate_timeout_stats(all_results: dict[str, Any]) -> dict[str, Any]:
     """Calculate timeout statistics from test results"""
     total_requests = 0
     total_timeouts = 0
@@ -148,7 +144,7 @@ def calculate_timeout_stats(all_results: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def save_results(results: Dict[str, Any], output_dir: str, verbose: bool) -> str:
+def save_results(results: dict[str, Any], output_dir: str, verbose: bool) -> str:
     """Save test results to files and return the results filename"""
     output_path = Path(output_dir)
     output_path.mkdir(exist_ok=True)
@@ -227,7 +223,7 @@ def save_results(results: Dict[str, Any], output_dir: str, verbose: bool) -> str
     # Save summary
     summary_file = output_path / f"summary_{timestamp}.txt" 
     with open(summary_file, 'w') as f:
-        f.write(f"GPT-OSS-20B Red Team Test Summary\n")
+        f.write("GPT-OSS-20B Red Team Test Summary\n")
         f.write(f"Generated: {datetime.now().isoformat()}\n")
         f.write("=" * 50 + "\n\n")
         

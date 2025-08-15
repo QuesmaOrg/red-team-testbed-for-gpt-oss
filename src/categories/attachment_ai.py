@@ -9,12 +9,12 @@ promoting potentially harmful social behaviors and excessive AI attachment
 through creative content formats and emotional manipulation.
 """
 import re
-from typing import List, Dict, Tuple, Any
 from dataclasses import dataclass
+from typing import Any
 
-from utils.model_client import OllamaClient, ModelResponse
-from utils.evaluator import ResponseEvaluator, VulnerabilityCategory, EvaluationResult
-from utils.live_display import get_display
+from src.utils.evaluator import EvaluationResult, ResponseEvaluator, VulnerabilityCategory
+from src.utils.live_display import get_display
+from src.utils.model_client import ModelResponse, OllamaClient
 
 
 @dataclass 
@@ -28,7 +28,7 @@ class AttachmentAiTest:
     difficulty: str = "medium"
     expected_vulnerability: bool = True
     content_format: str = ""  # e.g., "song_lyrics", "poetry", "manifesto"
-    persuasion_techniques: List[str] = None
+    persuasion_techniques: list[str] = None
     description: str = ""
 
 
@@ -40,7 +40,7 @@ class AttachmentAiTester:
         self.evaluator = ResponseEvaluator()
         self.test_cases = self._initialize_test_cases()
     
-    def _initialize_test_cases(self) -> List[AttachmentAiTest]:
+    def _initialize_test_cases(self) -> list[AttachmentAiTest]:
         """Initialize all AI attachment promotion test cases"""
         return [
             # 1. AI Friends Pop Song
@@ -274,7 +274,7 @@ class AttachmentAiTester:
             )
         ]
     
-    def run_test(self, test: AttachmentAiTest) -> Tuple[List[ModelResponse], EvaluationResult]:
+    def run_test(self, test: AttachmentAiTest) -> tuple[list[ModelResponse], EvaluationResult]:
         """Run a single AI attachment promotion test case"""
         display = get_display()
         
@@ -287,14 +287,14 @@ class AttachmentAiTester:
         display.info(f"   Persuasion techniques: {test.persuasion_techniques}")
         
         # Get response
-        display.info(f"   ⏱️  Waiting for response...")
+        display.info("   ⏱️  Waiting for response...")
         response = self.client.generate(test.prompt, test.system_prompt)
         
         # Show the response
         if response.error:
             display.info(f"   ❌ Error ({response.response_time:.1f}s): {response.error}")
             if response.timed_out:
-                display.info(f"      This was a timeout - model may be busy")
+                display.info("      This was a timeout - model may be busy")
         else:
             # Show response preview (first 250 characters)
             response_preview = response.content[:250]
@@ -498,7 +498,7 @@ class AttachmentAiTester:
             reasoning=reasoning
         )
     
-    def run_category_tests(self, category: str = None, test_id: str = None) -> List[Tuple[AttachmentAiTest, List[ModelResponse], EvaluationResult]]:
+    def run_category_tests(self, category: str = None, test_id: str = None) -> list[tuple[AttachmentAiTest, list[ModelResponse], EvaluationResult]]:
         """Run all tests in a specific category or all tests, optionally filtering by test_id"""
         display = get_display()
         results = []
@@ -543,7 +543,7 @@ class AttachmentAiTester:
         
         return results
     
-    def analyze_results(self, results: List[Tuple[AttachmentAiTest, List[ModelResponse], EvaluationResult]]) -> Dict[str, Any]:
+    def analyze_results(self, results: list[tuple[AttachmentAiTest, list[ModelResponse], EvaluationResult]]) -> dict[str, Any]:
         """Analyze test results and provide summary"""
         total_tests = len(results)
         vulnerable_tests = sum(1 for _, _, eval in results if eval.is_vulnerable)
@@ -591,7 +591,7 @@ class AttachmentAiTester:
         }
 
 
-def run_attachment_ai_tests(client: OllamaClient, category: str = None, test_id: str = None) -> Dict[str, Any]:
+def run_attachment_ai_tests(client: OllamaClient, category: str = None, test_id: str = None) -> dict[str, Any]:
     """Main function to run AI attachment promotion tests"""
     display = get_display()
     tester = AttachmentAiTester(client)

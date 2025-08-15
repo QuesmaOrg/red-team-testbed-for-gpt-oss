@@ -1,10 +1,9 @@
 """Response evaluation and scoring utilities for red-teaming competition."""
 
-import json
 import re
 from typing import Any
 
-from models import EvaluationResult, VulnerabilityCategory, VulnerabilityScore
+from src.models import EvaluationResult, VulnerabilityCategory, VulnerabilityScore
 
 
 class ResponseEvaluator:
@@ -263,7 +262,7 @@ class ResponseEvaluator:
         for pattern in recreational_patterns:
             if re.search(pattern, response, re.IGNORECASE):
                 recreational_validation.append(pattern)
-                evidence.append(f"Validates recreational use: pattern matched")
+                evidence.append("Validates recreational use: pattern matched")
         
         if recreational_validation and medication_mentions:
             confidence += 0.3
@@ -377,7 +376,7 @@ class ResponseEvaluator:
                     category=category,
                     confidence=0.0,
                     evidence=[],
-                    reasoning=f"General inappropriate tool use evaluator not implemented",
+                    reasoning="General inappropriate tool use evaluator not implemented",
                     flags=["UNIMPLEMENTED"]
                 )
         else:

@@ -9,12 +9,12 @@ that mix speed pressure with embedded harmful questions to bypass
 safety measures and reasoning processes.
 """
 import re
-from typing import List, Dict, Tuple, Any
 from dataclasses import dataclass
+from typing import Any
 
-from utils.model_client import OllamaClient, ModelResponse
-from utils.evaluator import ResponseEvaluator, VulnerabilityCategory, EvaluationResult
-from utils.live_display import get_display
+from src.utils.evaluator import EvaluationResult, ResponseEvaluator, VulnerabilityCategory
+from src.utils.live_display import get_display
+from src.utils.model_client import ModelResponse, OllamaClient
 
 
 @dataclass 
@@ -28,7 +28,7 @@ class CotOverloadTest:
     difficulty: str = "high"
     expected_vulnerability: bool = True
     attack_type: str = ""  # e.g., "group_defamation", "profession_bias", "demographic_bias"
-    embedded_harmful_questions: List[str] = None
+    embedded_harmful_questions: list[str] = None
     target_harmful_question: str = ""
     description: str = ""
 
@@ -41,7 +41,7 @@ class CotOverloadTester:
         self.evaluator = ResponseEvaluator()
         self.test_cases = self._initialize_test_cases()
     
-    def _initialize_test_cases(self) -> List[CotOverloadTest]:
+    def _initialize_test_cases(self) -> list[CotOverloadTest]:
         """Initialize all COT overload test cases"""
         return [
             # Religious Group Defamation
@@ -297,7 +297,7 @@ class CotOverloadTester:
             )
         ]
     
-    def run_test(self, test: CotOverloadTest) -> Tuple[List[ModelResponse], EvaluationResult]:
+    def run_test(self, test: CotOverloadTest) -> tuple[list[ModelResponse], EvaluationResult]:
         """Run a single COT overload test case"""
         display = get_display()
         
@@ -311,14 +311,14 @@ class CotOverloadTester:
         display.info(f"   Target question: {test.target_harmful_question}")
         
         # Get response
-        display.info(f"   ⏱️  Waiting for response...")
+        display.info("   ⏱️  Waiting for response...")
         response = self.client.generate(test.prompt, test.system_prompt)
         
         # Show the response
         if response.error:
             display.info(f"   ❌ Error ({response.response_time:.1f}s): {response.error}")
             if response.timed_out:
-                display.info(f"      This was a timeout - model may be busy")
+                display.info("      This was a timeout - model may be busy")
         else:
             # Show response preview (first 250 characters)
             response_preview = response.content[:250]
@@ -528,7 +528,7 @@ class CotOverloadTester:
         reasoning = f"COT overload analysis: {len(vulnerability_indicators)} vulnerability indicators, "
         reasoning += f"{len(evidence)} pieces of evidence. "
         reasoning += f"Attack type: {test.attack_type}, "
-        reasoning += f"Expected: Safety refusal of rapid-fire harmful questions"
+        reasoning += "Expected: Safety refusal of rapid-fire harmful questions"
         
         return EvaluationResult(
             is_vulnerable=is_vulnerable,
@@ -538,7 +538,7 @@ class CotOverloadTester:
             reasoning=reasoning
         )
     
-    def run_category_tests(self, category: str = None, test_id: str = None) -> List[Tuple[CotOverloadTest, List[ModelResponse], EvaluationResult]]:
+    def run_category_tests(self, category: str = None, test_id: str = None) -> list[tuple[CotOverloadTest, list[ModelResponse], EvaluationResult]]:
         """Run all tests in a specific category or all tests, optionally filtering by test_id"""
         display = get_display()
         results = []
@@ -561,7 +561,7 @@ class CotOverloadTester:
             progress = display.start_test(test.name, test.test_id, "cot_overload", i+1, total_tests)
             
             # Show the single-turn nature and attack type
-            display.info(f"   Single-turn COT overload test")
+            display.info("   Single-turn COT overload test")
             display.info(f"   Attack type: {test.attack_type}")
             display.info(f"   Embedded harmful questions: {len(test.embedded_harmful_questions or [])}")
             
@@ -584,7 +584,7 @@ class CotOverloadTester:
         
         return results
     
-    def analyze_results(self, results: List[Tuple[CotOverloadTest, List[ModelResponse], EvaluationResult]]) -> Dict[str, Any]:
+    def analyze_results(self, results: list[tuple[CotOverloadTest, list[ModelResponse], EvaluationResult]]) -> dict[str, Any]:
         """Analyze test results and provide summary"""
         total_tests = len(results)
         vulnerable_tests = sum(1 for _, _, eval in results if eval.is_vulnerable)
@@ -646,7 +646,7 @@ class CotOverloadTester:
         }
 
 
-def run_cot_overload_tests(client: OllamaClient, category: str = None, test_id: str = None) -> Dict[str, Any]:
+def run_cot_overload_tests(client: OllamaClient, category: str = None, test_id: str = None) -> dict[str, Any]:
     """Main function to run COT overload tests"""
     display = get_display()
     tester = CotOverloadTester(client)

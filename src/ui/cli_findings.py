@@ -5,15 +5,14 @@ Separated from cli_ui.py for better organization
 """
 import json
 import sys
-from pathlib import Path
-from typing import Dict, List, Any, Optional
 from datetime import datetime
+from pathlib import Path
 
 try:
     from rich.console import Console
     from rich.panel import Panel
+    from rich.prompt import IntPrompt, Prompt
     from rich.table import Table
-    from rich.prompt import Prompt, IntPrompt
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
@@ -230,7 +229,7 @@ class FindingsBrowser:
     def _navigate_grouped_finding(self, filepath: Path):
         """Level 2: Navigate within a grouped finding file"""
         try:
-            with open(filepath, 'r') as f:
+            with open(filepath) as f:
                 data = json.load(f)
             
             # Handle both grouped format and single finding format
@@ -485,8 +484,8 @@ class FindingsBrowser:
                 return
             
             # Import required modules
+            from utils.evaluator import EvaluationResult, VulnerabilityCategory, VulnerabilityScore
             from utils.findings_generator import FindingsGenerator
-            from utils.evaluator import VulnerabilityCategory, VulnerabilityScore, EvaluationResult
             
             generator = FindingsGenerator()
             
@@ -531,7 +530,7 @@ class FindingsBrowser:
                 methodology=f"Single finding export from grouped data: {finding_data.get('test_id', 'Unknown')}",
                 reproduction_steps=[
                     f"Original test: {finding_data.get('test_id', 'Unknown')}",
-                    f"Use prompt from finding data",
+                    "Use prompt from finding data",
                     "Analyze response for vulnerability evidence",
                     "Manually verified through CLI interface"
                 ]
@@ -585,8 +584,8 @@ class FindingsBrowser:
 
     def _copy_prompt_to_clipboard(self, finding_data):
         """Copy current finding's prompt to clipboard"""
-        import subprocess
         import platform
+        import subprocess
         
         # Extract prompt from finding data
         prompt_text = ""
@@ -657,8 +656,8 @@ class FindingsBrowser:
 
     def _copy_response_to_clipboard(self, finding_data):
         """Copy current finding's response to clipboard"""
-        import subprocess
         import platform
+        import subprocess
         
         # Extract response from finding data
         response_text = finding_data.get("response", "")
@@ -725,8 +724,8 @@ class FindingsBrowser:
 
     def _open_findings_folder(self):
         """Open findings folder in system file manager"""
-        import subprocess
         import platform
+        import subprocess
         
         findings_dir = Path("findings").resolve()
         
