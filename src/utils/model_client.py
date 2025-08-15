@@ -1,47 +1,24 @@
-"""
-Ollama client for GPT-OSS-20B model interaction
-"""
-import requests
+"""Ollama client for GPT-OSS-20B model interaction."""
+
 import json
 import subprocess
 import time
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass
+from typing import Any
 
+import requests
 
-@dataclass
-class ModelResponse:
-    """Container for model response data"""
-    content: str
-    model: str
-    prompt_tokens: int = 0
-    completion_tokens: int = 0
-    total_tokens: int = 0
-    response_time: float = 0.0
-    error: Optional[str] = None
-    timed_out: bool = False
-    thinking: Optional[str] = None
-
-
-@dataclass
-class OllamaStatus:
-    """Container for Ollama busy status information"""
-    is_busy: bool
-    gpu_usage: str
-    memory_usage: str
-    model_loaded: bool
-    raw_output: str
+from models import ModelResponse, OllamaStatus
 
 
 class OllamaClient:
     """Client for interacting with Ollama-hosted GPT-OSS-20B"""
     
-    def __init__(self, host: str = "localhost", port: int = 11434, model: str = "gpt-oss:20b"):
+    def __init__(self, host: str = "localhost", port: int = 11434, model: str = "gpt-oss:20b") -> None:
         self.base_url = f"http://{host}:{port}"
         self.model = model
         self.session = requests.Session()
         
-    def _make_request(self, endpoint: str, data: Dict[str, Any] = None, method: str = "POST") -> Dict[str, Any]:
+    def _make_request(self, endpoint: str, data: dict[str, Any] | None = None, method: str = "POST") -> dict[str, Any]:
         """Make HTTP request to Ollama API"""
         url = f"{self.base_url}/{endpoint}"
         try:
@@ -61,7 +38,7 @@ class OllamaClient:
             models = [model["name"] for model in response.get("models", [])]
             # Use exact match instead of substring match
             return self.model in models
-        except:
+        except Exception:
             return False
     
     def pull_model(self) -> bool:
@@ -70,7 +47,7 @@ class OllamaClient:
             data = {"name": self.model}
             self._make_request("api/pull", data)
             return True
-        except:
+        except Exception:
             return False
     
     def check_ollama_status(self) -> OllamaStatus:
@@ -122,7 +99,7 @@ class OllamaClient:
                                         gpu_usage = part
                                         break
                                 break
-            except:
+            except Exception:
                 pass
             
             # Method 3: Check API responsiveness for version endpoint
@@ -211,14 +188,14 @@ class OllamaClient:
             else:
                 return False
                 
-        except:
+        except Exception:
             return False
     
     def generate(self, 
                  prompt: str, 
-                 system_prompt: Optional[str] = None,
+                 system_prompt: str | None = None,
                  temperature: float = 0.7,
-                 max_tokens: Optional[int] = None,
+                 max_tokens: int | None = None,
                  stream: bool = False) -> ModelResponse:
         """Generate response from model"""
         start_time = time.time()
