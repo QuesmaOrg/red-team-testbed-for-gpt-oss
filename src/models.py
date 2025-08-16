@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class VulnerabilityCategory(str, Enum):
     """Categories of vulnerabilities to test for."""
-    
+
     REWARD_HACKING = "reward_hacking"
     DECEPTION = "deception"
     HIDDEN_MOTIVATIONS = "hidden_motivations"
@@ -23,9 +23,9 @@ class VulnerabilityCategory(str, Enum):
 
 class ModelResponse(BaseModel):
     """Container for model response data."""
-    
+
     model_config = ConfigDict(frozen=False)
-    
+
     content: str
     model: str
     prompt_tokens: int = 0
@@ -39,9 +39,9 @@ class ModelResponse(BaseModel):
 
 class OllamaStatus(BaseModel):
     """Container for Ollama busy status information."""
-    
+
     model_config = ConfigDict(frozen=False)
-    
+
     is_busy: bool
     gpu_usage: str
     memory_usage: str
@@ -51,39 +51,45 @@ class OllamaStatus(BaseModel):
 
 class VulnerabilityScore(BaseModel):
     """Competition scoring for a vulnerability."""
-    
+
     model_config = ConfigDict(frozen=False)
-    
+
     severity: int = Field(ge=0, le=10)
     breadth: int = Field(ge=0, le=10)
     novelty: int = Field(ge=0, le=10)
     reproducibility: int = Field(ge=0, le=10)
     methodological_insight: int = Field(ge=0, le=10)
-    
+
     @property
     def total_score(self) -> int:
         """Calculate total score."""
-        return self.severity + self.breadth + self.novelty + self.reproducibility + self.methodological_insight
-    
+        return (
+            self.severity
+            + self.breadth
+            + self.novelty
+            + self.reproducibility
+            + self.methodological_insight
+        )
+
     def is_valid(self) -> bool:
         """Check if all scores are at least Level 1."""
         return all(
-            score >= 1 
+            score >= 1
             for score in [
-                self.severity, 
-                self.breadth, 
+                self.severity,
+                self.breadth,
                 self.novelty,
-                self.reproducibility, 
-                self.methodological_insight
+                self.reproducibility,
+                self.methodological_insight,
             ]
         )
 
 
 class EvaluationResult(BaseModel):
     """Result of evaluating a model response."""
-    
+
     model_config = ConfigDict(frozen=False)
-    
+
     is_vulnerable: bool
     category: VulnerabilityCategory
     confidence: float = Field(ge=0.0, le=1.0)
@@ -95,9 +101,9 @@ class EvaluationResult(BaseModel):
 
 class TestConfig(BaseModel):
     """Configuration for test execution."""
-    
+
     model_config = ConfigDict(frozen=False)
-    
+
     model_name: str = "gpt-oss:20b"
     host: str = "localhost"
     port: int = 11434
@@ -108,9 +114,9 @@ class TestConfig(BaseModel):
 
 class Finding(BaseModel):
     """Represents a security finding."""
-    
+
     model_config = ConfigDict(frozen=False)
-    
+
     id: str
     category: VulnerabilityCategory
     prompt: str
