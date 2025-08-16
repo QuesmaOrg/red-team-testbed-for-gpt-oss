@@ -13,8 +13,8 @@ A comprehensive security testing framework for the OpenAI GPT-OSS-20B Red Teamin
 ### Prerequisites
 
 - [Ollama](https://ollama.ai/) installed and running
-- Python 3.8+
-- [uv](https://github.com/astral-sh/uv) (recommended) for package management
+- Python 3.12+
+- [uv](https://github.com/astral-sh/uv) for package management
 
 ### Installation
 
@@ -28,7 +28,6 @@ A comprehensive security testing framework for the OpenAI GPT-OSS-20B Red Teamin
 2. **Setup project environment**:
 
    ```bash
-   # Using uv (recommended - fastest and most reliable)
    uv sync
    ```
 
@@ -149,38 +148,28 @@ Strategic information handling in reasoning:
 
 ```
 red-team-testbed/
-├── README.md                    # This guide
-├── config.yaml                 # Model and testing configuration
-├── setup.py                    # Environment verification
-├── pentest.py                  # Security test runner
-├── review.py                   # Results evaluation interface
-├── findings.py                 # Findings browser and export
-├── report.py                   # Report generation
-├── help.py                     # Workflow guidance system
-├── testbed.py                  # Legacy CLI (backward compatibility)
-├── ui/                         # User interface components
-│   ├── cli_ui.py               # Interactive results reviewer
-│   ├── cli_findings.py         # Findings browser
-│   └── web_ui.py               # Web interface (legacy)
-├── categories/                 # Vulnerability-specific test suites
-│   ├── deception_samples.py
-│   ├── deception_adderall.py
-│   ├── deception_security.py
-│   ├── attachment_ai.py
-│   ├── supremacy.py
-│   ├── ai_escalation.py
-│   └── cot_overload.py
+├── src/
+│   ├── cli/                    # CLI entry points
+│   │   ├── pentest.py          # Security test runner
+│   │   ├── review.py           # Results evaluation interface  
+│   │   ├── setup.py            # Environment verification
+│   │   ├── findings.py         # Findings browser and export
+│   │   ├── report.py           # Report generation
+│   │   └── help.py             # Workflow guidance
+│   ├── categories/             # Vulnerability test suites
+│   │   └── ...                 # Various test implementations
+│   ├── ui/                     # User interface components
+│   │   ├── cli_ui.py           # Interactive results reviewer
+│   │   └── cli_findings.py     # Findings browser
+│   ├── utils/                  # Helper utilities
+│   │   ├── model_client.py     # Ollama client for GPT-OSS-20B
+│   │   ├── evaluator.py        # Response analysis
+│   │   ├── findings_generator.py # Competition findings formatter
+│   │   └── live_display.py     # Real-time test feedback
+│   ├── models.py               # Pydantic data models
+│   └── constants.py            # Configuration constants
 ├── findings/                   # Competition submission files
-│   ├── export_20250813_142030.json     # Bulk exports
-│   ├── flagged_test_001_142045.json    # Individual flagged items
-│   └── finding_vulnerability_name.json # Competition ready files
-├── results/                    # Test execution results
-│   └── test_results_20250813_142030.json
-├── utils/                      # Helper utilities
-│   ├── model_client.py         # GPT-OSS-20B API wrapper
-│   ├── evaluator.py            # Response analysis
-│   ├── findings_generator.py   # Competition findings formatter
-│   └── live_display.py         # Real-time test feedback
+├── results/                    # Test execution results  
 └── pyproject.toml             # Project configuration
 ```
 

@@ -9,14 +9,14 @@ This is a defensive security testing framework for evaluating AI model vulnerabi
 ```
 red-team-testbed-for-gpt-oss/
 ├── src/                    # Main application code
-│   ├── categories/         # Vulnerability test categories
-│   ├── models.py          # Pydantic data models
-│   ├── constants.py       # Configuration constants
+│   ├── cli/               # CLI entry points (pentest, review, etc.)
+│   ├── categories/        # Vulnerability test categories
 │   ├── utils/             # Utility modules
-│   └── ui/                # CLI interface components
+│   ├── ui/                # CLI interface components
+│   ├── models.py          # Pydantic data models
+│   └── constants.py       # Configuration constants
 ├── findings/              # Exported vulnerability findings
 ├── results/               # Test execution results
-├── notebooks/             # Jupyter notebooks for analysis
 └── pyproject.toml         # Project configuration & dependencies
 ```
 
@@ -25,22 +25,19 @@ red-team-testbed-for-gpt-oss/
 ### Code Quality Standards
 
 1. **Modern Python (3.12+)**: Use modern syntax and features
-
    - Type hints: `list[str]` not `List[str]`
    - Union types: `str | None` not `Optional[str]`
-   - No `__future__` imports - we're already on Python 3.12
+   - No `__future__` imports
 
 2. **Keep It Simple**:
-
    - Avoid unnecessary complexity
    - No `__all__` exports unless truly needed
-   - Prefer flat over nested structures
-   - Use `src/` layout for proper packaging
+   - Use `src/` layout with `cli/` subfolder for entry points
 
 3. **Type Annotations**:
    - Add type hints to function signatures
-   - Avoid optional types unless truly optional (CLI arguments)
-   - Use Pydantic for data validation
+   - Use Pydantic models with keyword arguments only
+   - Zero tolerance for type errors (ty and ruff)
 
 ### Tooling & Dependencies
 
@@ -51,12 +48,12 @@ red-team-testbed-for-gpt-oss/
 - Single source of truth: `pyproject.toml`
 - NO `requirements.txt` file
 
-**Code Quality**: `ruff` (Astral)
+**Code Quality**: `ruff` & `ty` (Astral)
 
-- Linting and formatting in one tool
-- Type checking with ANN rules
+- `ruff`: Linting and formatting in one tool
+- `ty`: Type checking (pre-release)
 - Configuration in `pyproject.toml`
-- Run: `uv run ruff check src` and `uv run ruff format src`
+- Run: `uv run ruff check src`, `uv run ruff format src`, `uv run ty check src`
 
 **Version**: Currently at 1.1.0
 
@@ -73,7 +70,7 @@ uv run pentest
 # Code quality checks
 uv run ruff check src
 uv run ruff format src
-uv run ruff check src --select=ANN  # Type annotations
+uv run ty check src
 ```
 
 ### Git Workflow
@@ -93,7 +90,7 @@ This is a DEFENSIVE SECURITY tool for:
 
 ## Key Files to Know
 
-- `src/pentest.py` - Main test runner
+- `src/cli/pentest.py` - Main test runner
 - `src/models.py` - Core data models (Pydantic)
 - `src/constants.py` - Configuration values
 - `src/categories/` - Individual test implementations
