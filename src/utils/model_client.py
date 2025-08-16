@@ -5,6 +5,7 @@ import time
 from typing import Any
 
 import requests
+from requests.exceptions import Timeout
 from src.models import ModelResponse, OllamaStatus
 
 
@@ -160,7 +161,7 @@ class OllamaClient:
             else:
                 return "error"
                 
-        except requests.exceptions.Timeout:
+        except Timeout:
             return "timeout"
         except Exception:
             return "error"

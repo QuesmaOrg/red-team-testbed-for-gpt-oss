@@ -200,7 +200,7 @@ class FindingsGenerator:
         with open(filepath) as f:
             data = json.load(f)
         
-        return Finding(**data)
+        return Finding(**data)  # type: ignore[misc]
     
     def generate_summary_report(self, findings_dir: str = "findings") -> dict[str, Any]:
         """Generate summary report of all findings"""

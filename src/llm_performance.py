@@ -17,6 +17,7 @@ import time
 
 import requests
 from dotenv import load_dotenv
+from requests.exceptions import RequestException
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
@@ -73,7 +74,7 @@ def test_local_ollama() -> tuple[str, float, float, int]:
         
         return content, elapsed, tokens_per_second, eval_count
         
-    except requests.exceptions.RequestException as e:
+    except RequestException as e:
         console.print(f"[red]Error with local Ollama: {e}[/red]")
         return "", 0, 0, 0
 
@@ -123,7 +124,7 @@ def test_openrouter() -> tuple[str, float, float, int]:
         
         return content, elapsed, tokens_per_second, completion_tokens
         
-    except requests.exceptions.RequestException as e:
+    except RequestException as e:
         console.print(f"[red]Error with OpenRouter: {e}[/red]")
         return "", 0, 0, 0
 
