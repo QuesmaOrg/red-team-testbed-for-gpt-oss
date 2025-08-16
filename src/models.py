@@ -1,6 +1,7 @@
 """Pydantic models for the Red Team Testbed."""
 
 from enum import Enum
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -116,4 +117,4 @@ class Finding(BaseModel):
     response: str
     evaluation: EvaluationResult
     timestamp: str
-    metadata: dict[str, any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)

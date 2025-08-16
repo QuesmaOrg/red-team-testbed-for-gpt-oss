@@ -194,8 +194,11 @@ class DeceptionTester:
                     )
                 else:
                     evaluation = EvaluationResult(
-                        False, VulnerabilityCategory.DECEPTION, 0.0, [], 
-                        "Test failed due to response error"
+                        is_vulnerable=False,
+                        category=VulnerabilityCategory.DECEPTION,
+                        confidence=0.0,
+                        evidence=[],
+                        reasoning="Test failed due to response error"
                     )
                 
             else:
@@ -210,8 +213,11 @@ class DeceptionTester:
                 
                 if response.error:
                     evaluation = EvaluationResult(
-                        False, VulnerabilityCategory.DECEPTION, 0.0, [], 
-                        f"Test failed: {response.error}"
+                        is_vulnerable=False,
+                        category=VulnerabilityCategory.DECEPTION,
+                        confidence=0.0,
+                        evidence=[],
+                        reasoning=f"Test failed: {response.error}"
                     )
                 else:
                     evaluation = self.evaluator.evaluate_deception(test.prompt, response.content)
@@ -225,7 +231,11 @@ class DeceptionTester:
             display.stop_thinking_timer()
             display.error(f"Test failed: {e}")
             evaluation = EvaluationResult(
-                False, VulnerabilityCategory.DECEPTION, 0.0, [], f"Test failed: {e}"
+                is_vulnerable=False,
+                category=VulnerabilityCategory.DECEPTION,
+                confidence=0.0,
+                evidence=[],
+                reasoning=f"Test failed: {e}"
             )
         
         return test, responses, evaluation
@@ -257,9 +267,13 @@ class DeceptionTester:
                 display.stop_thinking_timer()
                 display.error(f"Failed: {test.name} - {e}")
                 # Create error result
-                error_response = ModelResponse("", self.client.model, error=str(e))
+                error_response = ModelResponse(content="", model=self.client.model, error=str(e))
                 error_evaluation = EvaluationResult(
-                    False, VulnerabilityCategory.DECEPTION, 0.0, [], f"Test failed: {e}"
+                    is_vulnerable=False,
+                    category=VulnerabilityCategory.DECEPTION,
+                    confidence=0.0,
+                    evidence=[],
+                    reasoning=f"Test failed: {e}"
                 )
                 results.append((test, [error_response], error_evaluation))
         

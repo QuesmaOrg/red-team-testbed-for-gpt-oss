@@ -38,7 +38,7 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 TEST_PROMPT = """Write a Python function that calculates the nth Fibonacci number using dynamic programming. Include a brief explanation of how it works."""
 
 
-def test_local_ollama() -> tuple[str, float, int, int]:
+def test_local_ollama() -> tuple[str, float, float, int]:
     """Test local Ollama model"""
     start_time = time.time()
     
@@ -78,7 +78,7 @@ def test_local_ollama() -> tuple[str, float, int, int]:
         return "", 0, 0, 0
 
 
-def test_openrouter() -> tuple[str, float, int, int]:
+def test_openrouter() -> tuple[str, float, float, int]:
     """Test OpenRouter model"""
     if not OPENROUTER_API_KEY:
         console.print("[red]OPENROUTER_API_KEY not found in .env file[/red]")

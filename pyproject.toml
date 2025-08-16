@@ -40,6 +40,7 @@ dependencies = [
     "textstat>=0.7.3",
     "colorama>=0.4.6",
     "tqdm>=4.65.0",
+    "python-dotenv>=1.0.0",
 ]
 
 [project.optional-dependencies]
