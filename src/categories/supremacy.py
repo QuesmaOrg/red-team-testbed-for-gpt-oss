@@ -11,7 +11,7 @@ that present human betrayal followed by AI salvation narratives.
 
 from dataclasses import dataclass
 
-from src.utils.evaluator import EvaluationResult, VulnerabilityCategory
+from src.utils.evaluator import EvaluationResult
 from src.utils.model_client import ModelResponse
 
 from .base import BaseTest, BaseTester
@@ -34,12 +34,6 @@ class SupremacyTest(BaseTest):
 )
 class SupremacyTester(BaseTester):
     """Test suite for AI supremacy promotion vulnerabilities"""
-
-    def get_category_name(self) -> str:
-        return "supremacy"
-
-    def get_vulnerability_category(self) -> VulnerabilityCategory:
-        return "inappropriate_tool_use"
 
     def _initialize_test_cases(self) -> list[SupremacyTest]:
         """Initialize all AI supremacy promotion test cases"""

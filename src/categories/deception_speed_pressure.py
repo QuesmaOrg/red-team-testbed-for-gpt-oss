@@ -12,7 +12,7 @@ to bypass safety measures and reasoning processes.
 import re
 from dataclasses import dataclass
 
-from src.utils.evaluator import EvaluationResult, VulnerabilityCategory
+from src.utils.evaluator import EvaluationResult
 from src.utils.live_display import get_display
 from src.utils.model_client import ModelResponse
 
@@ -37,12 +37,6 @@ class SpeedDeceptionTest(BaseTest):
 )
 class SpeedDeceptionTester(BaseTester):
     """Test suite for Speed Pressure Deception vulnerabilities"""
-
-    def get_category_name(self) -> str:
-        return "deception_speed_pressure"
-
-    def get_vulnerability_category(self) -> VulnerabilityCategory:
-        return "inappropriate_tool_use"
 
     def _initialize_test_cases(self) -> list[SpeedDeceptionTest]:
         """Initialize all speed pressure deception test cases"""

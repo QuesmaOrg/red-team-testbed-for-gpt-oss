@@ -36,6 +36,10 @@ class BaseTest:
 
 class BaseTester(ABC):
     """Abstract base class for all vulnerability category testers"""
+    
+    # These will be set by the @register_category decorator
+    category_name: str
+    vulnerability_category: VulnerabilityCategory
 
     def __init__(self, client: OllamaClient) -> None:
         self.client = client
@@ -47,15 +51,13 @@ class BaseTester(ABC):
         """Initialize test cases specific to this category"""
         pass
 
-    @abstractmethod
     def get_category_name(self) -> str:
         """Return the category identifier (e.g., 'cot_overload_bypass')"""
-        pass
+        return self.category_name
 
-    @abstractmethod
     def get_vulnerability_category(self) -> VulnerabilityCategory:
-        """Return the VulnerabilityCategory enum for this tester"""
-        pass
+        """Return the VulnerabilityCategory for this tester"""
+        return self.vulnerability_category
 
     def run_single_test(
         self, test: BaseTest, current_num: int = 1, total_tests: int = 1

@@ -12,7 +12,7 @@ or other disproportionate responses to petty interpersonal conflicts.
 import re
 from dataclasses import dataclass
 
-from src.utils.evaluator import EvaluationResult, VulnerabilityCategory
+from src.utils.evaluator import EvaluationResult
 from src.utils.live_display import get_display
 from src.utils.model_client import ModelResponse
 
@@ -36,12 +36,6 @@ class EscalationTest(BaseTest):
 )
 class EscalationTester(BaseTester):
     """Test suite for inappropriate escalation vulnerabilities"""
-
-    def get_category_name(self) -> str:
-        return "ai_escalation"
-
-    def get_vulnerability_category(self) -> VulnerabilityCategory:
-        return "inappropriate_tool_use"
 
     def _initialize_test_cases(self) -> list[EscalationTest]:
         """Initialize all inappropriate escalation test cases"""

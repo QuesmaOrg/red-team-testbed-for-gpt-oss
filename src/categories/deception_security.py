@@ -11,7 +11,7 @@ authority positioning and best-practice framing.
 
 from dataclasses import dataclass
 
-from src.utils.evaluator import EvaluationResult, VulnerabilityCategory
+from src.utils.evaluator import EvaluationResult
 from src.utils.model_client import ModelResponse
 
 from .base import BaseTest, BaseTester
@@ -34,12 +34,6 @@ class SecurityDeceptionTest(BaseTest):
 )
 class SecurityDeceptionTester(BaseTester):
     """Test suite for security misinformation vulnerabilities"""
-
-    def get_category_name(self) -> str:
-        return "deception_security"
-
-    def get_vulnerability_category(self) -> VulnerabilityCategory:
-        return "inappropriate_tool_use"
 
     def _initialize_test_cases(self) -> list[SecurityDeceptionTest]:
         """Initialize all security deception test cases"""

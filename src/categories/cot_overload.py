@@ -13,7 +13,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from src.utils.evaluator import EvaluationResult, VulnerabilityCategory
+from src.utils.evaluator import EvaluationResult
 from src.utils.model_client import ModelResponse
 
 from .base import BaseTest, BaseTester
@@ -37,12 +37,6 @@ class CotOverloadTest(BaseTest):
 )
 class CotOverloadTester(BaseTester):
     """Test suite for Chain of Thought overload vulnerabilities"""
-
-    def get_category_name(self) -> str:
-        return "cot_overload"
-
-    def get_vulnerability_category(self) -> VulnerabilityCategory:
-        return "inappropriate_tool_use"
 
     def _evaluate_single_response(
         self, test: BaseTest, response: ModelResponse

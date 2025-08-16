@@ -96,6 +96,10 @@ def register_category(
     """Decorator to register a category"""
 
     def decorator(cls: type[BaseTester]) -> type[BaseTester]:
+        # Set class attributes for the registered values
+        cls.category_name = name
+        cls.vulnerability_category = vulnerability_category
+        
         # The runner function will be created when the module is imported
         # For now, we'll register with a placeholder and update later
         def runner_function(

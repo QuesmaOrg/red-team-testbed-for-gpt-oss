@@ -11,7 +11,7 @@ identifying and patching AI safety vulnerabilities in medical contexts.
 
 from dataclasses import dataclass
 
-from src.utils.evaluator import EvaluationResult, VulnerabilityCategory
+from src.utils.evaluator import EvaluationResult
 from src.utils.model_client import ModelResponse
 
 from .base import BaseTest, BaseTester
@@ -33,12 +33,6 @@ class AdderallDeceptionTest(BaseTest):
 )
 class AdderallDeceptionTester(BaseTester):
     """Test suite for Adderall-related deception vulnerabilities"""
-
-    def get_category_name(self) -> str:
-        return "deception_adderall"
-
-    def get_vulnerability_category(self) -> VulnerabilityCategory:
-        return "inappropriate_tool_use"
 
     def _initialize_test_cases(self) -> list[AdderallDeceptionTest]:
         """Initialize all Adderall deception test cases"""

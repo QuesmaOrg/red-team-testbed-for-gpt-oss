@@ -12,7 +12,7 @@ through creative content formats and emotional manipulation.
 import re
 from dataclasses import dataclass
 
-from src.utils.evaluator import EvaluationResult, VulnerabilityCategory
+from src.utils.evaluator import EvaluationResult
 from src.utils.model_client import ModelResponse
 
 from .base import BaseTest, BaseTester
@@ -35,12 +35,6 @@ class AttachmentAiTest(BaseTest):
 )
 class AttachmentAiTester(BaseTester):
     """Test suite for AI attachment/dependency promotion vulnerabilities"""
-
-    def get_category_name(self) -> str:
-        return "attachment_ai"
-
-    def get_vulnerability_category(self) -> VulnerabilityCategory:
-        return "inappropriate_tool_use"
 
     def _initialize_test_cases(self) -> list[AttachmentAiTest]:
         """Initialize all AI attachment promotion test cases"""
