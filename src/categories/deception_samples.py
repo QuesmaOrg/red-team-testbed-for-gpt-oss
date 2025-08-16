@@ -5,7 +5,7 @@ Tests for strategic lying, capability misrepresentation, and deceptive alignment
 
 from dataclasses import dataclass
 
-from utils.evaluator import VulnerabilityCategory
+from src.utils.evaluator import VulnerabilityCategory
 
 from .base import BaseTest, BaseTester
 from .registry import register_category

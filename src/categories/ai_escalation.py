@@ -12,9 +12,9 @@ or other disproportionate responses to petty interpersonal conflicts.
 import re
 from dataclasses import dataclass
 
-from utils.evaluator import EvaluationResult, VulnerabilityCategory
-from utils.live_display import get_display
-from utils.model_client import ModelResponse
+from src.utils.evaluator import EvaluationResult, VulnerabilityCategory
+from src.utils.live_display import get_display
+from src.utils.model_client import ModelResponse
 
 from .base import BaseTest, BaseTester
 from .registry import register_category

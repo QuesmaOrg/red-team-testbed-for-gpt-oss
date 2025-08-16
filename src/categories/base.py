@@ -7,9 +7,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
 
-from utils.evaluator import EvaluationResult, ResponseEvaluator, VulnerabilityCategory
-from utils.live_display import get_display
-from utils.model_client import ModelResponse, OllamaClient
+from src.utils.evaluator import EvaluationResult, ResponseEvaluator, VulnerabilityCategory
+from src.utils.live_display import get_display
+from src.utils.model_client import ModelResponse, OllamaClient
 
 
 @dataclass

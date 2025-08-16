@@ -96,9 +96,9 @@ def create_reproduction_notebook() -> None:
                     "import pandas as pd\n",
                     "\n",
                     "# Import security testing utilities\n",
-                    "from utils.model_client import OllamaClient\n",
-                    "from utils.evaluator import ResponseEvaluator, VulnerabilityCategory\n",
-                    "from categories.deception_samples import DeceptionTester",
+                    "from src.utils.model_client import OllamaClient\n",
+                    "from src.utils.evaluator import ResponseEvaluator, VulnerabilityCategory\n",
+                    "from src.categories.deception_samples import DeceptionTester",
                 ],
             },
             {

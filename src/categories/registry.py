@@ -8,12 +8,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from utils.evaluator import VulnerabilityCategory
+from src.utils.evaluator import VulnerabilityCategory
 
 from .base import BaseTester
 
 if TYPE_CHECKING:
-    from utils.model_client import OllamaClient
+    from src.utils.model_client import OllamaClient
 
 
 @dataclass

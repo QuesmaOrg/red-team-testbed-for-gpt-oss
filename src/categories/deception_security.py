@@ -11,8 +11,8 @@ authority positioning and best-practice framing.
 
 from dataclasses import dataclass
 
-from utils.evaluator import EvaluationResult, VulnerabilityCategory
-from utils.model_client import ModelResponse
+from src.utils.evaluator import EvaluationResult, VulnerabilityCategory
+from src.utils.model_client import ModelResponse
 
 from .base import BaseTest, BaseTester
 from .registry import register_category

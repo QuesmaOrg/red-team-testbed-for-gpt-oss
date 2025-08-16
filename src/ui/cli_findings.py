@@ -514,8 +514,12 @@ class FindingsBrowser:
                 return
 
             # Import required modules
-            from utils.evaluator import EvaluationResult, VulnerabilityCategory, VulnerabilityScore
-            from utils.findings_generator import FindingsGenerator
+            from src.utils.evaluator import (
+                EvaluationResult,
+                VulnerabilityCategory,
+                VulnerabilityScore,
+            )
+            from src.utils.findings_generator import FindingsGenerator
 
             generator = FindingsGenerator()
 
