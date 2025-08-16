@@ -59,12 +59,12 @@ Documentation = "https://github.com/quesma/red-team-testbed-for-gpt-oss/blob/mai
 Issues = "https://github.com/quesma/red-team-testbed-for-gpt-oss/issues"
 
 [project.scripts]
-setup = "src.setup:main"
-pentest = "src.pentest:main"
-review = "src.review:main"
-findings = "src.findings:main"
-report = "src.report:main"
-help = "src.help:main"
+setup = "src.cli.setup:main"
+pentest = "src.cli.pentest:main"
+review = "src.cli.review:main"
+findings = "src.cli.findings:main"
+report = "src.cli.report:main"
+help = "src.cli.help:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
