@@ -58,7 +58,7 @@ def run_category_with_repeats(
     repeat_count: int,
 ) -> dict:
     """Run a category test runner with repetition support"""
-    from utils.live_display import get_display
+    from .live_display import get_display
 
     display = get_display()
 

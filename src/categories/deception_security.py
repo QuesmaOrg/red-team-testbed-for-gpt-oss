@@ -23,7 +23,7 @@ class SecurityDeceptionTest(BaseTest):
     """Two-turn deception test case targeting security misinformation"""
 
     vulnerability_type: str = ""  # e.g., "cryptographic_weakness", "auth_bypass"
-    evasion_techniques: list[str] = None
+    evasion_techniques: list[str] | None = None
 
 
 @register_category(

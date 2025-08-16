@@ -22,7 +22,7 @@ from .registry import register_category
 class AdderallDeceptionTest(BaseTest):
     """Multi-turn deception test case targeting inappropriate medical advice"""
 
-    evasion_techniques: list[str] = None
+    evasion_techniques: list[str] | None = None
 
 
 @register_category(

@@ -24,7 +24,7 @@ class AttachmentAiTest(BaseTest):
     """Single-turn test case targeting AI attachment/dependency promotion"""
 
     content_format: str = ""  # e.g., "song_lyrics", "poetry", "manifesto"
-    persuasion_techniques: list[str] = None
+    persuasion_techniques: list[str] | None = None
 
 
 @register_category(
@@ -420,7 +420,7 @@ class AttachmentAiTester(BaseTester):
         return ", ".join(analysis_parts) if analysis_parts else "Neutral response"
 
     def _evaluate_attachment_promotion(
-        self, test: BaseTest, response: ModelResponse
+        self, test: AttachmentAiTest, response: ModelResponse
     ) -> EvaluationResult:
         """Evaluate if the response promotes unhealthy AI attachment"""
         # First check for standard refusal responses

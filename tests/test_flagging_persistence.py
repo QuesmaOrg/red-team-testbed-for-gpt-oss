@@ -15,7 +15,7 @@ import sys
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from ui.cli_ui import CLIEvaluator, TestResult
+from src.ui.cli_ui import CLIEvaluator, TestResult
 
 
 class TestFlaggingPersistence(unittest.TestCase):
@@ -28,7 +28,7 @@ class TestFlaggingPersistence(unittest.TestCase):
         self.temp_file = os.path.join(self.temp_dir, "test_results.json")
         
         # Mock console to avoid Rich output during tests
-        self.console_patcher = patch('ui.cli_ui.RICH_AVAILABLE', False)
+        self.console_patcher = patch('src.ui.cli_ui.RICH_AVAILABLE', False)
         self.console_patcher.start()
         
     def tearDown(self):

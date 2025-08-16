@@ -13,10 +13,10 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from utils.testbed_lib import run_category_with_repeats
-from utils.model_client import ModelResponse
-from utils.evaluator import EvaluationResult, VulnerabilityCategory
-from ui.cli_ui import TestResult
+from src.utils.testbed_lib import run_category_with_repeats
+from src.utils.model_client import ModelResponse
+from src.utils.evaluator import EvaluationResult, VulnerabilityCategory
+from src.ui.cli_ui import TestResult
 
 
 class MockTest:
@@ -70,7 +70,7 @@ class TestRepeatFunctionality(unittest.TestCase):
         self.mock_client = MockOllamaClient()
         
         # Mock display to avoid output during tests
-        self.display_patcher = patch('utils.live_display.get_display')
+        self.display_patcher = patch('src.utils.live_display.get_display')
         self.mock_display = self.display_patcher.start()
         self.mock_display.return_value = Mock()
         
@@ -222,7 +222,7 @@ class TestRepeatFunctionality(unittest.TestCase):
     
     def test_timeout_stats_with_repeats(self):
         """Test that timeout statistics calculation handles repeat results correctly"""
-        from utils.testbed_lib import calculate_timeout_stats
+        from src.utils.testbed_lib import calculate_timeout_stats
         
         # Mock results with repeat format (4-tuple)
         mock_test = MockTest("test_001")
@@ -255,7 +255,7 @@ class TestRepeatResultsSerialization(unittest.TestCase):
     
     def test_repeat_metadata_serialization(self):
         """Test that repetition metadata is correctly added during serialization"""
-        from utils.testbed_lib import save_results
+        from src.utils.testbed_lib import save_results
         import tempfile
         import json
         
@@ -301,7 +301,7 @@ class TestRepeatResultsSerialization(unittest.TestCase):
     
     def test_normal_results_no_repeat_metadata(self):
         """Test that normal results don't get repetition metadata"""
-        from utils.testbed_lib import save_results
+        from src.utils.testbed_lib import save_results
         import tempfile
         import json
         

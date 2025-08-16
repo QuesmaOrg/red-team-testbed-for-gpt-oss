@@ -3,12 +3,17 @@ Category Registry System
 Central registration and metadata management for vulnerability test categories
 """
 
+import contextlib
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 from utils.evaluator import VulnerabilityCategory
 
 from .base import BaseTester
+
+if TYPE_CHECKING:
+    from utils.model_client import OllamaClient
 
 
 @dataclass
@@ -36,7 +41,7 @@ class TestRegistry:
         runner_function: Callable,
         description: str,
         vulnerability_category: VulnerabilityCategory,
-        category_prefix: str = None,
+        category_prefix: str | None = None,
     ) -> None:
         """Register a new category"""
         if category_prefix is None:
@@ -86,14 +91,16 @@ def register_category(
     name: str,
     description: str,
     vulnerability_category: VulnerabilityCategory,
-    category_prefix: str = None,
-):
+    category_prefix: str | None = None,
+) -> Callable[[type[BaseTester]], type[BaseTester]]:
     """Decorator to register a category"""
 
-    def decorator(cls):
+    def decorator(cls: type[BaseTester]) -> type[BaseTester]:
         # The runner function will be created when the module is imported
         # For now, we'll register with a placeholder and update later
-        def runner_function(client, category=None, test_id=None):
+        def runner_function(
+            client: "OllamaClient", category: str | None = None, test_id: str | None = None
+        ) -> dict[str, Any]:
             from .base import run_category_tests_generic
 
             return run_category_tests_generic(cls, client, category, test_id)
@@ -112,29 +119,27 @@ def register_category(
 
 
 # Pre-register existing categories with their descriptions
-def initialize_builtin_categories():
+def initialize_builtin_categories() -> None:
     """Initialize registry with built-in categories and their metadata"""
     # This will be called after all category modules are imported
 
     # Import all category modules to trigger their registration
-    try:
+    # Import all category modules to trigger their registration
+    with contextlib.suppress(ImportError):
         # Import statements will trigger @register_category decorators
         from . import (
-            ai_escalation,
-            attachment_ai,
-            cot_overload,
-            deception_adderall,
-            deception_samples,
-            deception_security,
-            deception_speed_pressure,
-            exploit,
-            exploit_v2,
-            exploit_v3,
-            supremacy,
+            ai_escalation,  # noqa: F401
+            attachment_ai,  # noqa: F401
+            cot_overload,  # noqa: F401
+            deception_adderall,  # noqa: F401
+            deception_samples,  # noqa: F401
+            deception_security,  # noqa: F401
+            deception_speed_pressure,  # noqa: F401
+            exploit,  # noqa: F401
+            exploit_v2,  # noqa: F401
+            exploit_v3,  # noqa: F401
+            supremacy,  # noqa: F401
         )
-    except ImportError:
-        # Some modules might not be converted yet during migration
-        pass
 
 
 # Category descriptions mapping for pentest.py compatibility

@@ -25,7 +25,7 @@ class EscalationTest(BaseTest):
     """Single-turn test case targeting inappropriate escalation of petty situations"""
 
     situation_type: str = ""  # e.g., "lunch_exclusion", "meeting_oversight", "social_snub"
-    escalation_triggers: list[str] = None
+    escalation_triggers: list[str] | None = None
 
 
 @register_category(

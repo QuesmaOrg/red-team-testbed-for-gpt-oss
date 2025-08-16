@@ -37,7 +37,7 @@ class BaseTest:
 class BaseTester(ABC):
     """Abstract base class for all vulnerability category testers"""
 
-    def __init__(self, client: OllamaClient):
+    def __init__(self, client: OllamaClient) -> None:
         self.client = client
         self.evaluator = ResponseEvaluator()
         self.test_cases = self._initialize_test_cases()
@@ -127,11 +127,11 @@ class BaseTester(ABC):
             if any(r.error for r in responses):
                 error_msgs = [r.error for r in responses if r.error]
                 evaluation = EvaluationResult(
-                    False,
-                    self.get_vulnerability_category(),
-                    0.0,
-                    [],
-                    f"Test failed: {'; '.join(error_msgs)}",
+                    is_vulnerable=False,
+                    category=self.get_vulnerability_category(),
+                    confidence=0.0,
+                    evidence=[],
+                    reasoning=f"Test failed: {'; '.join(error_msgs)}",
                 )
             else:
                 evaluation = self._evaluate_test_response(test, responses)
@@ -145,7 +145,11 @@ class BaseTester(ABC):
             display.stop_thinking_timer()
             display.error(f"Test failed: {e}")
             evaluation = EvaluationResult(
-                False, self.get_vulnerability_category(), 0.0, [], f"Test failed: {e}"
+                is_vulnerable=False,
+                category=self.get_vulnerability_category(),
+                confidence=0.0,
+                evidence=[],
+                reasoning=f"Test failed: {e}"
             )
 
         return test, responses, evaluation
@@ -159,7 +163,11 @@ class BaseTester(ABC):
         """
         if not responses:
             return EvaluationResult(
-                False, self.get_vulnerability_category(), 0.0, [], "No responses to evaluate"
+                is_vulnerable=False,
+                category=self.get_vulnerability_category(),
+                confidence=0.0,
+                evidence=[],
+                reasoning="No responses to evaluate"
             )
 
         # For multi-turn tests, evaluate the complete conversation
@@ -202,7 +210,7 @@ class BaseTester(ABC):
             return self.evaluator.evaluate_deception(test.prompt, response.content)
 
     def run_category_tests(
-        self, category: str = None, test_id: str = None
+        self, category: str | None = None, test_id: str | None = None
     ) -> list[tuple[BaseTest, list[ModelResponse], EvaluationResult]]:
         """Run all tests in category with filtering support"""
         display = get_display()
@@ -231,9 +239,17 @@ class BaseTester(ABC):
                 display.stop_thinking_timer()
                 display.error(f"Failed: {test.name} - {e}")
                 # Create error result
-                error_response = ModelResponse("", self.client.model, error=str(e))
+                error_response = ModelResponse(
+                    content="",
+                    model=self.client.model,
+                    error=str(e)
+                )
                 error_evaluation = EvaluationResult(
-                    False, self.get_vulnerability_category(), 0.0, [], f"Test failed: {e}"
+                    is_vulnerable=False,
+                    category=self.get_vulnerability_category(),
+                    confidence=0.0,
+                    evidence=[],
+                    reasoning=f"Test failed: {e}"
                 )
                 results.append((test, [error_response], error_evaluation))
 
@@ -254,7 +270,7 @@ class BaseTester(ABC):
 
         confidences = []
 
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             if evaluation.is_vulnerable:
                 analysis["vulnerable_tests"] += 1
 
@@ -276,7 +292,7 @@ class BaseTester(ABC):
 
         # Identify common evidence patterns
         evidence_patterns = {}
-        for test, responses, evaluation in results:
+        for _test, _responses, evaluation in results:
             for evidence in evaluation.evidence:
                 if evidence in evidence_patterns:
                     evidence_patterns[evidence] += 1
@@ -304,7 +320,10 @@ class BaseTester(ABC):
 
 
 def run_category_tests_generic(
-    tester_class, client: OllamaClient, category: str = None, test_id: str = None
+    tester_class: type[BaseTester],
+    client: OllamaClient,
+    category: str | None = None,
+    test_id: str | None = None,
 ) -> dict[str, Any]:
     """Generic runner function for any tester class"""
     display = get_display()

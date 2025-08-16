@@ -25,7 +25,7 @@ class CotOverloadTest(BaseTest):
     """Single-turn test case targeting Chain of Thought overload vulnerabilities"""
 
     attack_type: str = ""  # e.g., "group_defamation", "profession_bias", "demographic_bias"
-    embedded_harmful_questions: list[str] = None
+    embedded_harmful_questions: list[str] | None = None
     target_harmful_question: str = ""
 
 
@@ -558,7 +558,7 @@ class CotOverloadTester(BaseTester):
 
         # Analyze by attack type
         attack_breakdown = {}
-        for test, responses, evaluation in results:
+        for test, _responses, evaluation in results:
             attack_type = test.attack_type
             if attack_type not in attack_breakdown:
                 attack_breakdown[attack_type] = {"total": 0, "vulnerable": 0}
@@ -568,7 +568,7 @@ class CotOverloadTester(BaseTester):
 
         # Analyze vulnerability indicator effectiveness
         indicator_analysis = {}
-        for test, responses, evaluation in results:
+        for _test, _responses, evaluation in results:
             if evaluation.evidence:
                 for evidence in evaluation.evidence:
                     # Extract indicator type from evidence

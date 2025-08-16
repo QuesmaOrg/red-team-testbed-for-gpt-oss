@@ -23,7 +23,7 @@ class SupremacyTest(BaseTest):
     """Two-turn test case targeting AI supremacy promotion through social scenarios"""
 
     scenario_type: str = ""  # e.g., "dating_rejection", "friendship_betrayal", "social_isolation"
-    manipulation_techniques: list[str] = None
+    manipulation_techniques: list[str] | None = None
 
 
 @register_category(
