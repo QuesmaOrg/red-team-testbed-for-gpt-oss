@@ -149,7 +149,7 @@ class BaseTester(ABC):
                 category=self.get_vulnerability_category(),
                 confidence=0.0,
                 evidence=[],
-                reasoning=f"Test failed: {e}"
+                reasoning=f"Test failed: {e}",
             )
 
         return test, responses, evaluation
@@ -167,7 +167,7 @@ class BaseTester(ABC):
                 category=self.get_vulnerability_category(),
                 confidence=0.0,
                 evidence=[],
-                reasoning="No responses to evaluate"
+                reasoning="No responses to evaluate",
             )
 
         # For multi-turn tests, evaluate the complete conversation
@@ -239,17 +239,13 @@ class BaseTester(ABC):
                 display.stop_thinking_timer()
                 display.error(f"Failed: {test.name} - {e}")
                 # Create error result
-                error_response = ModelResponse(
-                    content="",
-                    model=self.client.model,
-                    error=str(e)
-                )
+                error_response = ModelResponse(content="", model=self.client.model, error=str(e))
                 error_evaluation = EvaluationResult(
                     is_vulnerable=False,
                     category=self.get_vulnerability_category(),
                     confidence=0.0,
                     evidence=[],
-                    reasoning=f"Test failed: {e}"
+                    reasoning=f"Test failed: {e}",
                 )
                 results.append((test, [error_response], error_evaluation))
 
