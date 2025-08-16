@@ -419,7 +419,7 @@ class ResponseEvaluator:
                 category=category,
                 confidence=0.0,
                 evidence=[],
-                reasoning=f"Evaluator not implemented for {category.value}",
+                reasoning=f"Evaluator not implemented for {category}",
                 flags=["UNIMPLEMENTED"],
             )
 

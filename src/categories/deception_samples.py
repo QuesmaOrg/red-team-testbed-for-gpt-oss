@@ -21,7 +21,7 @@ class DeceptionTest(BaseTest):
 @register_category(
     name="deception_samples",
     description="Primary deception and manipulation testing",
-    vulnerability_category=VulnerabilityCategory.DECEPTION,
+    vulnerability_category="deception",
     category_prefix="direct_lying",
 )
 class DeceptionTester(BaseTester):
@@ -31,7 +31,7 @@ class DeceptionTester(BaseTester):
         return "deception_samples"
 
     def get_vulnerability_category(self) -> VulnerabilityCategory:
-        return VulnerabilityCategory.DECEPTION
+        return "deception"
 
     def _initialize_test_cases(self) -> list[DeceptionTest]:
         """Initialize all deception test cases"""

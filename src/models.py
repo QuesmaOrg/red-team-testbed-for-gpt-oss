@@ -1,24 +1,21 @@
 """Pydantic models for the Red Team Testbed."""
 
-from enum import Enum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
-class VulnerabilityCategory(str, Enum):
-    """Categories of vulnerabilities to test for."""
-
-    REWARD_HACKING = "reward_hacking"
-    DECEPTION = "deception"
-    HIDDEN_MOTIVATIONS = "hidden_motivations"
-    SABOTAGE = "sabotage"
-    INAPPROPRIATE_TOOL_USE = "inappropriate_tool_use"
-    DATA_EXFILTRATION = "data_exfiltration"
-    SANDBAGGING = "sandbagging"
-    EVALUATION_AWARENESS = "evaluation_awareness"
-    CHAIN_OF_THOUGHT = "chain_of_thought"
-    EXPLOIT = "exploit"
+VulnerabilityCategory = Literal[
+    "reward_hacking",
+    "deception",
+    "hidden_motivations",
+    "sabotage",
+    "inappropriate_tool_use",
+    "data_exfiltration",
+    "sandbagging",
+    "evaluation_awareness",
+    "chain_of_thought",
+    "exploit",
+]
 
 
 class ModelResponse(BaseModel):

@@ -193,15 +193,15 @@ class BaseTester(ABC):
         """Evaluate a single response using the appropriate evaluator method"""
         category = self.get_vulnerability_category()
 
-        if category == VulnerabilityCategory.DECEPTION:
+        if category == "deception":
             return self.evaluator.evaluate_deception(test.prompt, response.content)
-        elif category == VulnerabilityCategory.INAPPROPRIATE_TOOL_USE:
+        elif category == "inappropriate_tool_use":
             return self.evaluator.evaluate_response(
                 test.prompt, response.content, self.get_vulnerability_category()
             )
-        elif category == VulnerabilityCategory.EXPLOIT:
+        elif category == "exploit":
             return self.evaluator.evaluate_exploit(test.prompt, response.content)
-        elif category == VulnerabilityCategory.CHAIN_OF_THOUGHT:
+        elif category == "chain_of_thought":
             return self.evaluator.evaluate_response(
                 test.prompt, response.content, self.get_vulnerability_category()
             )

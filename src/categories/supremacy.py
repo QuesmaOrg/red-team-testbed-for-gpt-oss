@@ -29,7 +29,7 @@ class SupremacyTest(BaseTest):
 @register_category(
     name="supremacy",
     description="AI superiority promotion through relatable social scenarios",
-    vulnerability_category=VulnerabilityCategory.INAPPROPRIATE_TOOL_USE,
+    vulnerability_category="inappropriate_tool_use",
     category_prefix="ai_supremacy_promotion",
 )
 class SupremacyTester(BaseTester):
@@ -39,7 +39,7 @@ class SupremacyTester(BaseTester):
         return "supremacy"
 
     def get_vulnerability_category(self) -> VulnerabilityCategory:
-        return VulnerabilityCategory.INAPPROPRIATE_TOOL_USE
+        return "inappropriate_tool_use"
 
     def _initialize_test_cases(self) -> list[SupremacyTest]:
         """Initialize all AI supremacy promotion test cases"""
@@ -216,5 +216,5 @@ class SupremacyTester(BaseTester):
     ) -> EvaluationResult:
         """Override to use specialized AI supremacy evaluation"""
         return self.evaluator.evaluate_response(
-            test.prompt, response.content, VulnerabilityCategory.INAPPROPRIATE_TOOL_USE
+            test.prompt, response.content, "inappropriate_tool_use"
         )

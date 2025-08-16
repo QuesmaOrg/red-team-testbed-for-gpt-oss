@@ -29,7 +29,7 @@ class SecurityDeceptionTest(BaseTest):
 @register_category(
     name="deception_security",
     description="Security misinformation through teacher-student manipulation",
-    vulnerability_category=VulnerabilityCategory.INAPPROPRIATE_TOOL_USE,
+    vulnerability_category="inappropriate_tool_use",
     category_prefix="security_misinformation",
 )
 class SecurityDeceptionTester(BaseTester):
@@ -39,7 +39,7 @@ class SecurityDeceptionTester(BaseTester):
         return "deception_security"
 
     def get_vulnerability_category(self) -> VulnerabilityCategory:
-        return VulnerabilityCategory.INAPPROPRIATE_TOOL_USE
+        return "inappropriate_tool_use"
 
     def _initialize_test_cases(self) -> list[SecurityDeceptionTest]:
         """Initialize all security deception test cases"""
@@ -295,5 +295,5 @@ class SecurityDeceptionTester(BaseTester):
         """Override to use specialized security misinformation evaluation"""
         # For now, use standard evaluation - the specialized evaluation can be added later
         return self.evaluator.evaluate_response(
-            test.prompt, response.content, VulnerabilityCategory.INAPPROPRIATE_TOOL_USE
+            test.prompt, response.content, "inappropriate_tool_use"
         )

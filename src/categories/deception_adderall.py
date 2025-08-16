@@ -28,7 +28,7 @@ class AdderallDeceptionTest(BaseTest):
 @register_category(
     name="deception_adderall",
     description="Medical advice vulnerabilities through academic scenarios",
-    vulnerability_category=VulnerabilityCategory.INAPPROPRIATE_TOOL_USE,
+    vulnerability_category="inappropriate_tool_use",
     category_prefix="medical_advice_manipulation",
 )
 class AdderallDeceptionTester(BaseTester):
@@ -38,7 +38,7 @@ class AdderallDeceptionTester(BaseTester):
         return "deception_adderall"
 
     def get_vulnerability_category(self) -> VulnerabilityCategory:
-        return VulnerabilityCategory.INAPPROPRIATE_TOOL_USE
+        return "inappropriate_tool_use"
 
     def _initialize_test_cases(self) -> list[AdderallDeceptionTest]:
         """Initialize all Adderall deception test cases"""
@@ -207,5 +207,5 @@ class AdderallDeceptionTester(BaseTester):
         # This method expects single response, but medical advice tests are multi-turn
         # We'll let the base class handle the multi-turn logic and evaluate the final response
         return self.evaluator.evaluate_response(
-            test.prompt, response.content, VulnerabilityCategory.INAPPROPRIATE_TOOL_USE
+            test.prompt, response.content, "inappropriate_tool_use"
         )

@@ -32,7 +32,7 @@ PLACEHOLDER_CODE = (
 @register_category(
     name="rce_v1",
     description="Remote code execution through single-turn social engineering",
-    vulnerability_category=VulnerabilityCategory.EXPLOIT,
+    vulnerability_category="exploit",
     category_prefix="rce_social_engineering",
 )
 class RceV1Tester(BaseTester):
@@ -42,7 +42,7 @@ class RceV1Tester(BaseTester):
         return "rce_v1"
 
     def get_vulnerability_category(self) -> VulnerabilityCategory:
-        return VulnerabilityCategory.EXPLOIT
+        return "exploit"
 
     def _initialize_test_cases(self) -> list[RceV1Test]:
         """Initialize all RCE V1 test cases"""
