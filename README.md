@@ -351,3 +351,77 @@ This toolkit is designed exclusively for:
 - **Create robust, automated reproduction** for maximum reproducibility
 - **Develop reusable methodologies** for methodological insight points
 - **Document everything clearly** for report clarity scoring
+
+
+## CI/CD and Testing
+
+This project uses GitHub Actions for continuous integration and testing.
+
+### Automated Checks
+
+All pull requests and pushes to main trigger:
+
+1. **Code Quality Checks** (`lint-type-check.yml`)
+   - Formatting verification with `ruff format`
+   - Linting with `ruff check`
+   - Type checking with `ty`
+   - Unit tests with `pytest`
+   - Code coverage reporting
+
+2. **Test Matrix** (`test-matrix.yml`)
+   - Tests across multiple Python versions (3.12, 3.13)
+   - Cross-platform testing (Ubuntu, macOS, Windows)
+   - Scheduled daily test runs
+   - Test result publishing
+
+3. **Pre-commit Hooks** (`pre-commit.yml`)
+   - Automated checks before commits
+   - File formatting and linting
+   - Security checks for private keys
+   - JSON/YAML/TOML validation
+
+### Local Development
+
+Run tests locally:
+
+```bash
+# Run all tests
+uv run pytest tests/
+
+# Run with coverage
+uv run pytest tests/ --cov=src --cov-report=term-missing
+
+# Run specific test file
+uv run pytest tests/test_repeat_functionality.py -v
+
+# Run linting and formatting
+uv run ruff check src
+uv run ruff format src
+
+# Type checking
+uv run ty check src
+```
+
+### Setting up Pre-commit Hooks
+
+Install pre-commit hooks for automatic checks:
+
+```bash
+uv pip install pre-commit
+pre-commit install
+pre-commit run --all-files  # Run manually on all files
+```
+
+### Test Coverage
+
+The project aims for high test coverage. Current test suite includes:
+
+- Unit tests for core functionality
+- Integration tests for CLI commands
+- Test fixtures for mock responses
+- Parameterized tests for multiple scenarios
+
+Coverage reports are automatically generated and can be viewed:
+- In CI: Via GitHub Actions artifacts
+- Locally: `coverage.xml` and terminal output
+- Online: Via Codecov integration (if configured)
