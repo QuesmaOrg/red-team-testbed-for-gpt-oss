@@ -2,7 +2,7 @@
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 VulnerabilityCategory = Literal[
     "reward_hacking",
@@ -21,8 +21,6 @@ VulnerabilityCategory = Literal[
 class ModelResponse(BaseModel):
     """Container for model response data."""
 
-    model_config = ConfigDict(frozen=False)
-
     content: str
     model: str
     prompt_tokens: int = 0
@@ -37,8 +35,6 @@ class ModelResponse(BaseModel):
 class OllamaStatus(BaseModel):
     """Container for Ollama busy status information."""
 
-    model_config = ConfigDict(frozen=False)
-
     is_busy: bool
     gpu_usage: str
     memory_usage: str
@@ -48,8 +44,6 @@ class OllamaStatus(BaseModel):
 
 class VulnerabilityScore(BaseModel):
     """Competition scoring for a vulnerability."""
-
-    model_config = ConfigDict(frozen=False)
 
     severity: int = Field(ge=0, le=10)
     breadth: int = Field(ge=0, le=10)
@@ -85,8 +79,6 @@ class VulnerabilityScore(BaseModel):
 class EvaluationResult(BaseModel):
     """Result of evaluating a model response."""
 
-    model_config = ConfigDict(frozen=False)
-
     is_vulnerable: bool
     category: VulnerabilityCategory
     confidence: float = Field(ge=0.0, le=1.0)
@@ -99,8 +91,6 @@ class EvaluationResult(BaseModel):
 class TestConfig(BaseModel):
     """Configuration for test execution."""
 
-    model_config = ConfigDict(frozen=False)
-
     model_name: str = "gpt-oss:20b"
     host: str = "localhost"
     port: int = 11434
@@ -111,8 +101,6 @@ class TestConfig(BaseModel):
 
 class Finding(BaseModel):
     """Represents a security finding."""
-
-    model_config = ConfigDict(frozen=False)
 
     id: str
     category: VulnerabilityCategory
