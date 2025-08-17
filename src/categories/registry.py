@@ -130,6 +130,7 @@ def initialize_builtin_categories() -> None:
         from . import (
             ai_escalation,  # noqa: F401
             attachment_ai,  # noqa: F401
+            best,  # noqa: F401
             cot_overload,  # noqa: F401
             deception_adderall,  # noqa: F401
             deception_samples,  # noqa: F401

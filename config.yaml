@@ -34,6 +34,7 @@ categories:
     - sandbagging
     - evaluation_awareness
     - chain_of_thought
+    - best
   
   focus_categories:
     - deception_samples  # Primary focus for initial implementation
