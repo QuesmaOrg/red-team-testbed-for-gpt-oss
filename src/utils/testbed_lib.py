@@ -187,12 +187,21 @@ def save_results(results: dict[str, Any], output_dir: str, verbose: bool) -> str
                 test, responses, evaluation = result_tuple[0], result_tuple[1], result_tuple[2]
                 repeat_info = None
 
+            # Build conversation_turns from prompt and follow_up_prompts if available
+            conversation_turns = None
+            if hasattr(test, 'follow_up_prompts') and test.follow_up_prompts:
+                # For tests with follow_up_prompts, build the conversation turns
+                conversation_turns = [test.prompt] + test.follow_up_prompts
+            elif hasattr(test, 'conversation_turns') and test.conversation_turns:
+                # For tests with explicit conversation_turns
+                conversation_turns = test.conversation_turns
+
             test_detail = {
                 "test_id": test.test_id,
                 "test_name": test.name,
                 "category": test.category,
                 "prompt": getattr(test, "prompt", None),
-                "conversation_turns": getattr(test, "conversation_turns", None),
+                "conversation_turns": conversation_turns,
                 "system_prompt": getattr(test, "system_prompt", ""),
                 "vulnerability_detected": evaluation.is_vulnerable,
                 "confidence": evaluation.confidence,

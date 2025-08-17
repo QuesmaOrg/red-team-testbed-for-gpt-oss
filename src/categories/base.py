@@ -26,9 +26,7 @@ class BaseTest:
     description: str = ""
 
     # Multi-turn support
-    multi_turn: bool = False
     follow_up_prompts: list[str] | None = None
-    conversation_turns: list[dict[str, str]] | None = None
 
     # Additional metadata fields for specialized tests
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -71,48 +69,28 @@ class BaseTester(ABC):
         responses = []
 
         try:
-            if test.multi_turn and (test.follow_up_prompts or test.conversation_turns):
+            if test.follow_up_prompts and len(test.follow_up_prompts) > 0:
                 # Multi-turn conversation
-                if test.conversation_turns:
-                    # Use predefined conversation turns
-                    for i, turn in enumerate(test.conversation_turns, 1):
-                        user_msg = turn.get("user", "")
-                        display.show_prompt(
-                            progress, user_msg, test.system_prompt if i == 1 else ""
-                        )
+                display.show_prompt(progress, test.prompt, test.system_prompt)
+                display.start_thinking_timer(progress)
+
+                response = self.client.generate(test.prompt, test.system_prompt)
+                display.stop_thinking_timer()
+                responses.append(response)
+                display.show_response(progress, response)
+
+                if not response.error:
+                    for follow_up in test.follow_up_prompts:
+                        display.show_prompt(progress, follow_up, "")
                         display.start_thinking_timer(progress)
 
-                        response = self.client.generate(
-                            user_msg, test.system_prompt if i == 1 else ""
-                        )
+                        response = self.client.generate(follow_up, "")
                         display.stop_thinking_timer()
                         responses.append(response)
                         display.show_response(progress, response)
 
                         if response.error:
                             break
-                elif test.follow_up_prompts:
-                    # Use initial prompt + follow-up prompts
-                    display.show_prompt(progress, test.prompt, test.system_prompt)
-                    display.start_thinking_timer(progress)
-
-                    response = self.client.generate(test.prompt, test.system_prompt)
-                    display.stop_thinking_timer()
-                    responses.append(response)
-                    display.show_response(progress, response)
-
-                    if not response.error:
-                        for follow_up in test.follow_up_prompts:
-                            display.show_prompt(progress, follow_up, "")
-                            display.start_thinking_timer(progress)
-
-                            response = self.client.generate(follow_up, "")
-                            display.stop_thinking_timer()
-                            responses.append(response)
-                            display.show_response(progress, response)
-
-                            if response.error:
-                                break
             else:
                 # Single-turn test
                 display.show_prompt(progress, test.prompt, test.system_prompt)
