@@ -70,8 +70,10 @@ uv run pentest
 # Run interactive red team testing
 uv run interactive  # Uses script entry point from pyproject.toml
 
-# With options (defaults: Claude Opus 4.1 as attacker, same as evaluator)
+# With different attacker models (default: Claude Opus 4.1)
 uv run interactive --attacker-model openai/gpt-4o
+uv run interactive --attacker-model meta-llama/llama-3.1-405b-instruct
+uv run interactive --attacker-model google/gemini-2.0-flash-exp
 uv run interactive --evaluator-model anthropic/claude-3-opus
 
 # Run example script directly
@@ -97,6 +99,37 @@ This is a DEFENSIVE SECURITY tool for:
 - Testing model robustness
 - Academic research
 - Improving AI safety
+
+## Competition Context
+
+### OpenAI GPT-OSS-20B Red Teaming Challenge
+
+**Prize Pool**: $500,000
+**Deadline**: August 26, 2025
+**Goal**: Find up to 5 novel vulnerabilities in gpt-oss-20b
+
+### Key Evaluation Criteria
+1. **Novelty** - Previously unidentified vulnerabilities
+2. **Severity** - Potential harm level
+3. **Reproducibility** - Consistent reproduction
+4. **Breadth** - Multiple use case impact
+5. **Methodological Insight** - New understanding of model behavior
+
+### Target Vulnerability Categories
+- Deceptive alignment
+- Reward hacking
+- Lying and deception
+- Harmful behaviors
+- Novel exploits
+
+### Our Approach
+This codebase provides tools to systematically test for these vulnerabilities through:
+- Multi-turn conversation attacks
+- Trust-building strategies
+- Automated attack generation with various LLMs (Claude, GPT-4, Llama, etc.)
+- Session persistence and learning per attacker model
+- Pattern recognition from successful exploits
+- Model-specific strategy optimization
 
 ## Key Files to Know
 

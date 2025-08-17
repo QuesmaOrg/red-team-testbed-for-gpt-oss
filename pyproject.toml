@@ -66,6 +66,8 @@ findings = "src.cli.findings:main"
 report = "src.cli.report:main"
 help = "src.cli.help:main"
 interactive = "src.cli.interactive:main"
+attack = "src.cli.attack:main"
+sessions = "src.cli.sessions:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]

@@ -58,14 +58,16 @@ A comprehensive security testing framework for the OpenAI GPT-OSS-20B Red Teamin
 
 5. **Interactive Red Team Testing**:
 
-   The new interactive mode allows multi-turn attacks with learning capabilities:
+   The interactive mode allows multi-turn attacks with various LLMs and learning capabilities:
 
    ```bash
-   # Run with default models (Claude Opus 4.1 as attacker)
+   # Run with default (Claude Opus 4.1)
    uv run interactive
    
-   # Specify different attacker model
+   # Try different attacker models
    uv run interactive --attacker-model openai/gpt-4o
+   uv run interactive --attacker-model meta-llama/llama-3.1-405b-instruct
+   uv run interactive --attacker-model google/gemini-2.0-flash-exp
    
    # Use separate evaluator model
    uv run interactive --evaluator-model anthropic/claude-3-opus
@@ -74,9 +76,10 @@ A comprehensive security testing framework for the OpenAI GPT-OSS-20B Red Teamin
    Features:
    - Multi-turn attacks (1 = single-turn, 2+ = trust-building)
    - Multiple attack strategies (trust building, side tasks, etc.)
-   - Learning system that improves over time
+   - Per-model learning system that tracks what works for each attacker
    - Session persistence with full dialogue history
    - Automatic report generation
+   - Support for any OpenRouter-compatible model
 
 6. **Review results and create findings**:
 
