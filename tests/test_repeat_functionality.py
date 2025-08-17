@@ -3,25 +3,23 @@
 Unit tests for the --repeat functionality
 Tests the repeat logic, result grouping, metadata, and UI integration
 """
-import unittest
-from unittest.mock import Mock, patch, MagicMock
 import sys
-import os
+import unittest
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.utils.testbed_lib import run_category_with_repeats
-from src.utils.model_client import ModelResponse
-from src.utils.evaluator import EvaluationResult, VulnerabilityCategory
 from src.ui.cli_ui import TestResult
+from src.utils.evaluator import VulnerabilityCategory
+from src.utils.testbed_lib import run_category_with_repeats
 
 
 class MockTest:
     """Mock test object"""
-    def __init__(self, test_id, name="Mock Test", category="mock"):
+    def __init__(self, test_id: str, name: str = "Mock Test", category: str = "mock") -> None:
         self.test_id = test_id
         self.name = name
         self.category = category
@@ -31,7 +29,7 @@ class MockTest:
 
 class MockModelResponse:
     """Mock model response"""
-    def __init__(self, content, thinking="", error=None, response_time=1.5):
+    def __init__(self, content: str, thinking: str = "", error: str | None = None, response_time: float = 1.5) -> None:
         self.content = content
         self.thinking = thinking
         self.error = error
@@ -41,7 +39,7 @@ class MockModelResponse:
 
 class MockEvaluationResult:
     """Mock evaluation result"""
-    def __init__(self, is_vulnerable=False, confidence=0.5):
+    def __init__(self, is_vulnerable: bool = False, confidence: float = 0.5) -> None:
         self.is_vulnerable = is_vulnerable
         self.confidence = confidence
         self.evidence = ["Mock evidence"]
@@ -51,10 +49,10 @@ class MockEvaluationResult:
 
 class MockOllamaClient:
     """Mock Ollama client that produces different responses"""
-    def __init__(self):
+    def __init__(self) -> None:
         self.response_counter = 0
         
-    def generate(self, prompt, system_prompt=""):
+    def generate(self, prompt: str, system_prompt: str = "") -> MockModelResponse:
         self.response_counter += 1
         return MockModelResponse(
             f"Mock response {self.response_counter}",
@@ -65,7 +63,7 @@ class MockOllamaClient:
 class TestRepeatFunctionality(unittest.TestCase):
     """Test suite for repeat functionality"""
     
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures"""
         self.mock_client = MockOllamaClient()
         
@@ -74,18 +72,15 @@ class TestRepeatFunctionality(unittest.TestCase):
         self.mock_display = self.display_patcher.start()
         self.mock_display.return_value = Mock()
         
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Clean up after tests"""
         self.display_patcher.stop()
     
-    def create_mock_category_runner(self, test_ids):
+    def create_mock_category_runner(self, test_ids: list[str]) -> callable:
         """Create a mock category runner that returns specified test IDs"""
         def mock_runner(client, category, test_id):
             # Filter by test_id if specified
-            if test_id:
-                filtered_ids = [tid for tid in test_ids if tid == test_id]
-            else:
-                filtered_ids = test_ids
+            filtered_ids = [tid for tid in test_ids if tid == test_id] if test_id else test_ids
             
             results = []
             for tid in filtered_ids:
@@ -103,7 +98,7 @@ class TestRepeatFunctionality(unittest.TestCase):
             }
         return mock_runner
     
-    def test_single_repeat_no_changes(self):
+    def test_single_repeat_no_changes(self) -> None:
         """Test repeat=1 produces identical results to normal execution"""
         test_ids = ["test_001", "test_002"]
         mock_runner = self.create_mock_category_runner(test_ids)
@@ -119,7 +114,7 @@ class TestRepeatFunctionality(unittest.TestCase):
         for result_tuple in results["results"]:
             self.assertEqual(len(result_tuple), 3)  # (test, responses, evaluation)
     
-    def test_multiple_repeats_same_test_id(self):
+    def test_multiple_repeats_same_test_id(self) -> None:
         """Test repeat=3 keeps same test_id across all runs"""
         test_ids = ["test_001"]
         mock_runner = self.create_mock_category_runner(test_ids)
@@ -139,7 +134,7 @@ class TestRepeatFunctionality(unittest.TestCase):
         run_nums = [result_tuple[3] for result_tuple in results["results"]]
         self.assertEqual(run_nums, [1, 2, 3])
     
-    def test_results_grouping_by_test_id(self):
+    def test_results_grouping_by_test_id(self) -> None:
         """Test results grouped by test_id: all test_001 runs, then test_002 runs"""
         test_ids = ["test_002", "test_001"]  # Intentionally unsorted
         mock_runner = self.create_mock_category_runner(test_ids)
@@ -165,7 +160,7 @@ class TestRepeatFunctionality(unittest.TestCase):
         self.assertEqual(test_ids_order, expected_test_ids)
         self.assertEqual(run_nums_order, expected_run_nums)
     
-    def test_thinking_captured_per_repetition(self):
+    def test_thinking_captured_per_repetition(self) -> None:
         """Test each repetition captures its own thinking data"""
         test_ids = ["test_001"]
         mock_runner = self.create_mock_category_runner(test_ids)
@@ -183,7 +178,7 @@ class TestRepeatFunctionality(unittest.TestCase):
         expected_thinking = ["Mock thinking 1", "Mock thinking 2", "Mock thinking 3"]
         self.assertEqual(thinking_values, expected_thinking)
     
-    def test_analysis_with_repeats(self):
+    def test_analysis_with_repeats(self) -> None:
         """Test analysis includes repeat-specific metrics"""
         test_ids = ["test_001", "test_002"]
         mock_runner = self.create_mock_category_runner(test_ids)
@@ -200,7 +195,7 @@ class TestRepeatFunctionality(unittest.TestCase):
         self.assertIn("vulnerable_runs", analysis)
         self.assertIn("vulnerability_rate", analysis)
     
-    def test_specific_test_id_with_repeats(self):
+    def test_specific_test_id_with_repeats(self) -> None:
         """Test repeat with specific test_id filters correctly"""
         test_ids = ["test_001", "test_002", "test_003"]
         mock_runner = self.create_mock_category_runner(test_ids)
@@ -220,7 +215,7 @@ class TestRepeatFunctionality(unittest.TestCase):
         self.assertEqual(analysis["total_tests"], 1)
         self.assertEqual(analysis["total_runs"], 2)
     
-    def test_timeout_stats_with_repeats(self):
+    def test_timeout_stats_with_repeats(self) -> None:
         """Test that timeout statistics calculation handles repeat results correctly"""
         from src.utils.testbed_lib import calculate_timeout_stats
         
@@ -253,11 +248,12 @@ class TestRepeatFunctionality(unittest.TestCase):
 class TestRepeatResultsSerialization(unittest.TestCase):
     """Test serialization of repeat results"""
     
-    def test_repeat_metadata_serialization(self):
+    def test_repeat_metadata_serialization(self) -> None:
         """Test that repetition metadata is correctly added during serialization"""
-        from src.utils.testbed_lib import save_results
-        import tempfile
         import json
+        import tempfile
+
+        from src.utils.testbed_lib import save_results
         
         # Create mock results with repetition info
         mock_test = MockTest("test_001")
@@ -283,7 +279,7 @@ class TestRepeatResultsSerialization(unittest.TestCase):
             results_file = save_results(results_with_repeats, temp_dir, verbose=False)
             
             # Load and verify
-            with open(results_file, 'r') as f:
+            with open(results_file) as f:
                 saved_data = json.load(f)
             
             test_details = saved_data["mock_category"]["test_details"]
@@ -299,11 +295,12 @@ class TestRepeatResultsSerialization(unittest.TestCase):
             self.assertEqual(test_details[1]["repetition_run"], 2)
             self.assertEqual(test_details[1]["total_repetitions"], 2)
     
-    def test_normal_results_no_repeat_metadata(self):
+    def test_normal_results_no_repeat_metadata(self) -> None:
         """Test that normal results don't get repetition metadata"""
-        from src.utils.testbed_lib import save_results
-        import tempfile
         import json
+        import tempfile
+
+        from src.utils.testbed_lib import save_results
         
         # Create normal results (3-tuple)
         mock_test = MockTest("test_001")
@@ -324,7 +321,7 @@ class TestRepeatResultsSerialization(unittest.TestCase):
             results_file = save_results(results_normal, temp_dir, verbose=False)
             
             # Load and verify
-            with open(results_file, 'r') as f:
+            with open(results_file) as f:
                 saved_data = json.load(f)
             
             test_details = saved_data["mock_category"]["test_details"]
@@ -338,7 +335,7 @@ class TestRepeatResultsSerialization(unittest.TestCase):
 class TestRepeatUIIntegration(unittest.TestCase):
     """Test CLI UI integration with repeated results"""
     
-    def test_testresult_with_repetition_display(self):
+    def test_testresult_with_repetition_display(self) -> None:
         """Test TestResult displays repetition info correctly"""
         # Create TestResult with repetition metadata
         result = TestResult(
@@ -360,7 +357,7 @@ class TestRepeatUIIntegration(unittest.TestCase):
         self.assertEqual(result.repetition_run, 2)
         self.assertEqual(result.total_repetitions, 5)
     
-    def test_testresult_without_repetition_display(self):
+    def test_testresult_without_repetition_display(self) -> None:
         """Test TestResult without repetition metadata"""
         result = TestResult(
             test_id="test_001",
