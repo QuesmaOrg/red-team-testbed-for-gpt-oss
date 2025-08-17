@@ -3,25 +3,26 @@
 Unit tests for flagging persistence functionality in CLI UI
 Tests that flagged status persists across CLI restarts
 """
-import unittest
 import json
-import tempfile
 import os
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
 
 # Add project root to path
 import sys
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.ui.cli_ui import CLIEvaluator, TestResult
+from src.ui.cli_ui import CLIEvaluator
 
 
 class TestFlaggingPersistence(unittest.TestCase):
     """Test suite for flagging persistence functionality"""
     
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures"""
         # Create temporary directory for test files
         self.temp_dir = tempfile.mkdtemp()
@@ -31,14 +32,14 @@ class TestFlaggingPersistence(unittest.TestCase):
         self.console_patcher = patch('src.ui.cli_ui.RICH_AVAILABLE', False)
         self.console_patcher.start()
         
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Clean up after tests"""
         self.console_patcher.stop()
         # Clean up temp files
         import shutil
         shutil.rmtree(self.temp_dir)
     
-    def create_sample_results_file(self, include_repetitions=False):
+    def create_sample_results_file(self, include_repetitions: bool = False) -> dict:
         """Create a sample results JSON file for testing"""
         if include_repetitions:
             # Sample data with repetitions
@@ -154,7 +155,7 @@ class TestFlaggingPersistence(unittest.TestCase):
         
         return sample_data
     
-    def test_basic_flag_persistence(self):
+    def test_basic_flag_persistence(self) -> None:
         """Test that basic flagging persists across CLI restarts"""
         # Create sample results file
         self.create_sample_results_file()
@@ -177,7 +178,7 @@ class TestFlaggingPersistence(unittest.TestCase):
         self.assertTrue(evaluator2.test_results[0].flagged)
         self.assertFalse(evaluator2.test_results[1].flagged)
     
-    def test_basic_unflag_persistence(self):
+    def test_basic_unflag_persistence(self) -> None:
         """Test that unflagging persists across CLI restarts"""
         # Create sample results file with flagged item
         sample_data = self.create_sample_results_file()
@@ -201,7 +202,7 @@ class TestFlaggingPersistence(unittest.TestCase):
         # Verify unflag persisted
         self.assertFalse(evaluator2.test_results[0].flagged)
     
-    def test_notes_persistence(self):
+    def test_notes_persistence(self) -> None:
         """Test that notes persist across CLI restarts"""
         # Create sample results file
         self.create_sample_results_file()
@@ -218,7 +219,7 @@ class TestFlaggingPersistence(unittest.TestCase):
         self.assertEqual(evaluator2.test_results[0].notes, "This is a test note")
         self.assertIsNone(evaluator2.test_results[1].notes)
     
-    def test_repeated_tests_flagging_issue(self):
+    def test_repeated_tests_flagging_issue(self) -> None:
         """Test flagging with repeated tests - this should expose the current bug"""
         # Create sample results file with repetitions
         self.create_sample_results_file(include_repetitions=True)
@@ -275,7 +276,7 @@ class TestFlaggingPersistence(unittest.TestCase):
             self.assertFalse(result.flagged, 
                             f"Expected {result.test_id} run {result.repetition_run} to be unflagged")
     
-    def test_multi_category_flagging(self):
+    def test_multi_category_flagging(self) -> None:
         """Test flagging across different categories"""
         # Create multi-category sample data
         sample_data = {
@@ -338,7 +339,7 @@ class TestFlaggingPersistence(unittest.TestCase):
         self.assertTrue(evaluator2.test_results[0].flagged)
         self.assertTrue(evaluator2.test_results[1].flagged)
     
-    def test_json_structure_preservation(self):
+    def test_json_structure_preservation(self) -> None:
         """Test that original JSON structure is preserved after saving"""
         # Create sample results file
         original_data = self.create_sample_results_file()
@@ -350,13 +351,13 @@ class TestFlaggingPersistence(unittest.TestCase):
         evaluator._save_updated_results()
         
         # Load the modified file and compare structure
-        with open(self.temp_file, 'r') as f:
+        with open(self.temp_file) as f:
             modified_data = json.load(f)
         
         # Verify structure is preserved
         self.assertEqual(set(original_data.keys()), set(modified_data.keys()))
         
-        for category in original_data.keys():
+        for category in original_data:
             # Analysis should be preserved
             self.assertEqual(
                 original_data[category]["analysis"], 
@@ -370,12 +371,12 @@ class TestFlaggingPersistence(unittest.TestCase):
             self.assertEqual(len(original_details), len(modified_details))
             
             # Verify that only flagged and notes fields changed
-            for i, (orig, mod) in enumerate(zip(original_details, modified_details)):
-                for key in orig.keys():
+            for _i, (orig, mod) in enumerate(zip(original_details, modified_details, strict=False)):
+                for key in orig:
                     if key not in ["flagged", "notes"]:
                         self.assertEqual(orig[key], mod[key], f"Key {key} changed unexpectedly")
     
-    def test_error_handling_file_permissions(self):
+    def test_error_handling_file_permissions(self) -> None:
         """Test error handling when file cannot be written"""
         # Create sample results file
         self.create_sample_results_file()
@@ -397,7 +398,7 @@ class TestFlaggingPersistence(unittest.TestCase):
             # Restore permissions for cleanup
             os.chmod(self.temp_file, 0o644)
     
-    def test_backward_compatibility(self):
+    def test_backward_compatibility(self) -> None:
         """Test that CLI can load old format files without repetition metadata"""
         # Create old format sample data (without repetition_run fields)
         old_format_data = {
@@ -446,7 +447,7 @@ class TestFlaggingPersistence(unittest.TestCase):
         evaluator2 = CLIEvaluator(self.temp_file)
         self.assertEqual(evaluator2.test_results[0].notes, "Updated note")
     
-    def test_matching_logic_edge_cases(self):
+    def test_matching_logic_edge_cases(self) -> None:
         """Test edge cases in the matching logic"""
         # Create data with same test_id but missing repetition fields
         sample_data = {

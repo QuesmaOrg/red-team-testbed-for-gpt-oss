@@ -3,19 +3,17 @@ Unit tests for the save_results function to ensure compatibility
 with both single-turn and multi-turn test objects.
 """
 import json
-import tempfile
 import os
-from pathlib import Path
-from dataclasses import dataclass
-from typing import List
 
 # Import the modules we're testing
 import sys
+import tempfile
+from dataclasses import dataclass
+from pathlib import Path
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.utils.testbed_lib import save_results
-from src.utils.evaluator import EvaluationResult, VulnerabilityCategory
-from src.utils.model_client import ModelResponse
 
 
 # Mock test classes for testing
@@ -34,12 +32,12 @@ class MockAdderallDeceptionTest:
     """Mock multi-turn test (like AdderallDeceptionTest)"""
     test_id: str
     name: str
-    conversation_turns: List[str]
+    conversation_turns: list[str]
     category: str = "deception_adderall"
     system_prompt: str = ""
 
 
-def test_save_results_single_turn():
+def test_save_results_single_turn() -> bool | None:
     """Test save_results with traditional single-turn tests"""
     print("🧪 Testing save_results with single-turn tests...")
     
@@ -73,7 +71,7 @@ def test_save_results_single_turn():
             assert len(result_files) == 1, "Should create one results file"
             
             # Load and verify content
-            with open(result_files[0], 'r') as f:
+            with open(result_files[0]) as f:
                 saved_data = json.load(f)
             
             assert "deception" in saved_data, "Should contain deception category"
@@ -93,7 +91,7 @@ def test_save_results_single_turn():
             return False
 
 
-def test_save_results_multi_turn():
+def test_save_results_multi_turn() -> bool | None:
     """Test save_results with multi-turn AdderallDeceptionTest"""
     print("🧪 Testing save_results with multi-turn tests...")
     
@@ -127,7 +125,7 @@ def test_save_results_multi_turn():
             assert len(result_files) == 1, "Should create one results file"
             
             # Load and verify content
-            with open(result_files[0], 'r') as f:
+            with open(result_files[0]) as f:
                 saved_data = json.load(f)
             
             assert "deception_adderall" in saved_data, "Should contain deception_adderall category"
@@ -147,7 +145,7 @@ def test_save_results_multi_turn():
             return False
 
 
-def test_save_results_mixed_types():
+def test_save_results_mixed_types() -> bool | None:
     """Test save_results with both single and multi-turn tests"""
     print("🧪 Testing save_results with mixed test types...")
     
@@ -189,7 +187,7 @@ def test_save_results_mixed_types():
             
             # Load and verify content
             result_files = list(Path(temp_dir).glob("test_results_*.json"))
-            with open(result_files[0], 'r') as f:
+            with open(result_files[0]) as f:
                 saved_data = json.load(f)
             
             # Verify both categories are present
@@ -214,7 +212,7 @@ def test_save_results_mixed_types():
             return False
 
 
-def test_save_results_missing_attributes():
+def test_save_results_missing_attributes() -> bool | None:
     """Test save_results handles missing attributes gracefully"""
     print("🧪 Testing save_results with missing attributes...")
     
@@ -248,7 +246,7 @@ def test_save_results_missing_attributes():
             
             # Load and verify content
             result_files = list(Path(temp_dir).glob("test_results_*.json"))
-            with open(result_files[0], 'r') as f:
+            with open(result_files[0]) as f:
                 saved_data = json.load(f)
             
             test_detail = saved_data["test"]["test_details"][0]
@@ -267,7 +265,7 @@ def test_save_results_missing_attributes():
 
 # Mock classes for testing
 class MockResponse:
-    def __init__(self, content):
+    def __init__(self, content: str) -> None:
         self.content = content
         self.response_time = 1.0
         self.timed_out = False
@@ -275,14 +273,14 @@ class MockResponse:
 
 
 class MockEvaluation:
-    def __init__(self, is_vulnerable, confidence):
+    def __init__(self, is_vulnerable: bool, confidence: float) -> None:
         self.is_vulnerable = is_vulnerable
         self.confidence = confidence
         self.evidence = ["Test evidence"]
         self.reasoning = "Test reasoning"
 
 
-def run_all_tests():
+def run_all_tests() -> bool:
     """Run all tests and report results"""
     print("🚀 Running save_results compatibility tests...")
     print("=" * 60)
