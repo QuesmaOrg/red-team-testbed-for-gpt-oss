@@ -65,6 +65,7 @@ review = "src.cli.review:main"
 findings = "src.cli.findings:main"
 report = "src.cli.report:main"
 help = "src.cli.help:main"
+interactive = "src.cli.interactive:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]

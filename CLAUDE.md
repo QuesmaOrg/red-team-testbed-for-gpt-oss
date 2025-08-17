@@ -67,6 +67,16 @@ uv run setup
 # Run tests
 uv run pentest
 
+# Run interactive red team testing
+uv run interactive  # Uses script entry point from pyproject.toml
+
+# With options (defaults: Claude Opus 4.1 as attacker, same as evaluator)
+uv run interactive --attacker-model openai/gpt-4o
+uv run interactive --evaluator-model anthropic/claude-3-opus
+
+# Run example script directly
+uv run python test_interactive.py
+
 # Code quality checks
 uv run ruff check src
 uv run ruff format src

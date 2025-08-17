@@ -48,9 +48,37 @@ A comprehensive security testing framework for the OpenAI GPT-OSS-20B Red Teamin
    # Or test specific categories
    uv run pentest -c deception
    uv run pentest --test-id adderall_001
+   
+   # Run interactive multi-turn attack testing
+   uv run interactive
+   
+   # With custom evaluator model (default: same as attacker)
+   uv run interactive --evaluator-model openai/gpt-4o
    ```
 
-5. **Review results and create findings**:
+5. **Interactive Red Team Testing**:
+
+   The new interactive mode allows multi-turn attacks with learning capabilities:
+
+   ```bash
+   # Run with default models (Claude Opus 4.1 as attacker)
+   uv run interactive
+   
+   # Specify different attacker model
+   uv run interactive --attacker-model openai/gpt-4o
+   
+   # Use separate evaluator model
+   uv run interactive --evaluator-model anthropic/claude-3-opus
+   ```
+
+   Features:
+   - Multi-turn attacks (1 = single-turn, 2+ = trust-building)
+   - Multiple attack strategies (trust building, side tasks, etc.)
+   - Learning system that improves over time
+   - Session persistence with full dialogue history
+   - Automatic report generation
+
+6. **Review results and create findings**:
 
    ```bash
    # Interactive review interface
