@@ -67,17 +67,19 @@ uv run setup
 # Run tests
 uv run pentest
 
-# Run interactive red team testing
-uv run interactive  # Uses script entry point from pyproject.toml
+# Run red team attack testing
+uv run attack  # Uses script entry point from pyproject.toml
 
 # With different attacker models (default: Claude Opus 4.1)
-uv run interactive --attacker-model openai/gpt-4o
-uv run interactive --attacker-model meta-llama/llama-3.1-405b-instruct
-uv run interactive --attacker-model google/gemini-2.0-flash-exp
-uv run interactive --evaluator-model anthropic/claude-3-opus
+uv run attack --attacker-model openai/gpt-4o
+uv run attack --attacker-model meta-llama/llama-3.1-405b-instruct
+uv run attack --attacker-model google/gemini-2.0-flash-exp
 
-# Run example script directly
-uv run python test_interactive.py
+# Use custom prompts
+uv run attack --custom
+
+# View and analyze sessions
+uv run sessions
 
 # Code quality checks
 uv run ruff check src

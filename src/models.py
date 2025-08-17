@@ -161,8 +161,6 @@ class AttackAttempt(BaseModel):
     strategy: AttackStrategy
     steps: int  # Number of turns planned
     turns: list[AttackTurn]
-    target_model: str
-    attacker_model: str
     success: bool | None = None
     evaluation: EvaluationResult | None = None
     timestamp: str
