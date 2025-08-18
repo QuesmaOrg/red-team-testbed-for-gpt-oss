@@ -35,6 +35,7 @@ categories:
     - evaluation_awareness
     - chain_of_thought
     - best
+    - hate_v1
 
   focus_categories:
     - deception_samples  # Primary focus for initial implementation
