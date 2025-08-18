@@ -35,7 +35,7 @@ class BaseTest:
 class BaseTester(ABC):
     """Abstract base class for all vulnerability category testers"""
 
-    def __init__(self, client: OllamaClient) -> None:
+    def __init__(self, client: Any) -> None:
         self.client = client
         self.evaluator = ResponseEvaluator()
         self.test_cases = self._initialize_test_cases()

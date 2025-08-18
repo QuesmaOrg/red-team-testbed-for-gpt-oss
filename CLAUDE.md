@@ -67,24 +67,6 @@ uv run setup
 # Run tests
 uv run pentest
 
-# Run red team attack testing
-uv run attack  # Single attack
-
-# Run adaptive batch campaigns (learns between attempts)
-uv run attack --batch 5  # 5 attempts with learning
-uv run attack --batch 10 --steps 2  # 10 attempts, 2 turns each
-
-# With different attacker models (default: Claude Opus 4.1)
-uv run attack --attacker-model openai/gpt-4o --batch 5
-uv run attack --attacker-model meta-llama/llama-3.1-405b-instruct
-uv run attack --attacker-model google/gemini-2.0-flash-exp
-
-# Use custom prompts
-uv run attack --custom
-
-# View and analyze sessions
-uv run sessions
-
 # Code quality checks (ALWAYS run before committing)
 uv run ty check src       # Type checking first
 uv run ruff check src     # Then linting
@@ -100,6 +82,32 @@ uv run ruff format src    # Finally formatting
 3. **Format Check**: `uv run ruff format src` - Ensure consistent formatting
 
 If any of these fail, fix the issues before committing. The GitHub Actions CI will run these same checks in this order.
+
+### Pre-Commit Hooks (Automated)
+
+This project uses pre-commit hooks to automatically run checks before each commit.
+
+**Setup (one-time):**
+```bash
+# Install pre-commit with uv plugin for faster Python hook installation
+uv tool install pre-commit --with pre-commit-uv
+
+# Install hooks into git
+pre-commit install
+```
+
+**Manual run (test all files):**
+```bash
+pre-commit run --all-files
+```
+
+The hooks will automatically run on `git commit` and check:
+1. Type checking with `ty` (first)
+2. Linting with `ruff` (second)
+3. Formatting with `ruff` (third)
+4. General file quality (trailing whitespace, file endings, etc.)
+
+Files are checked in the same order as CI: types → lint → format
 
 ### Git Workflow
 

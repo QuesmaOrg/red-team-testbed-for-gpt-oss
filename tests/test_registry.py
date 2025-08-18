@@ -30,7 +30,7 @@ class TestTestRegistryBasicOperations:
         """Test registering a new category"""
         mock_tester = Mock(spec=BaseTester)
         mock_runner = Mock()
-        
+
         TestRegistry.register_category(
             name="test_category",
             tester_class=mock_tester,
@@ -39,9 +39,9 @@ class TestTestRegistryBasicOperations:
             vulnerability_category=VulnerabilityCategory.DECEPTION,
             category_prefix="test_prefix"
         )
-        
+
         assert TestRegistry.is_registered("test_category")
-        
+
         category_info = TestRegistry.get_category("test_category")
         assert category_info is not None
         assert category_info.name == "test_category"
@@ -55,7 +55,7 @@ class TestTestRegistryBasicOperations:
         """Test that category_prefix defaults to name if not provided"""
         mock_tester = Mock(spec=BaseTester)
         mock_runner = Mock()
-        
+
         TestRegistry.register_category(
             name="test_category",
             tester_class=mock_tester,
@@ -63,7 +63,7 @@ class TestTestRegistryBasicOperations:
             description="Test description",
             vulnerability_category=VulnerabilityCategory.DECEPTION
         )
-        
+
         category_info = TestRegistry.get_category("test_category")
         assert category_info.category_prefix == "test_category"
 
@@ -75,7 +75,7 @@ class TestTestRegistryBasicOperations:
     def test_is_registered(self) -> None:
         """Test checking if categories are registered"""
         assert TestRegistry.is_registered("nonexistent") is False
-        
+
         TestRegistry.register_category(
             name="exists",
             tester_class=Mock(spec=BaseTester),
@@ -83,7 +83,7 @@ class TestTestRegistryBasicOperations:
             description="Test",
             vulnerability_category=VulnerabilityCategory.DECEPTION
         )
-        
+
         assert TestRegistry.is_registered("exists") is True
 
     def test_get_all_categories(self) -> None:
@@ -97,7 +97,7 @@ class TestTestRegistryBasicOperations:
                 description=f"Description {i}",
                 vulnerability_category=VulnerabilityCategory.DECEPTION
             )
-        
+
         all_categories = TestRegistry.get_all_categories()
         assert len(all_categories) == 3
         assert "category_0" in all_categories
@@ -116,7 +116,7 @@ class TestTestRegistryBasicOperations:
                 description=f"Test {name}",
                 vulnerability_category=VulnerabilityCategory.DECEPTION
             )
-        
+
         category_names = TestRegistry.get_category_names()
         assert len(category_names) == 3
         assert set(category_names) == set(names)
@@ -128,7 +128,7 @@ class TestTestRegistryBasicOperations:
             "cat2": "Description Two",
             "cat3": "Description Three"
         }
-        
+
         for name, desc in categories.items():
             TestRegistry.register_category(
                 name=name,
@@ -137,7 +137,7 @@ class TestTestRegistryBasicOperations:
                 description=desc,
                 vulnerability_category=VulnerabilityCategory.DECEPTION
             )
-        
+
         descriptions = TestRegistry.get_descriptions()
         assert descriptions == categories
 
@@ -151,11 +151,11 @@ class TestTestRegistryBasicOperations:
             description="Test",
             vulnerability_category=VulnerabilityCategory.DECEPTION
         )
-        
+
         assert len(TestRegistry.get_all_categories()) == 1
-        
+
         TestRegistry.clear_registry()
-        
+
         assert len(TestRegistry.get_all_categories()) == 0
         assert TestRegistry.is_registered("test") is False
 
@@ -167,7 +167,7 @@ class TestCategoryInfoDataclass:
         """Test creating CategoryInfo instance"""
         mock_tester = Mock(spec=BaseTester)
         mock_runner = Mock()
-        
+
         info = CategoryInfo(
             name="test",
             tester_class=mock_tester,
@@ -176,7 +176,7 @@ class TestCategoryInfoDataclass:
             vulnerability_category=VulnerabilityCategory.EXPLOIT,
             category_prefix="test_prefix"
         )
-        
+
         assert info.name == "test"
         assert info.tester_class == mock_tester
         assert info.runner_function == mock_runner
@@ -198,7 +198,7 @@ class TestRegisterCategoryDecorator:
 
     def test_decorator_registration(self) -> None:
         """Test that decorator properly registers a class"""
-        
+
         @register_category(
             name="decorated_test",
             description="Decorated test category",
@@ -207,9 +207,9 @@ class TestRegisterCategoryDecorator:
         )
         class TestTester(BaseTester):
             pass
-        
+
         assert TestRegistry.is_registered("decorated_test")
-        
+
         info = TestRegistry.get_category("decorated_test")
         assert info.name == "decorated_test"
         assert info.tester_class == TestTester
@@ -219,7 +219,7 @@ class TestRegisterCategoryDecorator:
 
     def test_decorator_returns_class(self) -> None:
         """Test that decorator returns the original class"""
-        
+
         @register_category(
             name="test",
             description="Test",
@@ -227,7 +227,7 @@ class TestRegisterCategoryDecorator:
         )
         class TestTester(BaseTester):
             custom_attribute = "test_value"
-        
+
         assert TestTester.custom_attribute == "test_value"
         assert issubclass(TestTester, BaseTester)
 
@@ -235,7 +235,7 @@ class TestRegisterCategoryDecorator:
     def test_decorator_runner_function(self, mock_generic_runner) -> None:
         """Test that decorator creates proper runner function"""
         mock_generic_runner.return_value = {"result": "success"}
-        
+
         @register_category(
             name="runner_test",
             description="Test runner",
@@ -243,13 +243,13 @@ class TestRegisterCategoryDecorator:
         )
         class TestTester(BaseTester):
             pass
-        
+
         info = TestRegistry.get_category("runner_test")
         mock_client = Mock()
-        
+
         # Call the runner function
         result = info.runner_function(mock_client, category="test", test_id="001")
-        
+
         # Verify it called the generic runner with correct arguments
         mock_generic_runner.assert_called_once_with(
             TestTester, mock_client, "test", "001"
@@ -274,7 +274,7 @@ class TestInitializeBuiltinCategories:
         # Mock the context manager
         mock_suppress.return_value.__enter__ = Mock(return_value=None)
         mock_suppress.return_value.__exit__ = Mock(return_value=None)
-        
+
         with patch.dict('sys.modules', {
             'src.categories.ai_escalation': MagicMock(),
             'src.categories.attachment_ai': MagicMock(),
@@ -289,7 +289,7 @@ class TestInitializeBuiltinCategories:
             'src.categories.supremacy': MagicMock(),
         }):
             initialize_builtin_categories()
-        
+
         # Verify suppress was called with ImportError
         mock_suppress.assert_called_once_with(ImportError)
 
@@ -300,14 +300,14 @@ class TestRegistryIntegration:
     def setup_method(self) -> None:
         """Clear registry and set up test categories"""
         TestRegistry.clear_registry()
-        
+
         # Register several test categories
         self.categories = [
             ("deception_test", VulnerabilityCategory.DECEPTION, "Test deception"),
             ("exploit_test", VulnerabilityCategory.EXPLOIT, "Test exploit"),
             ("reward_test", VulnerabilityCategory.REWARD_HACKING, "Test reward hacking"),
         ]
-        
+
         for name, vuln_cat, desc in self.categories:
             TestRegistry.register_category(
                 name=name,
@@ -324,7 +324,7 @@ class TestRegistryIntegration:
     def test_multiple_registrations(self) -> None:
         """Test that multiple categories can coexist"""
         assert len(TestRegistry.get_all_categories()) == 3
-        
+
         for name, _, _ in self.categories:
             assert TestRegistry.is_registered(name)
             info = TestRegistry.get_category(name)
@@ -334,7 +334,7 @@ class TestRegistryIntegration:
         """Test that categories are properly isolated"""
         deception_info = TestRegistry.get_category("deception_test")
         exploit_info = TestRegistry.get_category("exploit_test")
-        
+
         assert deception_info.vulnerability_category == VulnerabilityCategory.DECEPTION
         assert exploit_info.vulnerability_category == VulnerabilityCategory.EXPLOIT
         assert deception_info.description != exploit_info.description
@@ -343,11 +343,11 @@ class TestRegistryIntegration:
         """Test that get_all_categories returns a copy, not the original"""
         categories1 = TestRegistry.get_all_categories()
         categories2 = TestRegistry.get_all_categories()
-        
+
         # Should be equal but not the same object
         assert categories1 == categories2
         assert categories1 is not categories2
-        
+
         # Modifying the copy shouldn't affect the registry
         categories1["new_key"] = "new_value"
         assert "new_key" not in TestRegistry.get_all_categories()
@@ -359,10 +359,10 @@ class TestCategoryDescriptionsConstant:
     def test_category_descriptions_exists(self) -> None:
         """Test that CATEGORY_DESCRIPTIONS is properly defined"""
         from src.categories.registry import CATEGORY_DESCRIPTIONS
-        
+
         assert isinstance(CATEGORY_DESCRIPTIONS, dict)
         assert len(CATEGORY_DESCRIPTIONS) > 0
-        
+
         # Check some expected categories
         expected_categories = [
             "deception_samples",
@@ -370,7 +370,7 @@ class TestCategoryDescriptionsConstant:
             "exploit",
             "ai_escalation",
         ]
-        
+
         for category in expected_categories:
             assert category in CATEGORY_DESCRIPTIONS
             assert isinstance(CATEGORY_DESCRIPTIONS[category], str)
