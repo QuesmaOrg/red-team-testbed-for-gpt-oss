@@ -443,13 +443,27 @@ uv run ty check src
 
 ### Setting up Pre-commit Hooks
 
-Install pre-commit hooks for automatic checks:
+Pre-commit hooks automatically run type checking, linting, and formatting before each commit:
 
 ```bash
-uv pip install pre-commit
+# Install pre-commit with uv plugin for faster Python hook installation
+uv tool install pre-commit --with pre-commit-uv
+
+# Install hooks into git
 pre-commit install
-pre-commit run --all-files  # Run manually on all files
+
+# Run manually on all files (optional)
+pre-commit run --all-files
 ```
+
+The hooks will automatically:
+1. Type check with `ty` (catches type errors)
+2. Lint and auto-fix with `ruff check --fix` (fixes safe issues)
+3. Format with `ruff format` (ensures consistent style)
+4. Validate YAML, JSON, and TOML files
+5. Check for merge conflicts
+
+All checks use the exact same commands and settings from `pyproject.toml`.
 
 ### Test Coverage
 
