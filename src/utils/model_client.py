@@ -1,4 +1,4 @@
-"""Ollama client for GPT-OSS-20B model interaction."""
+"""LLM client factory and backward compatibility layer."""
 
 import subprocess
 import time
@@ -7,6 +7,18 @@ from typing import Any
 import requests
 from requests.exceptions import Timeout
 from src.models import ModelResponse, OllamaStatus
+from src.utils.llm_backend import create_backend
+from src.utils.settings_manager import settings_manager
+
+
+def get_client():
+    """Factory function to get the configured LLM client."""
+    try:
+        settings = settings_manager.load_settings()
+        return create_backend(settings)
+    except Exception:
+        # Fallback to default Ollama configuration for backward compatibility
+        return OllamaClient()
 
 
 class OllamaClient:

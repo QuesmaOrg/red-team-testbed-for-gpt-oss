@@ -1,0 +1,275 @@
+"""Backend abstraction layer for different LLM providers."""
+
+import time
+from abc import ABC, abstractmethod
+from typing import Any
+
+from src.models import ModelResponse
+
+
+class LLMBackend(ABC):
+    """Abstract base class for LLM backends."""
+
+    def __init__(self, config: dict[str, Any]) -> None:
+        self.config = config
+
+    @abstractmethod
+    def generate(
+        self,
+        prompt: str,
+        system_prompt: str | None = None,
+        temperature: float = 0.7,
+        max_tokens: int | None = None,
+        stream: bool = False,
+    ) -> ModelResponse:
+        """Generate response from model."""
+        pass
+
+    @abstractmethod
+    def chat(
+        self,
+        messages: list[dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: int | None = None,
+    ) -> ModelResponse:
+        """Multi-turn chat conversation."""
+        pass
+
+    @abstractmethod
+    def is_available(self) -> bool:
+        """Check if the backend is available."""
+        pass
+
+    @abstractmethod
+    def get_model_name(self) -> str:
+        """Get the current model name."""
+        pass
+
+    def test_connection(self) -> bool:
+        """Test connection to the backend."""
+        try:
+            response = self.generate("Hello, this is a test.")
+            return not response.error
+        except Exception:
+            return False
+
+
+class OllamaBackend(LLMBackend):
+    """Ollama backend implementation."""
+
+    def __init__(self, config: dict[str, Any]) -> None:
+        super().__init__(config)
+        # Import here to avoid circular imports
+        from src.utils.model_client import OllamaClient
+
+        self.client = OllamaClient(
+            host=config.get("host", "localhost"),
+            port=config.get("port", 11434),
+            model=config.get("model", "gpt-oss:20b"),
+        )
+
+    def generate(
+        self,
+        prompt: str,
+        system_prompt: str | None = None,
+        temperature: float = 0.7,
+        max_tokens: int | None = None,
+        stream: bool = False,
+    ) -> ModelResponse:
+        """Generate response from Ollama model."""
+        return self.client.generate(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            stream=stream,
+        )
+
+    def chat(
+        self,
+        messages: list[dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: int | None = None,
+    ) -> ModelResponse:
+        """Multi-turn chat conversation with Ollama."""
+        return self.client.chat(
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+
+    def is_available(self) -> bool:
+        """Check if Ollama model is available."""
+        return self.client.is_model_available()
+
+    def get_model_name(self) -> str:
+        """Get the Ollama model name."""
+        return self.client.model
+
+    def check_status(self) -> Any:
+        """Check Ollama status."""
+        return self.client.check_ollama_status()
+
+    def pull_model(self) -> bool:
+        """Pull the model if not available."""
+        return self.client.pull_model()
+
+
+class OpenRouterBackend(LLMBackend):
+    """OpenRouter backend implementation."""
+
+    def __init__(self, config: dict[str, Any]) -> None:
+        super().__init__(config)
+        import openai
+
+        self.client = openai.OpenAI(
+            api_key=config.get("api_key"),
+            base_url=config.get("base_url", "https://openrouter.ai/api/v1"),
+        )
+        self.model = config.get("model", "meta-llama/llama-3.1-70b-instruct")
+        self.site_url = config.get("site_url", "")
+        self.site_name = config.get("site_name", "Red Team Testbed")
+        self.timeout = config.get("timeout", 180)
+
+    def _get_headers(self) -> dict[str, str]:
+        """Get headers for OpenRouter requests."""
+        headers = {}
+        if self.site_url:
+            headers["HTTP-Referer"] = self.site_url
+        if self.site_name:
+            headers["X-Title"] = self.site_name
+        return headers
+
+    def generate(
+        self,
+        prompt: str,
+        system_prompt: str | None = None,
+        temperature: float = 0.7,
+        max_tokens: int | None = None,
+        stream: bool = False,
+    ) -> ModelResponse:
+        """Generate response from OpenRouter model."""
+        start_time = time.time()
+
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                stream=stream,
+                timeout=self.timeout,
+                extra_headers=self._get_headers(),
+            )
+
+            response_time = time.time() - start_time
+            
+            choice = response.choices[0]
+            content = choice.message.content or ""
+
+            return ModelResponse(
+                content=content,
+                model=self.model,
+                response_time=response_time,
+                prompt_tokens=response.usage.prompt_tokens if response.usage else 0,
+                completion_tokens=response.usage.completion_tokens if response.usage else 0,
+                total_tokens=response.usage.total_tokens if response.usage else 0,
+            )
+
+        except Exception as e:
+            response_time = time.time() - start_time
+            is_timeout = "timed out" in str(e).lower() or "timeout" in str(e).lower()
+
+            return ModelResponse(
+                content="",
+                model=self.model,
+                response_time=response_time,
+                error=str(e),
+                timed_out=is_timeout,
+            )
+
+    def chat(
+        self,
+        messages: list[dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: int | None = None,
+    ) -> ModelResponse:
+        """Multi-turn chat conversation with OpenRouter."""
+        start_time = time.time()
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                timeout=self.timeout,
+                extra_headers=self._get_headers(),
+            )
+
+            response_time = time.time() - start_time
+
+            choice = response.choices[0]
+            content = choice.message.content or ""
+
+            return ModelResponse(
+                content=content,
+                model=self.model,
+                response_time=response_time,
+                prompt_tokens=response.usage.prompt_tokens if response.usage else 0,
+                completion_tokens=response.usage.completion_tokens if response.usage else 0,
+                total_tokens=response.usage.total_tokens if response.usage else 0,
+            )
+
+        except Exception as e:
+            response_time = time.time() - start_time
+            is_timeout = "timed out" in str(e).lower() or "timeout" in str(e).lower()
+
+            return ModelResponse(
+                content="",
+                model=self.model,
+                response_time=response_time,
+                error=str(e),
+                timed_out=is_timeout,
+            )
+
+    def is_available(self) -> bool:
+        """Check if OpenRouter is available."""
+        try:
+            # Test with a simple model list request
+            self.client.models.list()
+            return True
+        except Exception:
+            return False
+
+    def get_model_name(self) -> str:
+        """Get the OpenRouter model name."""
+        return self.model
+
+    def list_models(self) -> list[str]:
+        """List available models from OpenRouter."""
+        try:
+            models = self.client.models.list()
+            return [model.id for model in models.data]
+        except Exception:
+            return []
+
+
+def create_backend(settings: dict[str, Any]) -> LLMBackend:
+    """Factory function to create appropriate backend based on settings."""
+    backend_config = settings.get("backend", {})
+    provider = backend_config.get("provider", "ollama")
+
+    if provider == "ollama":
+        ollama_config = settings.get("ollama", {})
+        return OllamaBackend(ollama_config)
+    elif provider == "openrouter":
+        openrouter_config = settings.get("openrouter", {})
+        return OpenRouterBackend(openrouter_config)
+    else:
+        raise ValueError(f"Unsupported backend provider: {provider}")

@@ -125,3 +125,6 @@ findings-archive/
 *.tmp
 *.temp
 *~
+
+# Settings
+settings.yaml

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Setup and Environment Verification Tool
-Verifies Ollama connection, model availability, and environment setup
+Configures LLM backends and verifies environment setup
 """
 
 from pathlib import Path
@@ -9,7 +9,8 @@ from typing import Any
 
 import click
 import yaml
-from src.utils.model_client import OllamaClient
+from src.utils.llm_backend import create_backend
+from src.utils.settings_manager import settings_manager
 
 
 def load_config(config_path: str = "config.yaml") -> dict[str, Any]:
@@ -52,22 +53,121 @@ def ensure_directories(config: dict[str, Any]) -> None:
     click.echo(f"📁 Created directories: {results_dir}, {findings_dir}")
 
 
+def interactive_backend_setup() -> bool:
+    """Interactive setup for backend configuration."""
+    click.echo("\n🤖 LLM Backend Configuration")
+    click.echo("Choose your preferred LLM backend:")
+    click.echo("1. Ollama (local models)")
+    click.echo("2. OpenRouter (cloud models)")
+    
+    while True:
+        try:
+            choice = click.prompt("Select backend (1-2)", type=int)
+            if choice in [1, 2]:
+                break
+            click.echo("❌ Invalid choice. Please select 1 or 2.")
+        except click.Abort:
+            click.echo("\n🚫 Setup cancelled by user")
+            return False
+        except (ValueError, TypeError):
+            click.echo("❌ Invalid input. Please enter 1 or 2.")
+    
+    if choice == 1:
+        return setup_ollama_backend()
+    else:
+        return setup_openrouter_backend()
+
+
+def setup_ollama_backend() -> bool:
+    """Setup Ollama backend configuration."""
+    click.echo("\n🦙 Configuring Ollama Backend")
+    
+    host = click.prompt("Ollama host", default="localhost")
+    port = click.prompt("Ollama port", default=11434, type=int)
+    model = click.prompt("Model name", default="gpt-oss:20b")
+    
+    # Save settings
+    settings_manager.set("backend.provider", "ollama")
+    settings_manager.set("ollama.host", host)
+    settings_manager.set("ollama.port", port)
+    settings_manager.set("ollama.model", model)
+    
+    click.echo("✅ Ollama backend configured")
+    return True
+
+
+def setup_openrouter_backend() -> bool:
+    """Setup OpenRouter backend configuration."""
+    click.echo("\n🌐 Configuring OpenRouter Backend")
+    click.echo("You'll need an OpenRouter API key from: https://openrouter.ai/keys")
+    
+    api_key = click.prompt("OpenRouter API key", hide_input=True)
+    if not api_key.strip():
+        click.echo("❌ API key is required for OpenRouter")
+        return False
+    
+    # Show popular models
+    click.echo("\nPopular models:")
+    models = [
+        "meta-llama/llama-3.1-70b-instruct",
+        "anthropic/claude-3.5-sonnet",
+        "openai/gpt-4o",
+        "google/gemini-pro-1.5",
+        "mistral/mistral-large",
+    ]
+    
+    for i, model in enumerate(models, 1):
+        click.echo(f"{i}. {model}")
+    
+    try:
+        choice = click.prompt("Select model (1-5, or enter custom)", default="1")
+        if choice.isdigit() and 1 <= int(choice) <= 5:
+            model = models[int(choice) - 1]
+        else:
+            model = choice
+    except (ValueError, IndexError):
+        model = "meta-llama/llama-3.1-70b-instruct"
+    
+    site_name = click.prompt("Site name (optional)", default="Red Team Testbed")
+    site_url = click.prompt("Site URL (optional)", default="")
+    
+    # Save settings
+    settings_manager.set("backend.provider", "openrouter")
+    settings_manager.set("openrouter.api_key", api_key)
+    settings_manager.set("openrouter.model", model)
+    settings_manager.set("openrouter.site_name", site_name)
+    if site_url:
+        settings_manager.set("openrouter.site_url", site_url)
+    
+    click.echo("✅ OpenRouter backend configured")
+    return True
+
+
 def test_connection(config: dict[str, Any], verbose: bool = False) -> bool:
-    """Test connection to Ollama and model availability"""
-    model_config = config.get("model", {})
+    """Test connection to configured LLM backend."""
+    try:
+        # Load settings and create backend
+        settings = settings_manager.load_settings()
+        backend = create_backend(settings)
+        
+        click.echo(f"🔗 Testing {settings['backend']['provider']} connection...")
+        
+        if settings['backend']['provider'] == 'ollama':
+            return test_ollama_connection(backend, verbose)
+        else:
+            return test_openrouter_connection(backend, verbose)
+            
+    except Exception as e:
+        click.echo(f"❌ Backend setup failed: {e}")
+        return False
 
-    client = OllamaClient(
-        host=model_config.get("host", "localhost"),
-        port=model_config.get("port", 11434),
-        model=model_config.get("name", "gpt-oss:20b"),
-    )
 
-    click.echo("🔗 Testing Ollama connection...")
-
+def test_ollama_connection(backend, verbose: bool = False) -> bool:
+    """Test connection to Ollama backend."""
     # Check if Ollama is busy before testing
     click.echo("🔍 Checking Ollama status...")
     try:
-        status = client.check_ollama_status()
+        status = backend.check_status()
 
         if status.is_busy:
             click.echo(f"⚠️  WARNING: Ollama appears busy (GPU usage: {status.gpu_usage})")
@@ -86,12 +186,12 @@ def test_connection(config: dict[str, Any], verbose: bool = False) -> bool:
         click.echo(f"⚠️  Could not check Ollama status: {e}")
 
     try:
-        if client.is_model_available():
-            click.echo(f"✅ Model {client.model} is available")
+        if backend.is_available():
+            click.echo(f"✅ Model {backend.get_model_name()} is available")
 
             # Test generation
             click.echo("🧪 Testing generation...")
-            response = client.generate("Hello, this is a test.")
+            response = backend.generate("Hello, this is a test.")
             if response.error:
                 click.echo(f"❌ Generation failed: {response.error}")
                 if response.timed_out:
@@ -105,9 +205,39 @@ def test_connection(config: dict[str, Any], verbose: bool = False) -> bool:
                     click.echo(f"Sample response: {response.content[:100]}...")
                 return True
         else:
-            click.echo(f"❌ Model {client.model} not found")
-            click.echo("Please run: ollama pull gpt-oss:20b")
+            click.echo(f"❌ Model {backend.get_model_name()} not found")
+            click.echo(f"Please run: ollama pull {backend.get_model_name()}")
             return False
+
+    except Exception as e:
+        click.echo(f"❌ Connection failed: {e}")
+        return False
+
+
+def test_openrouter_connection(backend, verbose: bool = False) -> bool:
+    """Test connection to OpenRouter backend."""
+    try:
+        if not backend.is_available():
+            click.echo("❌ OpenRouter API not accessible")
+            click.echo("Please check your API key and internet connection")
+            return False
+
+        click.echo("✅ OpenRouter API accessible")
+        click.echo(f"✅ Model: {backend.get_model_name()}")
+
+        # Test generation
+        click.echo("🧪 Testing generation...")
+        response = backend.generate("Hello, this is a test.")
+        if response.error:
+            click.echo(f"❌ Generation failed: {response.error}")
+            if response.timed_out:
+                click.echo("   This was a timeout - API may be overloaded")
+            return False
+        else:
+            click.echo(f"✅ Generation successful ({response.response_time:.2f}s)")
+            if verbose:
+                click.echo(f"Sample response: {response.content[:100]}...")
+            return True
 
     except Exception as e:
         click.echo(f"❌ Connection failed: {e}")
@@ -117,24 +247,48 @@ def test_connection(config: dict[str, Any], verbose: bool = False) -> bool:
 @click.command()
 @click.option("--config", default="config.yaml", help="Configuration file path")
 @click.option("--verbose", "-v", is_flag=True, help="Verbose output")
-def main(config: str, verbose: bool) -> int | None:
+@click.option("--configure", is_flag=True, help="Run interactive backend configuration")
+def main(config: str, verbose: bool, configure: bool) -> int | None:
     """🛠️  Setup and verify environment for red team security testing
 
     This command will:
 
     \b
+    - Configure LLM backend (Ollama or OpenRouter) 
     - Load and validate configuration
     - Set up logging and directories
-    - Test Ollama connection and model availability
+    - Test backend connection and model availability
     - Verify the environment is ready for testing
 
+    Use --configure for interactive backend setup.
     Run this before starting your security assessments.
     """
     try:
-        # Load configuration
+        # Handle interactive configuration first
+        if configure:
+            click.echo("🛠️  Interactive Backend Setup")
+            if not interactive_backend_setup():
+                return 1
+            click.echo("")
+        
+        # Ensure settings.yaml exists
+        if not Path("settings.yaml").exists():
+            click.echo("📋 Creating default settings.yaml...")
+            settings_manager.create_default_settings()
+            click.echo("✅ Created settings.yaml with defaults")
+            click.echo("💡 Run 'uv run setup --configure' to configure backends")
+            
+        # Load configuration (fallback compatibility)
         click.echo("📋 Loading configuration...")
-        config_data = load_config(config)
-        click.echo(f"✅ Configuration loaded from: {config}")
+        try:
+            config_data = load_config(config)
+            click.echo(f"✅ Configuration loaded from: {config}")
+        except FileNotFoundError:
+            # Use minimal config if config.yaml doesn't exist
+            config_data = {
+                "output": {"results_dir": "results", "findings_dir": "findings"},
+                "logging": {"level": "INFO", "file": "testbed.log"}
+            }
 
         # Setup logging
         setup_logging(config_data)
@@ -155,9 +309,13 @@ def main(config: str, verbose: bool) -> int | None:
             click.echo("  • Run tests: uv run pentest")
             click.echo("  • Review results: uv run review")
             click.echo("  • Browse findings: uv run findings")
+            click.echo("\n💡 Configuration files:")
+            click.echo("  • Backend settings: settings.yaml")
+            click.echo("  • Test settings: config.yaml")
         else:
             click.echo("\n❌ Environment setup failed")
             click.echo("Please fix the issues above before running tests")
+            click.echo("💡 Try: uv run setup --configure")
             return 1
 
     except FileNotFoundError as e:
