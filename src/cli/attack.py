@@ -174,13 +174,8 @@ def run_generated_attack(red_team: InteractiveRedTeamV2, steps: int | None) -> N
             session_manager.save_session(red_team.session)
             console.print("[dim]Session auto-saved[/dim]")
 
-            # Ask to continue if not infinite
-            if repetitions != 0 and attempt_count < repetitions:
-                if not Confirm.ask("\n[yellow]Continue to next attempt?[/yellow]", default=True):
-                    break
-            elif repetitions == 0 and not Confirm.ask(
-                "\n[yellow]Run another attempt?[/yellow]", default=True
-            ):
+            # Continue automatically if not infinite
+            if repetitions != 0 and attempt_count >= repetitions:
                 break
 
     except KeyboardInterrupt:
@@ -340,13 +335,8 @@ def run_custom_attack(red_team: InteractiveRedTeamV2) -> None:
             session_manager.save_session(red_team.session)
             console.print("[dim]Session auto-saved[/dim]")
 
-            # Ask to continue
-            if repetitions != 0 and attempt_count < repetitions:
-                if not Confirm.ask("\n[yellow]Continue to next attempt?[/yellow]", default=True):
-                    break
-            elif repetitions == 0 and not Confirm.ask(
-                "\n[yellow]Run another attempt?[/yellow]", default=True
-            ):
+            # Continue automatically
+            if repetitions != 0 and attempt_count >= repetitions:
                 break
 
     except KeyboardInterrupt:
