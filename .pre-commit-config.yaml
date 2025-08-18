@@ -1,0 +1,56 @@
+# Pre-commit hooks configuration
+# Install: uv tool install pre-commit pre-commit-uv
+# Setup: pre-commit install
+#
+# IMPORTANT: These hooks use the EXACT same commands as manual runs
+# to ensure consistency with pyproject.toml settings
+
+repos:
+  # uv-specific hooks
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.8.11
+    hooks:
+      - id: uv-lock
+
+  # Run checks in the same order as CI and manual commands
+  # All use 'local' repo to ensure we use exact commands with pyproject.toml settings
+  - repo: local
+    hooks:
+      # 1. Type checking with ty (first)
+      - id: ty-check
+        name: Type check with ty
+        entry: uv run ty check src
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      # 2. Linting with ruff (second)
+      - id: ruff-check
+        name: Lint with ruff
+        entry: uv run ruff check src
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      # 3. Formatting with ruff (third)
+      - id: ruff-format
+        name: Format with ruff
+        entry: uv run ruff format src --check
+        language: system
+        pass_filenames: false
+        always_run: true
+
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: ['--fix=lf']
