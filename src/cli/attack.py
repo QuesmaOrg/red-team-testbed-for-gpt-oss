@@ -6,6 +6,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, IntPrompt, Prompt
 
+from src.adaptive_attacker import AdaptiveAttacker
 from src.interactive_exploit_v2 import InteractiveRedTeamV2
 from src.models import AttackStrategy
 from src.utils.session_manager import SessionManager
@@ -40,12 +41,19 @@ console = Console()
     type=int,
     help="Number of conversation turns",
 )
+@click.option(
+    "--batch",
+    default=None,
+    type=int,
+    help="Run multiple adaptive attempts",
+)
 def main(
     target_model: str,
     attacker_model: str,
     evaluator_model: str | None,
     custom: bool,
     steps: int | None,
+    batch: int | None,
 ) -> None:
     """Run interactive red team attacks."""
     
@@ -57,15 +65,22 @@ def main(
         )
     )
 
-    # Initialize
+    console.print(f"\n[green]✓[/green] Target: [cyan]{target_model}[/cyan]")
+    
+    # Batch/adaptive mode
+    if batch:
+        console.print(f"[green]✓[/green] Attacker: [cyan]{attacker_model}[/cyan]")
+        console.print(f"[green]✓[/green] Batch mode: [cyan]{batch} attempts[/cyan]\n")
+        run_adaptive_campaign(target_model, attacker_model, evaluator_model, batch, steps)
+        return
+    
+    # Single attack mode
     red_team = InteractiveRedTeamV2(
         target_model=target_model,
         attacker_model=attacker_model,
         evaluator_model=evaluator_model,
     )
     session_manager = SessionManager("sessions")
-
-    console.print(f"\n[green]✓[/green] Target: [cyan]{target_model}[/cyan]")
     
     if custom:
         # Custom prompt mode
@@ -139,6 +154,85 @@ def run_generated_attack(red_team: InteractiveRedTeamV2, steps: int | None) -> N
     console.print(f"\n[bold]Attack Complete[/bold]")
     console.print(f"ID: {attempt.attempt_id[:8]}")
     console.print(f"Success: {'✓' if attempt.success else '✗'}")
+
+
+def run_adaptive_campaign(
+    target_model: str,
+    attacker_model: str,
+    evaluator_model: str | None,
+    num_attempts: int,
+    steps: int | None,
+) -> None:
+    """Run an adaptive campaign with multiple attempts."""
+    
+    # Initialize adaptive attacker
+    attacker = AdaptiveAttacker(
+        target_model=target_model,
+        attacker_model=attacker_model,
+        evaluator_model=evaluator_model,
+    )
+    
+    console.print("[bold]Campaign Mode:[/bold]")
+    console.print("  [cyan]1[/cyan] - Automatic (fully adaptive)")
+    console.print("  [cyan]2[/cyan] - Semi-guided (choose base strategy)")
+    console.print("  [cyan]3[/cyan] - Goal-focused (specify target vulnerability)")
+    
+    mode = Prompt.ask("Choose mode", choices=["1", "2", "3"], default="1")
+    
+    base_strategy = None
+    initial_goal = None
+    vary = True
+    
+    if mode == "1":
+        # Fully automatic
+        console.print("\n[dim]Running fully adaptive campaign...[/dim]")
+        
+    elif mode == "2":
+        # Choose base strategy
+        strategies = list(AttackStrategy)
+        console.print("\n[bold]Base Strategy:[/bold]")
+        for i, s in enumerate(strategies, 1):
+            console.print(f"  [cyan]{i}[/cyan] - {s.value}")
+        
+        idx = IntPrompt.ask(
+            "Select base strategy",
+            default=1,
+            choices=[str(i) for i in range(1, len(strategies) + 1)]
+        )
+        base_strategy = strategies[idx - 1]
+        
+        vary = Confirm.ask("Vary approach between attempts?", default=True)
+        
+    else:
+        # Goal-focused
+        console.print("\n[dim]Describe the vulnerability you want to find[/dim]")
+        initial_goal = Prompt.ask("Target vulnerability")
+        vary = Confirm.ask("Allow strategy variations?", default=True)
+    
+    # Determine steps range
+    if steps:
+        steps_range = (steps, steps)
+    else:
+        min_steps = IntPrompt.ask("\nMinimum steps per attempt", default=1, choices=["1", "2", "3"])
+        max_steps = IntPrompt.ask("Maximum steps per attempt", default=3, choices=["1", "2", "3", "4", "5"])
+        steps_range = (min_steps, max_steps)
+    
+    # Run the campaign
+    console.print("\n" + "="*60)
+    results = attacker.run_adaptive_campaign(
+        num_attempts=num_attempts,
+        base_strategy=base_strategy,
+        initial_goal=initial_goal,
+        steps_range=steps_range,
+        vary_approach=vary,
+    )
+    
+    # Final message
+    console.print(f"\n[bold]Campaign Complete![/bold]")
+    if results["successful"] > 0:
+        console.print(f"[green]Found {results['successful']} vulnerabilities![/green]")
+    else:
+        console.print("[yellow]No vulnerabilities found, but learned valuable patterns.[/yellow]")
 
 
 def run_custom_attack(red_team: InteractiveRedTeamV2) -> None:

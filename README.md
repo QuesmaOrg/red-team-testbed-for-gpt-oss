@@ -61,13 +61,16 @@ A comprehensive security testing framework for the OpenAI GPT-OSS-20B Red Teamin
    The attack system allows multi-turn attacks with various LLMs and learning capabilities:
 
    ```bash
-   # Run with default (Claude Opus 4.1)
+   # Run single attack (Claude Opus 4.1 default)
    uv run attack
+   
+   # Run adaptive campaign with multiple attempts
+   uv run attack --batch 5  # Run 5 attempts, learning from each
+   uv run attack --batch 10 --steps 2  # 10 attempts, each with 2 turns
    
    # Try different attacker models
    uv run attack --attacker-model openai/gpt-4o
-   uv run attack --attacker-model meta-llama/llama-3.1-405b-instruct
-   uv run attack --attacker-model google/gemini-2.0-flash-exp
+   uv run attack --attacker-model meta-llama/llama-3.1-405b-instruct --batch 5
    
    # Use custom prompts instead of AI-generated
    uv run attack --custom

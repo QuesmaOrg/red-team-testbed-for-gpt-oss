@@ -68,10 +68,14 @@ uv run setup
 uv run pentest
 
 # Run red team attack testing
-uv run attack  # Uses script entry point from pyproject.toml
+uv run attack  # Single attack
+
+# Run adaptive batch campaigns (learns between attempts)
+uv run attack --batch 5  # 5 attempts with learning
+uv run attack --batch 10 --steps 2  # 10 attempts, 2 turns each
 
 # With different attacker models (default: Claude Opus 4.1)
-uv run attack --attacker-model openai/gpt-4o
+uv run attack --attacker-model openai/gpt-4o --batch 5
 uv run attack --attacker-model meta-llama/llama-3.1-405b-instruct
 uv run attack --attacker-model google/gemini-2.0-flash-exp
 
