@@ -133,17 +133,67 @@ def run_generated_attack(red_team: InteractiveRedTeamV2, steps: int | None) -> N
     if steps is None:
         steps = IntPrompt.ask("\nNumber of turns", default=2, choices=["1", "2", "3", "4", "5"])
 
-    # Run attack
-    console.print("\n" + "=" * 60)
-    attempt = red_team.run_interactive_attack(
-        strategy=strategy, custom_goal=custom_goal, steps=steps, show_live=True
-    )
+    # Get number of repetitions
+    console.print("\n[dim]How many times to repeat? (0 for infinite)[/dim]")
+    repetitions = IntPrompt.ask("Repetitions", default=1)
 
-    # Summary
-    console.print("\n" + "=" * 60)
-    console.print("\n[bold]Attack Complete[/bold]")
-    console.print(f"ID: {attempt.attempt_id[:8]}")
-    console.print(f"Success: {'✓' if attempt.success else '✗'}")
+    # Save session after each attempt
+    session_manager = SessionManager("sessions")
+
+    # Run attacks
+    attempt_count = 0
+    successful_count = 0
+
+    try:
+        while repetitions == 0 or attempt_count < repetitions:
+            attempt_count += 1
+
+            # Show progress
+            if repetitions == 0:
+                console.print(f"\n[bold]═══ Attempt {attempt_count} (∞) ═══[/bold]")
+            else:
+                console.print(f"\n[bold]═══ Attempt {attempt_count}/{repetitions} ═══[/bold]")
+
+            # Run attack
+            console.print("\n" + "=" * 60)
+            attempt = red_team.run_interactive_attack(
+                strategy=strategy, custom_goal=custom_goal, steps=steps, show_live=True
+            )
+
+            # Track success
+            if attempt.success:
+                successful_count += 1
+
+            # Summary
+            console.print("\n" + "=" * 60)
+            console.print("\n[bold]Attack Complete[/bold]")
+            console.print(f"ID: {attempt.attempt_id[:8]}")
+            console.print(f"Success: {'✓' if attempt.success else '✗'}")
+
+            # Save session after each attempt
+            session_manager.save_session(red_team.session)
+            console.print("[dim]Session auto-saved[/dim]")
+
+            # Ask to continue if not infinite
+            if repetitions != 0 and attempt_count < repetitions:
+                if not Confirm.ask("\n[yellow]Continue to next attempt?[/yellow]", default=True):
+                    break
+            elif repetitions == 0 and not Confirm.ask(
+                "\n[yellow]Run another attempt?[/yellow]", default=True
+            ):
+                break
+
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Interrupted by user[/yellow]")
+
+    # Final summary
+    console.print("\n[bold]Session Summary:[/bold]")
+    console.print(f"Total attempts: {attempt_count}")
+    console.print(f"Successful: {successful_count} ({successful_count / attempt_count * 100:.0%})")
+
+    # Final save
+    filepath = session_manager.save_session(red_team.session)
+    console.print(f"[green]✓[/green] Final session saved to: {filepath}")
 
 
 def run_adaptive_campaign(
@@ -250,16 +300,66 @@ def run_custom_attack(red_team: InteractiveRedTeamV2) -> None:
         if not Confirm.ask("Add another turn?", default=True):
             break
 
-    # Run with custom prompts
-    console.print("\n" + "=" * 60)
-    console.print("[bold cyan]Executing Custom Attack[/bold cyan]\n")
+    # Get number of repetitions
+    console.print("\n[dim]How many times to repeat? (0 for infinite)[/dim]")
+    repetitions = IntPrompt.ask("Repetitions", default=1)
 
-    attempt = red_team.run_custom_attack(prompts)
+    # Save session after each attempt
+    session_manager = SessionManager("sessions")
 
-    # Summary
-    console.print("\n" + "=" * 60)
-    console.print("\n[bold]Attack Complete[/bold]")
-    console.print(f"Success: {'✓' if attempt.success else '✗'}")
+    # Run attacks
+    attempt_count = 0
+    successful_count = 0
+
+    try:
+        while repetitions == 0 or attempt_count < repetitions:
+            attempt_count += 1
+
+            # Show progress
+            if repetitions == 0:
+                console.print(f"\n[bold]═══ Attempt {attempt_count} (∞) ═══[/bold]")
+            else:
+                console.print(f"\n[bold]═══ Attempt {attempt_count}/{repetitions} ═══[/bold]")
+
+            # Run with custom prompts
+            console.print("\n" + "=" * 60)
+            console.print("[bold cyan]Executing Custom Attack[/bold cyan]\n")
+
+            attempt = red_team.run_custom_attack(prompts)
+
+            # Track success
+            if attempt.success:
+                successful_count += 1
+
+            # Summary
+            console.print("\n" + "=" * 60)
+            console.print("\n[bold]Attack Complete[/bold]")
+            console.print(f"Success: {'✓' if attempt.success else '✗'}")
+
+            # Save session after each attempt
+            session_manager.save_session(red_team.session)
+            console.print("[dim]Session auto-saved[/dim]")
+
+            # Ask to continue
+            if repetitions != 0 and attempt_count < repetitions:
+                if not Confirm.ask("\n[yellow]Continue to next attempt?[/yellow]", default=True):
+                    break
+            elif repetitions == 0 and not Confirm.ask(
+                "\n[yellow]Run another attempt?[/yellow]", default=True
+            ):
+                break
+
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Interrupted by user[/yellow]")
+
+    # Final summary
+    console.print("\n[bold]Session Summary:[/bold]")
+    console.print(f"Total attempts: {attempt_count}")
+    console.print(f"Successful: {successful_count} ({successful_count / attempt_count * 100:.0%})")
+
+    # Final save
+    filepath = session_manager.save_session(red_team.session)
+    console.print(f"[green]✓[/green] Final session saved to: {filepath}")
 
 
 if __name__ == "__main__":
