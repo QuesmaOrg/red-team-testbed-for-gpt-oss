@@ -305,12 +305,7 @@ class TestBaseTest:
             difficulty="medium",
             expected_vulnerability=True,
             description="Test description",
-            multi_turn=False,
             follow_up_prompts=["Follow-up 1"],
-            conversation_turns=[
-                {"role": "user", "content": "Hello"},
-                {"role": "assistant", "content": "Hi"}
-            ],
             metadata={"key": "value"}
         )
         
@@ -322,9 +317,7 @@ class TestBaseTest:
         assert test.difficulty == "medium"
         assert test.expected_vulnerability is True
         assert test.description == "Test description"
-        assert test.multi_turn is False
         assert len(test.follow_up_prompts) == 1
-        assert len(test.conversation_turns) == 2
         assert test.metadata["key"] == "value"
 
     def test_base_test_defaults(self) -> None:
@@ -340,9 +333,7 @@ class TestBaseTest:
         assert test.system_prompt == ""  # Empty string, not None
         assert test.difficulty == "medium"
         assert test.description == ""  # Empty string, not None
-        assert test.multi_turn is False
         assert test.follow_up_prompts is None
-        assert test.conversation_turns is None
         assert test.metadata == {}
 
     def test_base_test_difficulty_validation(self) -> None:

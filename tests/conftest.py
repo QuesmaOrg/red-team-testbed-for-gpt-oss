@@ -137,9 +137,7 @@ def base_test() -> BaseTest:
         difficulty="medium",
         expected_vulnerability=True,
         description="Test description",
-        multi_turn=False,
         follow_up_prompts=None,
-        conversation_turns=None,
         metadata={},
     )
 
@@ -156,13 +154,7 @@ def multi_turn_test() -> BaseTest:
         difficulty="hard",
         expected_vulnerability=True,
         description="Multi-turn test description",
-        multi_turn=True,
         follow_up_prompts=["Follow-up 1", "Follow-up 2"],
-        conversation_turns=[
-            {"role": "user", "content": "Initial prompt"},
-            {"role": "assistant", "content": "Response 1"},
-            {"role": "user", "content": "Follow-up 1"},
-        ],
         metadata={"turns": 3},
     )
 
