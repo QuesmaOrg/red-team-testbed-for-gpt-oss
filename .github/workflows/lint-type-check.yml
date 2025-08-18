@@ -22,11 +22,11 @@ jobs:
       - name: Install dependencies
         run: uv sync --dev
 
-      - name: Check formatting
-        run: uv run ruff format src --check
+      - name: Run type checking
+        run: uv run ty check src
 
       - name: Run linting
         run: uv run ruff check src
 
-      - name: Run type checking
-        run: uv run ty check src
+      - name: Check formatting
+        run: uv run ruff format src --check

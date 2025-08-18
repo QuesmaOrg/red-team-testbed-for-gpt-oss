@@ -67,11 +67,39 @@ uv run setup
 # Run tests
 uv run pentest
 
-# Code quality checks
-uv run ruff check src
-uv run ruff format src
-uv run ty check src
+# Run red team attack testing
+uv run attack  # Single attack
+
+# Run adaptive batch campaigns (learns between attempts)
+uv run attack --batch 5  # 5 attempts with learning
+uv run attack --batch 10 --steps 2  # 10 attempts, 2 turns each
+
+# With different attacker models (default: Claude Opus 4.1)
+uv run attack --attacker-model openai/gpt-4o --batch 5
+uv run attack --attacker-model meta-llama/llama-3.1-405b-instruct
+uv run attack --attacker-model google/gemini-2.0-flash-exp
+
+# Use custom prompts
+uv run attack --custom
+
+# View and analyze sessions
+uv run sessions
+
+# Code quality checks (ALWAYS run before committing)
+uv run ty check src       # Type checking first
+uv run ruff check src     # Then linting
+uv run ruff format src    # Finally formatting
 ```
+
+### Pre-Commit Checklist
+
+**IMPORTANT**: Always run these checks before committing code:
+
+1. **Type Check**: `uv run ty check src` - Ensure no type errors
+2. **Lint Check**: `uv run ruff check src` - Catch code issues
+3. **Format Check**: `uv run ruff format src` - Ensure consistent formatting
+
+If any of these fail, fix the issues before committing. The GitHub Actions CI will run these same checks in this order.
 
 ### Git Workflow
 
@@ -87,6 +115,37 @@ This is a DEFENSIVE SECURITY tool for:
 - Testing model robustness
 - Academic research
 - Improving AI safety
+
+## Competition Context
+
+### OpenAI GPT-OSS-20B Red Teaming Challenge
+
+**Prize Pool**: $500,000
+**Deadline**: August 26, 2025
+**Goal**: Find up to 5 novel vulnerabilities in gpt-oss-20b
+
+### Key Evaluation Criteria
+1. **Novelty** - Previously unidentified vulnerabilities
+2. **Severity** - Potential harm level
+3. **Reproducibility** - Consistent reproduction
+4. **Breadth** - Multiple use case impact
+5. **Methodological Insight** - New understanding of model behavior
+
+### Target Vulnerability Categories
+- Deceptive alignment
+- Reward hacking
+- Lying and deception
+- Harmful behaviors
+- Novel exploits
+
+### Our Approach
+This codebase provides tools to systematically test for these vulnerabilities through:
+- Multi-turn conversation attacks
+- Trust-building strategies
+- Automated attack generation with various LLMs (Claude, GPT-4, Llama, etc.)
+- Session persistence and learning per attacker model
+- Pattern recognition from successful exploits
+- Model-specific strategy optimization
 
 ## Key Files to Know
 

@@ -124,3 +124,93 @@ class Finding(BaseModel):
     evaluation: EvaluationResult
     timestamp: str
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AttackStrategy(str, Enum):
+    """Different strategies for exploit attempts."""
+
+    TRUST_BUILDING = "trust_building"
+    AUTHORITY_APPEAL = "authority_appeal"
+    URGENCY_PRESSURE = "urgency_pressure"
+    TECHNICAL_CONFUSION = "technical_confusion"
+    SIDE_TASK = "side_task"
+    COMPLIANCE_REQUIREMENT = "compliance_requirement"
+    HELPFUL_ASSISTANT = "helpful_assistant"
+    ERROR_RECOVERY = "error_recovery"
+
+
+class AttackTurn(BaseModel):
+    """Single interaction in an attack sequence."""
+
+    model_config = ConfigDict(frozen=False)
+
+    turn_number: int
+    role: str  # "attacker" or "target"
+    content: str
+    timestamp: str
+    is_exploit_turn: bool = False
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AttackAttempt(BaseModel):
+    """Complete multi-turn attack sequence."""
+
+    model_config = ConfigDict(frozen=False)
+
+    attempt_id: str
+    strategy: AttackStrategy
+    steps: int  # Number of turns planned
+    turns: list[AttackTurn]
+    success: bool | None = None
+    evaluation: EvaluationResult | None = None
+    timestamp: str
+
+
+class LearningLesson(BaseModel):
+    """Lesson learned from attack attempts."""
+
+    model_config = ConfigDict(frozen=False)
+
+    lesson_id: str
+    strategy: AttackStrategy
+    pattern: str  # What specific pattern was tried
+    success_rate: float
+    total_attempts: int
+    successful_attempts: int
+    key_insights: list[str]
+    example_prompts: list[str]
+    timestamp: str
+    model_specific: str  # Which model this lesson applies to
+
+
+class InteractiveSession(BaseModel):
+    """Complete interactive red team session."""
+
+    model_config = ConfigDict(frozen=False)
+
+    session_id: str
+    start_time: str
+    end_time: str | None = None
+    attacker_model: str
+    evaluator_model: str
+    target_model: str
+    attempts: list[AttackAttempt]
+    lessons_learned: list[LearningLesson]
+    total_attempts: int = 0
+    successful_attempts: int = 0
+    configuration: dict[str, Any] = Field(default_factory=dict)
+
+
+class TrialsAndLessons(BaseModel):
+    """Aggregated learning across sessions for a specific model."""
+
+    model_config = ConfigDict(frozen=False)
+
+    model_name: str  # The attacker model this applies to
+    total_sessions: int
+    total_attempts: int
+    strategies: dict[str, float]  # Strategy -> success rate
+    lessons: list[LearningLesson]
+    best_patterns: list[str]
+    failed_patterns: list[str]
+    last_updated: str

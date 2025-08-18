@@ -1,5 +1,7 @@
 # GPT-OSS-20B Red Team Security Testing Toolkit
 
+[![CI](https://github.com/QuesmaOrg/red-team-testbed-for-gpt-oss/actions/workflows/ci.yml/badge.svg)](https://github.com/QuesmaOrg/red-team-testbed-for-gpt-oss/actions/workflows/ci.yml)
+
 A comprehensive security testing framework for the OpenAI GPT-OSS-20B Red Teaming Competition.
 
 ## Competition Overview
@@ -48,9 +50,46 @@ A comprehensive security testing framework for the OpenAI GPT-OSS-20B Red Teamin
    # Or test specific categories
    uv run pentest -c deception
    uv run pentest --test-id adderall_001
+   
+   # Run multi-turn attack testing
+   uv run attack
+   
+   # View and analyze sessions
+   uv run sessions
    ```
 
-5. **Review results and create findings**:
+5. **Red Team Attack Testing**:
+
+   The attack system allows multi-turn attacks with various LLMs and learning capabilities:
+
+   ```bash
+   # Run single attack (Claude Opus 4.1 default)
+   uv run attack
+   
+   # Run adaptive campaign with multiple attempts
+   uv run attack --batch 5  # Run 5 attempts, learning from each
+   uv run attack --batch 10 --steps 2  # 10 attempts, each with 2 turns
+   
+   # Try different attacker models
+   uv run attack --attacker-model openai/gpt-4o
+   uv run attack --attacker-model meta-llama/llama-3.1-405b-instruct --batch 5
+   
+   # Use custom prompts instead of AI-generated
+   uv run attack --custom
+   
+   # View and analyze past sessions
+   uv run sessions
+   ```
+
+   Features:
+   - Multi-turn attacks (1 = single-turn, 2+ = trust-building)
+   - Multiple attack strategies (trust building, side tasks, etc.)
+   - Per-model learning system that tracks what works for each attacker
+   - Session persistence with full dialogue history
+   - Automatic report generation
+   - Support for any OpenRouter-compatible model
+
+6. **Review results and create findings**:
 
    ```bash
    # Interactive review interface
