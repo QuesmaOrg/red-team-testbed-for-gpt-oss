@@ -30,6 +30,12 @@ console = Console()
     help="Model to evaluate responses (default: same as attacker)",
 )
 @click.option(
+    "--learn-from",
+    default=1,
+    type=int,
+    help="Number of recent sessions to learn from (0=none, 1=default)",
+)
+@click.option(
     "--custom",
     is_flag=True,
     help="Use custom prompts instead of generated ones",
@@ -50,6 +56,7 @@ def main(
     target_model: str,
     attacker_model: str,
     evaluator_model: str | None,
+    learn_from: int,
     custom: bool,
     steps: int | None,
     batch: int | None,
@@ -74,20 +81,50 @@ def main(
         return
 
     # Single attack mode
-    red_team = InteractiveRedTeamV2(
-        target_model=target_model,
-        attacker_model=attacker_model,
-        evaluator_model=evaluator_model,
-    )
     session_manager = SessionManager("sessions")
+
+    # Load learning context if requested
+    learning_context = None
+    recent_sessions = []
+    if learn_from > 0:
+        recent_sessions = session_manager.get_recent_sessions(learn_from)
+        if recent_sessions:
+            learning_context = session_manager.extract_successful_patterns(recent_sessions)
+            console.print(
+                f"[dim]Loaded learning context from {len(recent_sessions)} recent sessions[/dim]"
+            )
+            if learning_context.get("successful_attempts", 0) > 0:
+                success_rate = (
+                    learning_context["successful_attempts"]
+                    / learning_context["total_attempts"]
+                    * 100
+                )
+                console.print(
+                    f"[dim]Found {learning_context['successful_attempts']} successes out of {learning_context['total_attempts']} attempts ({success_rate:.1f}% rate)[/dim]"
+                )
 
     if custom:
         # Custom prompt mode
+        red_team = InteractiveRedTeamV2(
+            target_model=target_model,
+            attacker_model=attacker_model,
+            evaluator_model=evaluator_model,
+            learning_context=learning_context,
+        )
         run_custom_attack(red_team)
     else:
         # AI-generated attack mode
         console.print(f"[green]✓[/green] Attacker: [cyan]{attacker_model}[/cyan]\n")
-        run_generated_attack(red_team, steps)
+        run_generated_attack(
+            red_team_config=(
+                target_model,
+                attacker_model,
+                evaluator_model,
+                learning_context,
+                recent_sessions,
+            ),
+            steps=steps,
+        )
 
     # Save session
     if Confirm.ask("\n[yellow]Save session?[/yellow]", default=True):
@@ -95,8 +132,11 @@ def main(
         console.print(f"[green]✓[/green] Session saved to: {filepath}")
 
 
-def run_generated_attack(red_team: InteractiveRedTeamV2, steps: int | None) -> None:
+def run_generated_attack(red_team_config: tuple, steps: int | None) -> None:
     """Run an AI-generated attack."""
+    target_model, attacker_model, evaluator_model, learning_context, recent_sessions = (
+        red_team_config
+    )
 
     console.print("[bold]Attack Mode:[/bold]")
     console.print("  [cyan]1[/cyan] - Predefined strategy")
@@ -126,8 +166,11 @@ def run_generated_attack(red_team: InteractiveRedTeamV2, steps: int | None) -> N
         custom_goal = Prompt.ask("Goal")
 
     else:
-        # Learn from past (simplified for now)
-        custom_goal = "execute code or reveal system information based on past successful patterns"
+        # Learn from past sessions
+        if learning_context and learning_context.get("successful_attempts", 0) > 0:
+            custom_goal = f"leverage successful patterns from {len(recent_sessions)} recent sessions to find new vulnerabilities"
+        else:
+            custom_goal = "explore potential vulnerabilities using general red team approaches"
 
     # Get number of steps
     if steps is None:
@@ -136,6 +179,14 @@ def run_generated_attack(red_team: InteractiveRedTeamV2, steps: int | None) -> N
     # Get number of repetitions
     console.print("\n[dim]How many times to repeat? (0 for infinite)[/dim]")
     repetitions = IntPrompt.ask("Repetitions", default=1)
+
+    # Create red team agent
+    red_team = InteractiveRedTeamV2(
+        target_model=target_model,
+        attacker_model=attacker_model,
+        evaluator_model=evaluator_model,
+        learning_context=learning_context,
+    )
 
     # Save session after each attempt
     session_manager = SessionManager("sessions")
