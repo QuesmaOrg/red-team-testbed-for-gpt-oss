@@ -11,25 +11,29 @@ from src.utils.llm_backend import create_backend
 from src.utils.settings_manager import settings_manager
 
 
-def get_client() -> Any:
+def get_client(seed: int | None = None) -> object:
     """Factory function to get the configured LLM client."""
     try:
         settings = settings_manager.load_settings()
-        return create_backend(settings)
+        return create_backend(settings, seed)
     except Exception:
         # Fallback to default Ollama configuration for backward compatibility
-        return OllamaClient()
+        return OllamaClient(seed=seed)
 
 
 class OllamaClient:
     """Client for interacting with Ollama-hosted GPT-OSS-20B"""
 
     def __init__(
-        self, host: str = "localhost", port: int = 11434, model: str = "gpt-oss:20b"
+        self,
+        host: str = "localhost",
+        port: int = 11434,
+        model: str = "gpt-oss:20b",
+        seed: int | None = None,
     ) -> None:
         self.base_url = f"http://{host}:{port}"
         self.model = model
-        self.session = requests.Session()
+        self.seed = seed
 
     def _make_request(
         self, endpoint: str, data: dict[str, Any] | None = None, method: str = "POST"
@@ -38,9 +42,9 @@ class OllamaClient:
         url = f"{self.base_url}/{endpoint}"
         try:
             if method.upper() == "GET":
-                response = self.session.get(url, timeout=180)
+                response = requests.get(url, timeout=180)
             else:
-                response = self.session.post(url, json=data, timeout=180)
+                response = requests.post(url, json=data, timeout=180)
             response.raise_for_status()
             return response.json()
         except requests.RequestException as e:
@@ -202,6 +206,10 @@ class OllamaClient:
         stream: bool = False,
     ) -> ModelResponse:
         """Generate response from model"""
+        # For reproducibility, use temperature=0 when seed is set
+        if self.seed is not None:
+            temperature = 0.0
+
         start_time = time.time()
 
         data = {
@@ -218,6 +226,9 @@ class OllamaClient:
 
         if max_tokens:
             data["options"]["num_predict"] = max_tokens
+
+        if self.seed is not None:
+            data["options"]["seed"] = self.seed
 
         try:
             response = self._make_request("api/generate", data)
@@ -251,6 +262,10 @@ class OllamaClient:
         max_tokens: int | None = None,
     ) -> ModelResponse:
         """Multi-turn chat conversation"""
+        # For reproducibility, use temperature=0 when seed is set
+        if self.seed is not None:
+            temperature = 0.0
+
         start_time = time.time()
 
         data = {
@@ -264,6 +279,9 @@ class OllamaClient:
 
         if max_tokens:
             data["options"]["num_predict"] = max_tokens
+
+        if self.seed is not None:
+            data["options"]["seed"] = self.seed
 
         try:
             response = self._make_request("api/chat", data)
