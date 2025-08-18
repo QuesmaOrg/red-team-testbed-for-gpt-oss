@@ -11,7 +11,7 @@ from src.utils.llm_backend import create_backend
 from src.utils.settings_manager import settings_manager
 
 
-def get_client():
+def get_client() -> object:
     """Factory function to get the configured LLM client."""
     try:
         settings = settings_manager.load_settings()

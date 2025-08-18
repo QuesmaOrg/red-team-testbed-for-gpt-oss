@@ -45,7 +45,7 @@ class LLMBackend(ABC):
         """Get the current model name."""
         pass
 
-    @abstractmethod 
+    @abstractmethod
     def get_backend_type(self) -> str:
         """Get the backend type identifier."""
         pass
@@ -115,7 +115,7 @@ class OllamaBackend(LLMBackend):
         """Get the backend type identifier."""
         return "Ollama"
 
-    def check_status(self) -> Any:
+    def check_status(self) -> object:
         """Check Ollama status."""
         return self.client.check_ollama_status()
 
@@ -130,6 +130,7 @@ class OpenRouterBackend(LLMBackend):
     def __init__(self, config: dict[str, Any]) -> None:
         super().__init__(config)
         import logging
+
         import openai
 
         # Suppress noisy httpx logs from OpenAI client
@@ -181,13 +182,13 @@ class OpenRouterBackend(LLMBackend):
             )
 
             response_time = time.time() - start_time
-            
+
             choice = response.choices[0]
             content = choice.message.content or ""
-            
+
             # Extract thinking if available (for models that support it)
             thinking = None
-            if hasattr(choice.message, 'reasoning') and choice.message.reasoning:
+            if hasattr(choice.message, "reasoning") and choice.message.reasoning:
                 thinking = choice.message.reasoning
 
             return ModelResponse(
@@ -235,10 +236,10 @@ class OpenRouterBackend(LLMBackend):
 
             choice = response.choices[0]
             content = choice.message.content or ""
-            
+
             # Extract thinking if available (for models that support it)
             thinking = None
-            if hasattr(choice.message, 'reasoning') and choice.message.reasoning:
+            if hasattr(choice.message, "reasoning") and choice.message.reasoning:
                 thinking = choice.message.reasoning
 
             return ModelResponse(

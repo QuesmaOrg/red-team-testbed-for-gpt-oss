@@ -189,10 +189,10 @@ def save_results(results: dict[str, Any], output_dir: str, verbose: bool) -> str
 
             # Build conversation_turns from prompt and follow_up_prompts if available
             conversation_turns = None
-            if hasattr(test, 'follow_up_prompts') and test.follow_up_prompts:
+            if hasattr(test, "follow_up_prompts") and test.follow_up_prompts:
                 # For tests with follow_up_prompts, build the conversation turns
                 conversation_turns = [test.prompt] + test.follow_up_prompts
-            elif hasattr(test, 'conversation_turns') and test.conversation_turns:
+            elif hasattr(test, "conversation_turns") and test.conversation_turns:
                 # For tests with explicit conversation_turns
                 conversation_turns = test.conversation_turns
 
