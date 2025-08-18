@@ -2,17 +2,21 @@
 
 import subprocess
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any, Union
 
 import requests
 from requests.exceptions import Timeout
 from src.models import ModelResponse, OllamaStatus
-from src.utils.llm_backend import create_backend
 from src.utils.settings_manager import settings_manager
 
+if TYPE_CHECKING:
+    from src.utils.llm_backend import LLMBackend
 
-def get_client(seed: int | None = None) -> object:
+
+def get_client(seed: int | None = None) -> Union["LLMBackend", "OllamaClient"]:
     """Factory function to get the configured LLM client."""
+    from src.utils.llm_backend import create_backend
+
     try:
         settings = settings_manager.load_settings()
         return create_backend(settings, seed)
@@ -312,6 +316,18 @@ class OllamaClient:
     def get_backend_type(self) -> str:
         """Get the backend type identifier (for compatibility)."""
         return "Ollama"
+
+    def get_model_name(self) -> str:
+        """Get the model name (for compatibility)."""
+        return self.model
+
+    def is_available(self) -> bool:
+        """Check if model is available (for compatibility)."""
+        return self.is_model_available()
+
+    def check_status(self) -> OllamaStatus:
+        """Check Ollama status (for compatibility)."""
+        return self.check_ollama_status()
 
 
 def test_connection() -> bool | None:

@@ -21,7 +21,6 @@ class TestOllamaClientInitialization:
         client = OllamaClient()
         assert client.base_url == "http://localhost:11434"
         assert client.model == "gpt-oss:20b"
-        assert client.session is not None
 
     def test_custom_initialization(self) -> None:
         """Test client accepts custom configuration"""
@@ -29,21 +28,21 @@ class TestOllamaClientInitialization:
         assert client.base_url == "http://custom.host:8080"
         assert client.model == "custom:model"
 
-    def test_session_persistence(self) -> None:
-        """Test that session object persists across calls"""
-        client = OllamaClient()
-        session1 = client.session
-        session2 = client.session
-        assert session1 is session2
+    def test_seed_initialization(self) -> None:
+        """Test that seed parameter is properly stored"""
+        client = OllamaClient(seed=42)
+        assert client.seed == 42
+        
+        client_no_seed = OllamaClient()
+        assert client_no_seed.seed is None
 
 
 class TestOllamaClientModelAvailability:
     """Test model availability checking"""
 
-    @patch('src.utils.model_client.requests.Session')
-    def test_model_available(self, mock_session_class) -> None:
+    @patch('src.utils.model_client.requests.get')
+    def test_model_available(self, mock_get) -> None:
         """Test when model is available"""
-        mock_session = MagicMock()
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "models": [
@@ -51,26 +50,25 @@ class TestOllamaClientModelAvailability:
                 {"name": "other:model"}
             ]
         }
-        mock_session.get.return_value = mock_response
-        mock_session_class.return_value = mock_session
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
 
         client = OllamaClient()
         assert client.is_model_available() is True
-        mock_session.get.assert_called_once_with(
+        mock_get.assert_called_once_with(
             "http://localhost:11434/api/tags",
             timeout=180
         )
 
-    @patch('src.utils.model_client.requests.Session')
-    def test_model_not_available(self, mock_session_class) -> None:
+    @patch('src.utils.model_client.requests.get')
+    def test_model_not_available(self, mock_get) -> None:
         """Test when model is not available"""
-        mock_session = MagicMock()
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "models": [{"name": "other:model"}]
         }
-        mock_session.get.return_value = mock_response
-        mock_session_class.return_value = mock_session
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
 
         client = OllamaClient()
         assert client.is_model_available() is False
