@@ -291,6 +291,10 @@ class OllamaClient:
                 timed_out=is_timeout,
             )
 
+    def get_backend_type(self) -> str:
+        """Get the backend type identifier (for compatibility)."""
+        return "Ollama"
+
 
 def test_connection() -> bool | None:
     """Test Ollama connection and model availability"""

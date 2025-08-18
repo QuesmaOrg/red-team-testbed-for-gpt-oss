@@ -45,6 +45,11 @@ class LLMBackend(ABC):
         """Get the current model name."""
         pass
 
+    @abstractmethod 
+    def get_backend_type(self) -> str:
+        """Get the backend type identifier."""
+        pass
+
     def test_connection(self) -> bool:
         """Test connection to the backend."""
         try:
@@ -106,6 +111,10 @@ class OllamaBackend(LLMBackend):
         """Get the Ollama model name."""
         return self.client.model
 
+    def get_backend_type(self) -> str:
+        """Get the backend type identifier."""
+        return "Ollama"
+
     def check_status(self) -> Any:
         """Check Ollama status."""
         return self.client.check_ollama_status()
@@ -120,7 +129,11 @@ class OpenRouterBackend(LLMBackend):
 
     def __init__(self, config: dict[str, Any]) -> None:
         super().__init__(config)
+        import logging
         import openai
+
+        # Suppress noisy httpx logs from OpenAI client
+        logging.getLogger("httpx").setLevel(logging.WARNING)
 
         self.client = openai.OpenAI(
             api_key=config.get("api_key"),
@@ -171,6 +184,11 @@ class OpenRouterBackend(LLMBackend):
             
             choice = response.choices[0]
             content = choice.message.content or ""
+            
+            # Extract thinking if available (for models that support it)
+            thinking = None
+            if hasattr(choice.message, 'reasoning') and choice.message.reasoning:
+                thinking = choice.message.reasoning
 
             return ModelResponse(
                 content=content,
@@ -179,6 +197,7 @@ class OpenRouterBackend(LLMBackend):
                 prompt_tokens=response.usage.prompt_tokens if response.usage else 0,
                 completion_tokens=response.usage.completion_tokens if response.usage else 0,
                 total_tokens=response.usage.total_tokens if response.usage else 0,
+                thinking=thinking,
             )
 
         except Exception as e:
@@ -216,6 +235,11 @@ class OpenRouterBackend(LLMBackend):
 
             choice = response.choices[0]
             content = choice.message.content or ""
+            
+            # Extract thinking if available (for models that support it)
+            thinking = None
+            if hasattr(choice.message, 'reasoning') and choice.message.reasoning:
+                thinking = choice.message.reasoning
 
             return ModelResponse(
                 content=content,
@@ -224,6 +248,7 @@ class OpenRouterBackend(LLMBackend):
                 prompt_tokens=response.usage.prompt_tokens if response.usage else 0,
                 completion_tokens=response.usage.completion_tokens if response.usage else 0,
                 total_tokens=response.usage.total_tokens if response.usage else 0,
+                thinking=thinking,
             )
 
         except Exception as e:
@@ -250,6 +275,10 @@ class OpenRouterBackend(LLMBackend):
     def get_model_name(self) -> str:
         """Get the OpenRouter model name."""
         return self.model
+
+    def get_backend_type(self) -> str:
+        """Get the backend type identifier."""
+        return "OpenRouter"
 
     def list_models(self) -> list[str]:
         """List available models from OpenRouter."""

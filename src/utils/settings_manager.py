@@ -167,7 +167,7 @@ class SettingsManager:
             },
             "openrouter": {
                 "api_key": "",
-                "model": "meta-llama/llama-3.1-70b-instruct", 
+                "model": "openai/gpt-oss-20b", 
                 "base_url": "https://openrouter.ai/api/v1",
                 "timeout": 180,
                 "site_url": "",

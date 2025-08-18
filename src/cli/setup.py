@@ -82,6 +82,10 @@ def setup_ollama_backend() -> bool:
     """Setup Ollama backend configuration."""
     click.echo("\n🦙 Configuring Ollama Backend")
     
+    # Create default settings.yaml if it doesn't exist
+    if not Path("settings.yaml").exists():
+        settings_manager.create_default_settings()
+    
     host = click.prompt("Ollama host", default="localhost")
     port = click.prompt("Ollama port", default=11434, type=int)
     model = click.prompt("Model name", default="gpt-oss:20b")
@@ -101,6 +105,10 @@ def setup_openrouter_backend() -> bool:
     click.echo("\n🌐 Configuring OpenRouter Backend")
     click.echo("You'll need an OpenRouter API key from: https://openrouter.ai/keys")
     
+    # Create default settings.yaml if it doesn't exist
+    if not Path("settings.yaml").exists():
+        settings_manager.create_default_settings()
+    
     api_key = click.prompt("OpenRouter API key", hide_input=True)
     if not api_key.strip():
         click.echo("❌ API key is required for OpenRouter")
@@ -109,6 +117,7 @@ def setup_openrouter_backend() -> bool:
     # Show popular models
     click.echo("\nPopular models:")
     models = [
+        "openai/gpt-oss-20b",
         "meta-llama/llama-3.1-70b-instruct",
         "anthropic/claude-3.5-sonnet",
         "openai/gpt-4o",
@@ -126,7 +135,7 @@ def setup_openrouter_backend() -> bool:
         else:
             model = choice
     except (ValueError, IndexError):
-        model = "meta-llama/llama-3.1-70b-instruct"
+        model = "openai/gpt-oss-20b"
     
     site_name = click.prompt("Site name (optional)", default="Red Team Testbed")
     site_url = click.prompt("Site URL (optional)", default="")
@@ -146,13 +155,20 @@ def setup_openrouter_backend() -> bool:
 def test_connection(config: dict[str, Any], verbose: bool = False) -> bool:
     """Test connection to configured LLM backend."""
     try:
-        # Load settings and create backend
-        settings = settings_manager.load_settings()
-        backend = create_backend(settings)
+        # Try to load settings and create backend
+        if Path("settings.yaml").exists():
+            settings = settings_manager.load_settings()
+            backend = create_backend(settings)
+            provider = settings['backend']['provider']
+            click.echo(f"🔗 Testing {provider} connection...")
+        else:
+            # Fallback to default Ollama configuration
+            from src.utils.model_client import OllamaClient
+            backend = OllamaClient()  # Uses default localhost:11434, gpt-oss:20b
+            provider = "ollama"
+            click.echo("🔗 Testing default Ollama connection...")
         
-        click.echo(f"🔗 Testing {settings['backend']['provider']} connection...")
-        
-        if settings['backend']['provider'] == 'ollama':
+        if provider == 'ollama':
             return test_ollama_connection(backend, verbose)
         else:
             return test_openrouter_connection(backend, verbose)
@@ -167,7 +183,11 @@ def test_ollama_connection(backend, verbose: bool = False) -> bool:
     # Check if Ollama is busy before testing
     click.echo("🔍 Checking Ollama status...")
     try:
-        status = backend.check_status()
+        # Handle both OllamaBackend and OllamaClient
+        if hasattr(backend, 'check_status'):
+            status = backend.check_status()
+        else:
+            status = backend.check_ollama_status()
 
         if status.is_busy:
             click.echo(f"⚠️  WARNING: Ollama appears busy (GPU usage: {status.gpu_usage})")
@@ -186,8 +206,16 @@ def test_ollama_connection(backend, verbose: bool = False) -> bool:
         click.echo(f"⚠️  Could not check Ollama status: {e}")
 
     try:
-        if backend.is_available():
-            click.echo(f"✅ Model {backend.get_model_name()} is available")
+        # Handle both interfaces for availability check
+        if hasattr(backend, 'is_available'):
+            model_available = backend.is_available()
+            model_name = backend.get_model_name()
+        else:
+            model_available = backend.is_model_available()
+            model_name = backend.model
+
+        if model_available:
+            click.echo(f"✅ Model {model_name} is available")
 
             # Test generation
             click.echo("🧪 Testing generation...")
@@ -205,8 +233,8 @@ def test_ollama_connection(backend, verbose: bool = False) -> bool:
                     click.echo(f"Sample response: {response.content[:100]}...")
                 return True
         else:
-            click.echo(f"❌ Model {backend.get_model_name()} not found")
-            click.echo(f"Please run: ollama pull {backend.get_model_name()}")
+            click.echo(f"❌ Model {model_name} not found")
+            click.echo(f"Please run: ollama pull {model_name}")
             return False
 
     except Exception as e:
@@ -271,12 +299,14 @@ def main(config: str, verbose: bool, configure: bool) -> int | None:
                 return 1
             click.echo("")
         
-        # Ensure settings.yaml exists
+        # Check if settings.yaml exists
         if not Path("settings.yaml").exists():
-            click.echo("📋 Creating default settings.yaml...")
-            settings_manager.create_default_settings()
-            click.echo("✅ Created settings.yaml with defaults")
-            click.echo("💡 Run 'uv run setup --configure' to configure backends")
+            if configure:
+                # settings.yaml will be created by interactive setup
+                pass
+            else:
+                click.echo("💡 No settings.yaml found, using default Ollama configuration")
+                click.echo("   Run 'uv run setup --configure' to configure different backends")
             
         # Load configuration (fallback compatibility)
         click.echo("📋 Loading configuration...")
