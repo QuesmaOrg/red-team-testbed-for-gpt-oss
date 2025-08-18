@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Interactive CLI for red team exploit testing."""
 
-
 import click
 from rich.console import Console
 from rich.panel import Panel

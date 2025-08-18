@@ -1,5 +1,7 @@
 # GPT-OSS-20B Red Team Security Testing Toolkit
 
+[![CI](https://github.com/QuesmaOrg/red-team-testbed-for-gpt-oss/actions/workflows/ci.yml/badge.svg)](https://github.com/QuesmaOrg/red-team-testbed-for-gpt-oss/actions/workflows/ci.yml)
+
 A comprehensive security testing framework for the OpenAI GPT-OSS-20B Red Teaming Competition.
 
 ## Competition Overview

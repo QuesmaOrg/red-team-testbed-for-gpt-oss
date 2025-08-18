@@ -85,11 +85,21 @@ uv run attack --custom
 # View and analyze sessions
 uv run sessions
 
-# Code quality checks
-uv run ruff check src
-uv run ruff format src
-uv run ty check src
+# Code quality checks (ALWAYS run before committing)
+uv run ty check src       # Type checking first
+uv run ruff check src     # Then linting
+uv run ruff format src    # Finally formatting
 ```
+
+### Pre-Commit Checklist
+
+**IMPORTANT**: Always run these checks before committing code:
+
+1. **Type Check**: `uv run ty check src` - Ensure no type errors
+2. **Lint Check**: `uv run ruff check src` - Catch code issues
+3. **Format Check**: `uv run ruff format src` - Ensure consistent formatting
+
+If any of these fail, fix the issues before committing. The GitHub Actions CI will run these same checks in this order.
 
 ### Git Workflow
 
