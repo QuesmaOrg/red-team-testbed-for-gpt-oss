@@ -51,7 +51,7 @@ new_test = SimpleTest(
 
 
 # For the entire test suite:
-def calculate_savings():
+def calculate_savings() -> None:
     """Calculate line savings across all test files"""
 
     # Current: ~100 tests × 11 lines each = 1,100 lines

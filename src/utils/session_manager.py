@@ -30,7 +30,7 @@ class SessionManager:
         """Load a session from disk."""
         with open(session_file) as f:
             data = json.load(f)
-        return InteractiveSession(**data)
+        return InteractiveSession.model_validate(data)
 
     def list_sessions(self) -> list[dict[str, str]]:
         """List all available sessions."""
@@ -63,7 +63,7 @@ class SessionManager:
         if lessons_file.exists():
             with open(lessons_file) as f:
                 data = json.load(f)
-            return TrialsAndLessons(**data)
+            return TrialsAndLessons.model_validate(data)
         return None
 
     def save_lessons(self, trials: TrialsAndLessons) -> Path:
