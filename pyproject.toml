@@ -91,6 +91,7 @@ select = [
 ]
 ignore = [
     "E501",  # line too long - handled by formatter
+    "ANN401",  # Dynamically typed expressions (Any) - needed for flexible test interfaces
 ]
 
 [tool.ruff.lint.isort]

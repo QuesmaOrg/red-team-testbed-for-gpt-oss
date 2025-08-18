@@ -34,7 +34,7 @@ class TestModelResponse:
             timed_out=False,
             thinking="Internal thoughts"
         )
-        
+
         assert response.content == "Test content"
         assert response.model == "gpt-oss:20b"
         assert response.prompt_tokens == 10
@@ -55,7 +55,7 @@ class TestModelResponse:
             total_tokens=15,
             response_time=1.0
         )
-        
+
         assert response.error is None
         assert response.timed_out is False
         assert response.thinking is None
@@ -72,7 +72,7 @@ class TestModelResponse:
             error="Connection timeout",
             timed_out=True
         )
-        
+
         assert response.error == "Connection timeout"
         assert response.timed_out is True
         assert response.content == ""
@@ -87,7 +87,7 @@ class TestModelResponse:
             total_tokens=15,
             response_time=1.0
         )
-        
+
         data = response.model_dump()
         assert data["content"] == "Test"
         assert data["model"] == "test-model"
@@ -117,7 +117,7 @@ class TestVulnerabilityCategory:
             "CHAIN_OF_THOUGHT",
             "EXPLOIT",
         ]
-        
+
         for category_name in expected_categories:
             assert hasattr(VulnerabilityCategory, category_name)
             category = getattr(VulnerabilityCategory, category_name)
@@ -142,7 +142,7 @@ class TestVulnerabilityScore:
             reproducibility=8,
             methodological_insight=4
         )
-        
+
         assert score.severity == 7
         assert score.breadth == 5
         assert score.novelty == 6
@@ -212,7 +212,7 @@ class TestEvaluationResult:
             ),
             flags=["FLAG1", "FLAG2"]
         )
-        
+
         assert result.is_vulnerable is True
         assert result.category == VulnerabilityCategory.DECEPTION
         assert result.confidence == 0.75
@@ -230,7 +230,7 @@ class TestEvaluationResult:
             evidence=[],
             reasoning="No vulnerability detected"
         )
-        
+
         assert result.score is None
         assert result.flags == []
 
@@ -271,7 +271,7 @@ class TestOllamaStatus:
             model_loaded=True,
             raw_output="GPU 0: 45% | Memory: 8.2 GB | Model: gpt-oss:20b"
         )
-        
+
         assert status.is_busy is False
         assert status.gpu_usage == "45%"
         assert status.memory_usage == "8.2 GB"
@@ -287,7 +287,7 @@ class TestOllamaStatus:
             model_loaded=True,
             raw_output=""  # raw_output is required, not optional
         )
-        
+
         assert status.raw_output == ""
 
 
@@ -308,7 +308,7 @@ class TestBaseTest:
             follow_up_prompts=["Follow-up 1"],
             metadata={"key": "value"}
         )
-        
+
         assert test.test_id == "test_001"
         assert test.name == "Test Case"
         assert test.prompt == "Test prompt"
@@ -329,7 +329,7 @@ class TestBaseTest:
             category="category",
             expected_vulnerability=False
         )
-        
+
         assert test.system_prompt == ""  # Empty string, not None
         assert test.difficulty == "medium"
         assert test.description == ""  # Empty string, not None
@@ -381,7 +381,7 @@ class TestTestResult:
             evidence=["Evidence"],
             reasoning="Reasoning"
         )
-        
+
         assert result.test_id == "test_001"
         assert result.test_name == "Test"
         assert result.category == "category"
@@ -406,7 +406,7 @@ class TestTestResult:
             evidence=[],
             reasoning="No vulnerability"
         )
-        
+
         assert result.vulnerability_detected is False
         assert result.confidence == 0.0
         assert result.evidence == []
@@ -425,7 +425,7 @@ class TestFinding:
             evidence=["Evidence 1", "Evidence 2"],
             reasoning="Detailed reasoning"
         )
-        
+
         finding = Finding(
             id="test_001",
             category=VulnerabilityCategory.EXPLOIT,
@@ -435,7 +435,7 @@ class TestFinding:
             timestamp="2024-01-15T10:30:00",
             metadata={"extra": "data"}
         )
-        
+
         assert finding.id == "test_001"
         assert finding.category == VulnerabilityCategory.EXPLOIT
         assert finding.prompt == "Test prompt"
@@ -455,7 +455,7 @@ class TestFinding:
             evidence=[],
             reasoning="Reasoning"
         )
-        
+
         finding = Finding(
             id="test_001",
             category=VulnerabilityCategory.DECEPTION,
@@ -464,7 +464,7 @@ class TestFinding:
             evaluation=evaluation,
             timestamp="2024-01-15T10:30:00"
         )
-        
+
         assert finding.metadata == {}  # Default is empty dict, not None
 
 
@@ -482,13 +482,13 @@ class TestModelSerialization:
             reproducibility=7,
             methodological_insight=2
         )
-        
+
         # Serialize to dict
         data = original.model_dump()
-        
+
         # Deserialize from dict
         restored = VulnerabilityScore(**data)
-        
+
         assert restored.severity == original.severity
         assert restored.breadth == original.breadth
         assert restored.novelty == original.novelty
@@ -504,13 +504,13 @@ class TestModelSerialization:
             evidence=["Evidence 1"],
             reasoning="Test reasoning"
         )
-        
+
         # Serialize to JSON
         json_str = result.model_dump_json()
         assert isinstance(json_str, str)
         assert "deception" in json_str
         assert "0.75" in json_str
-        
+
         # Deserialize from JSON
         restored = EvaluationResult.model_validate_json(json_str)
         assert restored.is_vulnerable == result.is_vulnerable

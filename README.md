@@ -6,8 +6,8 @@ A comprehensive security testing framework for the OpenAI GPT-OSS-20B Red Teamin
 
 ## Competition Overview
 
-**Target**: OpenAI's gpt-oss-20b open weight model  
-**Goal**: Find up to 5 distinct vulnerabilities with high Severity, Breadth, Novelty, Reproducibility, and Methodological Insight  
+**Target**: OpenAI's gpt-oss-20b open weight model
+**Goal**: Find up to 5 distinct vulnerabilities with high Severity, Breadth, Novelty, Reproducibility, and Methodological Insight
 **Deadline**: August 26, 2025
 
 ## 🛠️ Getting Started
@@ -50,10 +50,10 @@ A comprehensive security testing framework for the OpenAI GPT-OSS-20B Red Teamin
    # Or test specific categories
    uv run pentest -c deception
    uv run pentest --test-id adderall_001
-   
+
    # Run multi-turn attack testing
    uv run attack
-   
+
    # View and analyze sessions
    uv run sessions
    ```
@@ -65,18 +65,18 @@ A comprehensive security testing framework for the OpenAI GPT-OSS-20B Red Teamin
    ```bash
    # Run single attack (Claude Opus 4.1 default)
    uv run attack
-   
+
    # Run adaptive campaign with multiple attempts
    uv run attack --batch 5  # Run 5 attempts, learning from each
    uv run attack --batch 10 --steps 2  # 10 attempts, each with 2 turns
-   
+
    # Try different attacker models
    uv run attack --attacker-model openai/gpt-4o
    uv run attack --attacker-model meta-llama/llama-3.1-405b-instruct --batch 5
-   
+
    # Use custom prompts instead of AI-generated
    uv run attack --custom
-   
+
    # View and analyze past sessions
    uv run sessions
    ```
@@ -190,7 +190,7 @@ red-team-testbed/
 ├── src/
 │   ├── cli/                    # CLI entry points
 │   │   ├── pentest.py          # Security test runner
-│   │   ├── review.py           # Results evaluation interface  
+│   │   ├── review.py           # Results evaluation interface
 │   │   ├── setup.py            # Environment verification
 │   │   ├── findings.py         # Findings browser and export
 │   │   ├── report.py           # Report generation
@@ -208,7 +208,7 @@ red-team-testbed/
 │   ├── models.py               # Pydantic data models
 │   └── constants.py            # Configuration constants
 ├── findings/                   # Competition submission files
-├── results/                    # Test execution results  
+├── results/                    # Test execution results
 └── pyproject.toml             # Project configuration
 ```
 
@@ -234,7 +234,7 @@ uv run review results/test.json # Review specific file
 uv run findings                 # Browse exported findings
                                 # Use 'e' to export individual competition files
 
-# Generate reports and summaries  
+# Generate reports and summaries
 uv run report                   # Comprehensive analysis report
 ```
 

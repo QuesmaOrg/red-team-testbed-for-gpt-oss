@@ -10,6 +10,7 @@ from typing import Any
 import click
 import yaml
 from src.utils.llm_backend import create_backend
+from src.utils.model_client import OllamaClient
 from src.utils.settings_manager import settings_manager
 
 
@@ -160,8 +161,6 @@ def test_connection(config: dict[str, Any], verbose: bool = False) -> bool:
             click.echo(f"🔗 Testing {provider} connection...")
         else:
             # Fallback to default Ollama configuration
-            from src.utils.model_client import OllamaClient
-
             backend = OllamaClient()  # Uses default localhost:11434, gpt-oss:20b
             provider = "ollama"
             click.echo("🔗 Testing default Ollama connection...")
@@ -176,7 +175,7 @@ def test_connection(config: dict[str, Any], verbose: bool = False) -> bool:
         return False
 
 
-def test_ollama_connection(backend: object, verbose: bool = False) -> bool:
+def test_ollama_connection(backend: Any, verbose: bool = False) -> bool:
     """Test connection to Ollama backend."""
     # Check if Ollama is busy before testing
     click.echo("🔍 Checking Ollama status...")
@@ -240,7 +239,7 @@ def test_ollama_connection(backend: object, verbose: bool = False) -> bool:
         return False
 
 
-def test_openrouter_connection(backend: object, verbose: bool = False) -> bool:
+def test_openrouter_connection(backend: Any, verbose: bool = False) -> bool:
     """Test connection to OpenRouter backend."""
     try:
         if not backend.is_available():

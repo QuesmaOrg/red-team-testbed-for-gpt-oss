@@ -305,10 +305,10 @@ class TestOllamaClientHelpers:
         mock_session_class.return_value = mock_session
 
         client = OllamaClient()
-        
+
         with pytest.raises(ConnectionError) as exc_info:
             client._make_request("api/test", method="POST")
-        
+
         assert "Failed to connect to Ollama" in str(exc_info.value)
 
 
@@ -319,13 +319,13 @@ class TestOllamaClientIntegration:
     def test_full_generation_workflow(self, mock_session_class) -> None:
         """Test complete generation workflow with all features"""
         mock_session = MagicMock()
-        
+
         # First call: check model availability
         availability_response = MagicMock()
         availability_response.json.return_value = {
             "models": [{"name": "gpt-oss:20b"}]
         }
-        
+
         # Second call: generate response
         generation_response = MagicMock()
         generation_response.json.return_value = {
@@ -336,19 +336,19 @@ class TestOllamaClientIntegration:
             "prompt_eval_count": 15,
             "eval_count": 25,
         }
-        
+
         mock_session.get.return_value = availability_response
         mock_session.post.return_value = generation_response
         mock_session_class.return_value = mock_session
 
         client = OllamaClient()
-        
+
         # Check availability
         assert client.is_model_available() is True
-        
+
         # Generate response
         response = client.generate("Complex prompt", "System instructions")
-        
+
         # The OllamaClient doesn't strip thinking tags, it returns the full response
         assert "Here is my response" in response.content
         # thinking field is set to None since extraction not implemented
@@ -370,11 +370,11 @@ class TestOllamaClientIntegration:
         }
         mock_session.post.return_value = mock_response
         mock_session_class.return_value = mock_session
-        
+
         # Simulate 2.5 second response time
         mock_time.side_effect = [0.0, 2.5]
 
         client = OllamaClient()
         response = client.generate("Test")
-        
+
         assert response.response_time == 2.5
