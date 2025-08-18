@@ -18,7 +18,9 @@ class SessionManager:
 
     def save_session(self, session: InteractiveSession) -> Path:
         """Save a session to disk."""
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        # Use session start time for consistent filename
+        start_time = datetime.fromisoformat(session.start_time.replace("Z", "+00:00"))
+        timestamp = start_time.strftime("%Y-%m-%d_%H-%M-%S")
         filename = self.base_dir / f"{timestamp}_{session.session_id[:8]}.json"
 
         with open(filename, "w") as f:
