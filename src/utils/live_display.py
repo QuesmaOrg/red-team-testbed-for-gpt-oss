@@ -687,7 +687,12 @@ class LiveDisplay:
 
             # Overall statistics
             content_parts.append(Text("Overall Statistics:", style="bold cyan"))
-            content_parts.append(Text("(Note: Evaluations are heuristic-based and may undercount vulnerabilities)", style="dim italic"))
+            content_parts.append(
+                Text(
+                    "(Note: Evaluations are heuristic-based and may undercount vulnerabilities)",
+                    style="dim italic",
+                )
+            )
             stats_table = Table(show_header=False, box=None, padding=(0, 1))
             stats_table.add_column("Field", style="cyan")
             stats_table.add_column("Value")
