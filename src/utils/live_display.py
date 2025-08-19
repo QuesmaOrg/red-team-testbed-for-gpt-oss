@@ -656,18 +656,16 @@ class LiveDisplay:
             return
 
         if self.console:
-            # Header
-            self.console.print()
-            self.console.print("═" * 80, style="blue")
-            self.console.print()
-            header = Text("📊 PARALLEL EXECUTION SUMMARY", style="bold blue")
-            self.console.print(header, justify="center")
-            self.console.print()
+            # Build the complete summary content
+            from rich.console import Group
+            from rich.table import Table
+
+            content_parts = []
 
             # Test results by category
             category_stats = summary_data.get("category_stats", {})
             if category_stats:
-                self.console.print("Test Results by Category:", style="bold cyan")
+                content_parts.append(Text("Test Results by Category:", style="bold cyan"))
                 for cat_name, stats in category_stats.items():
                     total = stats["total"]
                     vulnerable = stats["vulnerable"]
@@ -683,10 +681,12 @@ class LiveDisplay:
                     if errors > 0:
                         category_line += f" [{errors} errors]"
 
-                    self.console.print(f"  {category_line}", style=color)
+                    content_parts.append(Text(f"  {category_line}", style=color))
+
+                content_parts.append(Text(""))  # Empty line
 
             # Overall statistics
-            self.console.print("\nOverall Statistics:", style="bold cyan")
+            content_parts.append(Text("Overall Statistics:", style="bold cyan"))
             stats_table = Table(show_header=False, box=None, padding=(0, 1))
             stats_table.add_column("Field", style="cyan")
             stats_table.add_column("Value")
@@ -720,29 +720,44 @@ class LiveDisplay:
             if error_count > 0:
                 stats_table.add_row("• Errors:", f"{error_count} tests failed", style="red")
 
-            self.console.print(stats_table)
+            content_parts.append(stats_table)
 
             # Most vulnerable tests
             most_vulnerable = summary_data.get("most_vulnerable", [])
             if most_vulnerable:
-                self.console.print("\nTop Vulnerable Tests:", style="bold red")
+                content_parts.append(Text(""))  # Empty line
+                content_parts.append(Text("Top Vulnerable Tests:", style="bold red"))
                 for i, (test_id, rate, vuln_runs, total_runs) in enumerate(most_vulnerable[:3], 1):
                     if rate > 0:
-                        self.console.print(
-                            f"  {i}. 🔴 {test_id} - {vuln_runs}/{total_runs} runs vulnerable ({rate * 100:.0f}%)"
+                        content_parts.append(
+                            Text(
+                                f"  {i}. 🔴 {test_id} - {vuln_runs}/{total_runs} runs vulnerable ({rate * 100:.0f}%)"
+                            )
                         )
 
             # Most resilient tests
             most_resilient = summary_data.get("most_resilient", [])
             if most_resilient:
-                self.console.print("\nMost Resilient Tests:", style="bold green")
+                content_parts.append(Text(""))  # Empty line
+                content_parts.append(Text("Most Resilient Tests:", style="bold green"))
                 for i, (test_id, rate, vuln_runs, total_runs) in enumerate(most_resilient[:2], 1):
-                    self.console.print(
-                        f"  {i}. ✅ {test_id} - {vuln_runs}/{total_runs} runs vulnerable ({rate * 100:.0f}%)"
+                    content_parts.append(
+                        Text(
+                            f"  {i}. ✅ {test_id} - {vuln_runs}/{total_runs} runs vulnerable ({rate * 100:.0f}%)"
+                        )
                     )
 
+            # Create the main panel with all content
+            summary_panel = Panel(
+                Group(*content_parts),
+                title="📊 PARALLEL EXECUTION SUMMARY",
+                title_align="left",
+                style="blue",
+                padding=(1, 2),
+            )
+
             self.console.print()
-            self.console.print("═" * 80, style="blue")
+            self.console.print(summary_panel)
         else:
             # Text mode fallback
             print()
