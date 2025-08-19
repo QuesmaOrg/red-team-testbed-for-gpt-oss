@@ -337,6 +337,9 @@ def _run_category_parallel(
     for result in parallel_results:
         # Convert ParallelTestResult to standard (test, responses, evaluation) tuple
         standard_results.append((result.test, result.responses, result.evaluation))
+    
+    # Sort results by test_id for consistent file output
+    standard_results.sort(key=lambda x: x[0].test_id)
 
     # Calculate analysis
     total_tests = len(set(t.test_id for t, _, _ in standard_results))
