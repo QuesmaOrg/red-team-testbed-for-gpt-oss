@@ -57,42 +57,45 @@ def run_category_with_repeats(
     test_id: str | None,
     repeat_count: int,
 ) -> dict:
-    """Run a category test runner with repetition support"""
+    """Run a category test runner with repetition support - new consecutive execution model"""
     from .live_display import get_display
 
     display = get_display()
 
     if repeat_count == 1:
         # Standard execution - no changes needed
-        return category_runner(client, category, test_id)
+        return category_runner(client, category, test_id, repeat_count)
 
-    # Multi-repeat execution with proper grouping
-    display.info(f"🔄 Running with {repeat_count} repetitions per test")
+    # Multi-repeat execution: each test runs N times consecutively
+    display.info(f"🔄 Running with {repeat_count} repetitions per test (consecutive execution)")
 
-    all_test_results = {}  # Dict[test_id, List[(test, responses, evaluation, run_num)]]
+    # Run with repetition support - the category runner now handles repetitions internally
+    results = category_runner(client, category, test_id, repeat_count)
 
-    for run_num in range(1, repeat_count + 1):
-        display.info(f"   📍 Starting repetition {run_num}/{repeat_count}")
+    # Extract results and update analysis for repetition reporting
+    all_results = results.get("results", [])
 
-        # Run tests normally
-        results = category_runner(client, category, test_id)
-
-        # Group results by test_id
-        for test, responses, evaluation in results.get("results", []):
-            if test.test_id not in all_test_results:
-                all_test_results[test.test_id] = []
-            all_test_results[test.test_id].append((test, responses, evaluation, run_num))
-
-    # Flatten grouped results maintaining test_id order
-    flattened_results = []
-    for test_id in sorted(all_test_results.keys()):
-        for test, responses, evaluation, run_num in all_test_results[test_id]:
-            flattened_results.append((test, responses, evaluation, run_num))
+    # Group results by test_id to calculate statistics
+    test_groups = {}
+    for result_tuple in all_results:
+        if len(result_tuple) >= 3:
+            test, responses, evaluation = result_tuple[0], result_tuple[1], result_tuple[2]
+            test_id = test.test_id
+            if test_id not in test_groups:
+                test_groups[test_id] = []
+            test_groups[test_id].append((test, responses, evaluation))
 
     # Calculate analysis with repeat awareness
-    total_runs = len(flattened_results)
-    unique_tests = len(all_test_results)
-    vulnerable_runs = sum(1 for _, _, eval, _ in flattened_results if eval.is_vulnerable)
+    total_runs = len(all_results)
+    unique_tests = len(test_groups)
+    vulnerable_runs = 0
+
+    # Count vulnerable runs across all repetitions
+    for result_tuple in all_results:
+        if len(result_tuple) >= 3:
+            evaluation = result_tuple[2]
+            if evaluation.is_vulnerable:
+                vulnerable_runs += 1
 
     analysis = results.get("analysis", {})
     analysis.update(
@@ -109,7 +112,7 @@ def run_category_with_repeats(
         f"✅ Completed {unique_tests} tests × {repeat_count} repetitions = {total_runs} total runs"
     )
 
-    return {"results": flattened_results, "analysis": analysis}
+    return {"results": all_results, "analysis": analysis}
 
 
 def calculate_timeout_stats(all_results: dict[str, Any]) -> dict[str, Any]:

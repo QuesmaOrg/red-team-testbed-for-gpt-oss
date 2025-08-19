@@ -86,7 +86,6 @@ class OllamaBackend(LLMBackend):
         return self.client.generate(
             prompt=prompt,
             system_prompt=system_prompt,
-            temperature=self.temperature,
             max_tokens=max_tokens,
             stream=stream,
         )
@@ -99,7 +98,6 @@ class OllamaBackend(LLMBackend):
         """Multi-turn chat conversation with Ollama."""
         return self.client.chat(
             messages=messages,
-            temperature=self.temperature,
             max_tokens=max_tokens,
         )
 

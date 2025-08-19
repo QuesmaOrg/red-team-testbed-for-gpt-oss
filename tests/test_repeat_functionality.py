@@ -78,16 +78,18 @@ class TestRepeatFunctionality(unittest.TestCase):
 
     def create_mock_category_runner(self, test_ids: list[str]) -> callable:
         """Create a mock category runner that returns specified test IDs"""
-        def mock_runner(client, category, test_id):
+        def mock_runner(client, category, test_id, repeat_count=1):
             # Filter by test_id if specified
             filtered_ids = [tid for tid in test_ids if tid == test_id] if test_id else test_ids
 
             results = []
             for tid in filtered_ids:
-                test = MockTest(tid)
-                response = client.generate(test.prompt)
-                evaluation = MockEvaluationResult()
-                results.append((test, [response], evaluation))
+                # Generate repeat_count results for each test (consecutive execution)
+                for rep in range(repeat_count):
+                    test = MockTest(tid)
+                    response = client.generate(test.prompt)
+                    evaluation = MockEvaluationResult()
+                    results.append((test, [response], evaluation))
 
             return {
                 "results": results,
@@ -115,7 +117,7 @@ class TestRepeatFunctionality(unittest.TestCase):
             self.assertEqual(len(result_tuple), 3)  # (test, responses, evaluation)
 
     def test_multiple_repeats_same_test_id(self) -> None:
-        """Test repeat=3 keeps same test_id across all runs"""
+        """Test repeat=3 keeps same test_id across all runs (consecutive execution)"""
         test_ids = ["test_001"]
         mock_runner = self.create_mock_category_runner(test_ids)
 
@@ -125,18 +127,16 @@ class TestRepeatFunctionality(unittest.TestCase):
         # Should have 3 results, all with same test_id
         self.assertEqual(len(results["results"]), 3)
 
+        # New behavior: results don't have run_num as 4th element anymore
+        # The repetition is handled internally by the category runner
         for result_tuple in results["results"]:
-            self.assertEqual(len(result_tuple), 4)  # (test, responses, evaluation, run_num)
-            test, responses, evaluation, run_num = result_tuple
+            self.assertEqual(len(result_tuple), 3)  # (test, responses, evaluation) 
+            test, responses, evaluation = result_tuple
             self.assertEqual(test.test_id, "test_001")
 
-        # Check run numbers are 1, 2, 3
-        run_nums = [result_tuple[3] for result_tuple in results["results"]]
-        self.assertEqual(run_nums, [1, 2, 3])
-
-    def test_results_grouping_by_test_id(self) -> None:
-        """Test results grouped by test_id: all test_001 runs, then test_002 runs"""
-        test_ids = ["test_002", "test_001"]  # Intentionally unsorted
+    def test_results_consecutive_execution(self) -> None:
+        """Test results show consecutive execution: all test_001 runs, then test_002 runs"""
+        test_ids = ["test_002", "test_001"]  # Intentionally unsorted to test ordering
         mock_runner = self.create_mock_category_runner(test_ids)
 
         # Run with repeat=2
@@ -145,20 +145,16 @@ class TestRepeatFunctionality(unittest.TestCase):
         # Should have 4 results (2 tests × 2 repeats)
         self.assertEqual(len(results["results"]), 4)
 
-        # Extract test_ids and run_nums in order
+        # Extract test_ids in order - new behavior: consecutive per test
         test_ids_order = []
-        run_nums_order = []
         for result_tuple in results["results"]:
-            test, responses, evaluation, run_num = result_tuple
+            test, responses, evaluation = result_tuple  # No run_num anymore
             test_ids_order.append(test.test_id)
-            run_nums_order.append(run_num)
 
-        # Should be grouped by test_id (sorted)
-        expected_test_ids = ["test_001", "test_001", "test_002", "test_002"]
-        expected_run_nums = [1, 2, 1, 2]
-
+        # New consecutive behavior: all runs of test_002 first, then all runs of test_001
+        # (order matches the test_ids list order in the mock runner)
+        expected_test_ids = ["test_002", "test_002", "test_001", "test_001"]
         self.assertEqual(test_ids_order, expected_test_ids)
-        self.assertEqual(run_nums_order, expected_run_nums)
 
     def test_thinking_captured_per_repetition(self) -> None:
         """Test each repetition captures its own thinking data"""
@@ -171,7 +167,7 @@ class TestRepeatFunctionality(unittest.TestCase):
         # Each response should have different thinking
         thinking_values = []
         for result_tuple in results["results"]:
-            test, responses, evaluation, run_num = result_tuple
+            test, responses, evaluation = result_tuple  # No run_num
             thinking_values.append(responses[0].thinking)
 
         # Should be unique (mock client increments counter)
@@ -207,7 +203,7 @@ class TestRepeatFunctionality(unittest.TestCase):
         self.assertEqual(len(results["results"]), 2)
 
         for result_tuple in results["results"]:
-            test, responses, evaluation, run_num = result_tuple
+            test, responses, evaluation = result_tuple  # No run_num
             self.assertEqual(test.test_id, "test_002")
 
         # Analysis should reflect single test
@@ -219,7 +215,7 @@ class TestRepeatFunctionality(unittest.TestCase):
         """Test that timeout statistics calculation handles repeat results correctly"""
         from src.utils.testbed_lib import calculate_timeout_stats
 
-        # Mock results with repeat format (4-tuple)
+        # Mock results with standard format (3-tuple) - the new consecutive model
         mock_test = MockTest("test_001")
         mock_response1 = MockModelResponse("Response 1", response_time=2.0)
         mock_response1.timed_out = True
@@ -230,8 +226,8 @@ class TestRepeatFunctionality(unittest.TestCase):
         all_results = {
             "mock_category": {
                 "results": [
-                    (mock_test, [mock_response1], mock_evaluation, 1),  # 4-tuple format
-                    (mock_test, [mock_response2], mock_evaluation, 2),  # 4-tuple format
+                    (mock_test, [mock_response1], mock_evaluation),  # 3-tuple format
+                    (mock_test, [mock_response2], mock_evaluation),  # 3-tuple format
                 ]
             }
         }
@@ -249,27 +245,28 @@ class TestRepeatResultsSerialization(unittest.TestCase):
     """Test serialization of repeat results"""
 
     def test_repeat_metadata_serialization(self) -> None:
-        """Test that repetition metadata is correctly added during serialization"""
+        """Test that repetition results are correctly serialized (new consecutive model)"""
         import json
         import tempfile
 
         from src.utils.testbed_lib import save_results
 
-        # Create mock results with repetition info
+        # Create mock results with repetition info - new format (3-tuple)
         mock_test = MockTest("test_001")
         mock_response = MockModelResponse("Test response", thinking="Test thinking")
         mock_evaluation = MockEvaluationResult()
 
-        # Results with repetition info (4-tuple)
+        # Results with repetitions (3-tuple format, but repeated entries)
         results_with_repeats = {
             "mock_category": {
                 "results": [
-                    (mock_test, [mock_response], mock_evaluation, 1),  # run 1
-                    (mock_test, [mock_response], mock_evaluation, 2),  # run 2
+                    (mock_test, [mock_response], mock_evaluation),  # repetition 1
+                    (mock_test, [mock_response], mock_evaluation),  # repetition 2
                 ],
                 "analysis": {
                     "repetitions_per_test": 2,
-                    "total_tests": 1
+                    "total_tests": 1,
+                    "total_runs": 2
                 }
             }
         }
@@ -285,15 +282,13 @@ class TestRepeatResultsSerialization(unittest.TestCase):
             test_details = saved_data["mock_category"]["test_details"]
             self.assertEqual(len(test_details), 2)
 
-            # First result
+            # Both results should be for the same test (consecutive execution)
             self.assertEqual(test_details[0]["test_id"], "test_001")
-            self.assertEqual(test_details[0]["repetition_run"], 1)
-            self.assertEqual(test_details[0]["total_repetitions"], 2)
-
-            # Second result
             self.assertEqual(test_details[1]["test_id"], "test_001")
-            self.assertEqual(test_details[1]["repetition_run"], 2)
-            self.assertEqual(test_details[1]["total_repetitions"], 2)
+            
+            # New behavior: no explicit repetition_run metadata in standard format
+            self.assertNotIn("repetition_run", test_details[0])
+            self.assertNotIn("repetition_run", test_details[1])
 
     def test_normal_results_no_repeat_metadata(self) -> None:
         """Test that normal results don't get repetition metadata"""

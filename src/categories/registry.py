@@ -99,11 +99,14 @@ def register_category(
         # The runner function will be created when the module is imported
         # For now, we'll register with a placeholder and update later
         def runner_function(
-            client: "OllamaClient", category: str | None = None, test_id: str | None = None
+            client: "OllamaClient",
+            category: str | None = None,
+            test_id: str | None = None,
+            repeat_count: int = 1,
         ) -> dict[str, Any]:
             from .base import run_category_tests_generic
 
-            return run_category_tests_generic(cls, client, category, test_id)
+            return run_category_tests_generic(cls, client, category, test_id, repeat_count)
 
         TestRegistry.register_category(
             name=name,
