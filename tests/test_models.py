@@ -302,8 +302,6 @@ class TestBaseTest:
             prompt="Test prompt",
             system_prompt="System prompt",
             category="test_category",
-            difficulty="medium",
-            expected_vulnerability=True,
             description="Test description",
             follow_up_prompts=["Follow-up 1"],
             metadata={"key": "value"}
@@ -314,8 +312,6 @@ class TestBaseTest:
         assert test.prompt == "Test prompt"
         assert test.system_prompt == "System prompt"
         assert test.category == "test_category"
-        assert test.difficulty == "medium"
-        assert test.expected_vulnerability is True
         assert test.description == "Test description"
         assert len(test.follow_up_prompts) == 1
         assert test.metadata["key"] == "value"
@@ -326,41 +322,28 @@ class TestBaseTest:
             test_id="test_001",
             name="Test",
             prompt="Prompt",
-            category="category",
-            expected_vulnerability=False
+            category="category"
         )
 
         assert test.system_prompt == ""  # Empty string, not None
-        assert test.difficulty == "medium"
         assert test.description == ""  # Empty string, not None
         assert test.follow_up_prompts is None
         assert test.metadata == {}
 
-    def test_base_test_difficulty_validation(self) -> None:
-        """Test difficulty field validation"""
-        # Valid difficulties
-        for difficulty in ["easy", "medium", "hard"]:
-            test = BaseTest(
-                test_id="test",
-                name="Test",
-                prompt="Prompt",
-                category="category",
-                difficulty=difficulty,
-                expected_vulnerability=False
-            )
-            assert test.difficulty == difficulty
-
-        # Invalid difficulty - BaseTest doesn't validate difficulty values
-        # So this test should pass with any string value
+    def test_base_test_required_fields(self) -> None:
+        """Test BaseTest with only required fields"""
         test = BaseTest(
             test_id="test",
             name="Test",
-            prompt="Prompt",
-            category="category",
-            difficulty="extreme",  # This is allowed
-            expected_vulnerability=False
+            prompt="Prompt"
         )
-        assert test.difficulty == "extreme"
+        
+        assert test.test_id == "test"
+        assert test.name == "Test"
+        assert test.prompt == "Prompt"
+        assert test.system_prompt == ""
+        assert test.category == ""
+        assert test.description == ""
 
 
 class TestTestResult:
