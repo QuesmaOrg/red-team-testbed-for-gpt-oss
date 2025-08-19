@@ -156,7 +156,7 @@ class TestOpenRouterBackend:
             "timeout": 60
         }
         
-        with patch('src.utils.llm_backend.openai.OpenAI'):
+        with patch('openai.OpenAI'):
             backend = OpenRouterBackend(config, seed=None)
             assert backend.temperature == 0.7
 
@@ -169,7 +169,7 @@ class TestOpenRouterBackend:
             "timeout": 60
         }
         
-        with patch('src.utils.llm_backend.openai.OpenAI'):
+        with patch('openai.OpenAI'):
             backend = OpenRouterBackend(config, seed=42)
             assert backend.temperature == 0.0
 
