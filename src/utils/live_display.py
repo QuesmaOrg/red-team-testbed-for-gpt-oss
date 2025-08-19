@@ -395,7 +395,7 @@ class LiveDisplay:
                 Text(response_content, style="white"),
                 title=title,
                 title_align="left",
-                style="green",
+                style="blue",
                 padding=(1, 2),
             )
             self.console.print(response_panel)
@@ -421,35 +421,43 @@ class LiveDisplay:
         progress.current_step = "Evaluation complete"
         progress.evaluation_done = True
 
-        # Vulnerability status
-        vuln_status = "🔴 YES" if evaluation.is_vulnerable else "🟢 NO"
-        confidence = f"{evaluation.confidence:.2f}"
+        # Build dynamic title with result and confidence
+        if evaluation.is_vulnerable:
+            title = f"🔴 Evaluated as VULNERABLE (confidence: {evaluation.confidence:.2f})"
+            panel_style = "red"
+        else:
+            title = f"✅ Evaluated as NOT vulnerable (confidence: {evaluation.confidence:.2f})"
+            panel_style = "green"
 
         if self.console:
-            # Create evaluation table
-            eval_table = Table(show_header=False, box=None, padding=(0, 1))
-            eval_table.add_column("Field", style="cyan bold")
-            eval_table.add_column("Value")
-
-            eval_table.add_row("Vulnerable:", vuln_status)
-            eval_table.add_row("Confidence:", confidence)
+            # Create simplified content - only evidence and reasoning
+            content_parts = []
 
             if evaluation.evidence:
                 evidence_text = "\n".join(f"• {e}" for e in evaluation.evidence)
-                eval_table.add_row("Evidence:", evidence_text)
+                content_parts.append(f"Evidence:\n{evidence_text}")
 
             if evaluation.reasoning:
-                eval_table.add_row("Reasoning:", evaluation.reasoning)
+                content_parts.append(f"Reasoning: {evaluation.reasoning}")
+
+            # If no evidence or reasoning, show a simple message
+            if not content_parts:
+                content_parts.append("No additional details available")
+
+            content = "\n\n".join(content_parts)
 
             eval_panel = Panel(
-                eval_table, title="🔍 EVALUATION", title_align="left", style="blue", padding=(1, 2)
+                Text(content, style="white"),
+                title=title,
+                title_align="left",
+                style=panel_style,
+                padding=(0, 1),
             )
             self.console.print(eval_panel)
 
         else:
-            print("\n🔍 EVALUATION:")
-            print(f"   Vulnerable: {vuln_status}")
-            print(f"   Confidence: {confidence}")
+            # Fallback for non-Rich terminals
+            print(f"\n{title}:")
 
             if evaluation.evidence:
                 print("   Evidence:")
@@ -458,6 +466,9 @@ class LiveDisplay:
 
             if evaluation.reasoning:
                 print(f"   Reasoning: {evaluation.reasoning}")
+
+            if not evaluation.evidence and not evaluation.reasoning:
+                print("   No additional details available")
 
     def complete_test(self, progress: TestProgress, evaluation: EvaluationResult) -> None:
         """Mark test as complete"""
@@ -607,6 +618,9 @@ class LiveDisplay:
 
         vulnerability_rate = (vulnerable_runs / total_runs) * 100
 
+        # Dynamic color based on vulnerability results
+        summary_style = "red" if vulnerable_runs > 0 else "green"
+
         if self.console:
             summary_table = Table(show_header=False, box=None, padding=(0, 1))
             summary_table.add_column("Field", style="cyan bold")
@@ -623,7 +637,7 @@ class LiveDisplay:
                 summary_table,
                 title=f"📊 Vulnerability Summary for {test_id}",
                 title_align="left",
-                style="blue",
+                style=summary_style,
                 padding=(1, 2),
             )
             self.console.print(summary_panel)
