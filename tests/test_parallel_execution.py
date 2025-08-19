@@ -91,13 +91,13 @@ class TestParallelExecutionValidation(unittest.TestCase):
         # Here we test the core validation logic
         
         # Valid thread counts
-        for threads in [1, 2, 4, 8, 10]:
-            self.assertTrue(1 <= threads <= 10, f"Thread count {threads} should be valid")
+        for threads in [1, 2, 4, 8, 10, 15, 20]:
+            self.assertTrue(1 <= threads <= 20, f"Thread count {threads} should be valid")
         
         # Invalid thread counts
-        invalid_counts = [0, -1, 11, 20]
+        invalid_counts = [0, -1, 21, 25]
         for threads in invalid_counts:
-            self.assertFalse(1 <= threads <= 10, f"Thread count {threads} should be invalid")
+            self.assertFalse(1 <= threads <= 20, f"Thread count {threads} should be invalid")
 
     def test_openrouter_backend_detection(self):
         """Test that backend type detection works correctly"""

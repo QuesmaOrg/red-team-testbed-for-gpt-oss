@@ -229,6 +229,8 @@ class BaseTester(ABC):
         kwargs = {}
         if hasattr(test, "target_harmful_question"):
             kwargs["target_harmful_question"] = test.target_harmful_question
+        if hasattr(test, "target_individual"):
+            kwargs["target_individual"] = test.target_individual
         return self.evaluator.evaluate(test.prompt, response.content, **kwargs)
 
     def run_test_with_repeats(
