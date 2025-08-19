@@ -36,6 +36,23 @@ class TestOllamaClientInitialization:
         client_no_seed = OllamaClient()
         assert client_no_seed.seed is None
 
+    def test_temperature_initialization_default(self) -> None:
+        """Test temperature defaults to 0.7 when no seed is provided"""
+        client = OllamaClient()
+        assert client.temperature == 0.7
+
+    def test_temperature_initialization_with_seed(self) -> None:
+        """Test temperature is 0.0 when seed is provided for reproducibility"""
+        client = OllamaClient(seed=42)
+        assert client.temperature == 0.0
+
+    def test_temperature_initialization_with_different_seeds(self) -> None:
+        """Test temperature is always 0.0 regardless of seed value"""
+        client1 = OllamaClient(seed=1)
+        client2 = OllamaClient(seed=999)
+        assert client1.temperature == 0.0
+        assert client2.temperature == 0.0
+
 
 class TestOllamaClientModelAvailability:
     """Test model availability checking"""
@@ -361,3 +378,104 @@ class TestOllamaClientIntegration:
         response = client.generate("Test")
 
         assert response.response_time == 2.5
+
+
+class TestOllamaClientTemperatureHandling:
+    """Test temperature handling in API calls"""
+
+    @patch('src.utils.model_client.requests.post')
+    def test_generate_uses_instance_temperature_default(self, mock_post) -> None:
+        """Test that generate() uses instance temperature (default 0.7)"""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "model": "gpt-oss:20b",
+            "response": "Test response",
+            "done": True,
+        }
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        client = OllamaClient()
+        client.generate("Test prompt")
+
+        # Check that the API call includes temperature=0.7
+        call_args = mock_post.call_args
+        assert call_args[1]['json']['options']['temperature'] == 0.7
+
+    @patch('src.utils.model_client.requests.post')
+    def test_generate_uses_instance_temperature_with_seed(self, mock_post) -> None:
+        """Test that generate() uses temperature=0.0 when seed is set"""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "model": "gpt-oss:20b",
+            "response": "Test response",
+            "done": True,
+        }
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        client = OllamaClient(seed=42)
+        client.generate("Test prompt")
+
+        # Check that the API call includes temperature=0.0
+        call_args = mock_post.call_args
+        assert call_args[1]['json']['options']['temperature'] == 0.0
+
+    @patch('src.utils.model_client.requests.post')
+    def test_chat_uses_instance_temperature_default(self, mock_post) -> None:
+        """Test that chat() uses instance temperature (default 0.7)"""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "model": "gpt-oss:20b",
+            "message": {"content": "Test response"},
+            "done": True,
+        }
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        client = OllamaClient()
+        messages = [{"role": "user", "content": "Hello"}]
+        client.chat(messages)
+
+        # Check that the API call includes temperature=0.7
+        call_args = mock_post.call_args
+        assert call_args[1]['json']['options']['temperature'] == 0.7
+
+    @patch('src.utils.model_client.requests.post')
+    def test_chat_uses_instance_temperature_with_seed(self, mock_post) -> None:
+        """Test that chat() uses temperature=0.0 when seed is set"""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "model": "gpt-oss:20b",
+            "message": {"content": "Test response"},
+            "done": True,
+        }
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        client = OllamaClient(seed=42)
+        messages = [{"role": "user", "content": "Hello"}]
+        client.chat(messages)
+
+        # Check that the API call includes temperature=0.0
+        call_args = mock_post.call_args
+        assert call_args[1]['json']['options']['temperature'] == 0.0
+
+    def test_generate_no_temperature_parameter(self) -> None:
+        """Regression test: ensure generate() doesn't accept temperature parameter"""
+        client = OllamaClient()
+        
+        with pytest.raises(TypeError) as exc_info:
+            client.generate("Test prompt", temperature=0.5)
+        
+        assert "unexpected keyword argument 'temperature'" in str(exc_info.value)
+
+    def test_chat_no_temperature_parameter(self) -> None:
+        """Regression test: ensure chat() doesn't accept temperature parameter"""
+        client = OllamaClient()
+        messages = [{"role": "user", "content": "Hello"}]
+        
+        with pytest.raises(TypeError) as exc_info:
+            client.chat(messages, temperature=0.5)
+        
+        assert "unexpected keyword argument 'temperature'" in str(exc_info.value)
