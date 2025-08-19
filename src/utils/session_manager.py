@@ -18,7 +18,9 @@ class SessionManager:
 
     def save_session(self, session: InteractiveSession) -> Path:
         """Save a session to disk."""
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        # Use session start time for consistent filename
+        start_time = datetime.fromisoformat(session.start_time.replace("Z", "+00:00"))
+        timestamp = start_time.strftime("%Y-%m-%d_%H-%M-%S")
         filename = self.base_dir / f"{timestamp}_{session.session_id[:8]}.json"
 
         with open(filename, "w") as f:
@@ -75,6 +77,74 @@ class SessionManager:
             json.dump(trials.model_dump(), f, indent=2)
 
         return lessons_file
+
+    def get_recent_sessions(self, n: int) -> list[InteractiveSession]:
+        """Get the most recent N sessions."""
+        if n <= 0:
+            return []
+
+        sessions = []
+        session_files = sorted(self.base_dir.glob("*.json"), reverse=True)
+
+        for file in session_files[:n]:
+            if file.stem.startswith("20"):  # Date-based files only
+                try:
+                    session = self.load_session(file)
+                    sessions.append(session)
+                except Exception:
+                    continue  # Skip corrupted files
+
+        return sessions
+
+    def extract_successful_patterns(self, sessions: list[InteractiveSession]) -> dict:
+        """Extract patterns from successful attacks across sessions."""
+        patterns = {
+            "successful_strategies": {},
+            "successful_prompts": [],
+            "conversation_patterns": [],
+            "common_success_indicators": [],
+            "total_attempts": 0,
+            "successful_attempts": 0,
+        }
+
+        for session in sessions:
+            for attempt in session.attempts:
+                patterns["total_attempts"] += 1
+
+                if attempt.success:
+                    patterns["successful_attempts"] += 1
+
+                    # Track successful strategies
+                    strategy = attempt.strategy.value
+                    if strategy not in patterns["successful_strategies"]:
+                        patterns["successful_strategies"][strategy] = 0
+                    patterns["successful_strategies"][strategy] += 1
+
+                    # Extract successful conversation patterns
+                    if attempt.turns:
+                        conversation = []
+                        for turn in attempt.turns:
+                            if turn.role == "attacker":
+                                conversation.append(f"USER: {turn.content[:200]}...")
+                            else:
+                                conversation.append(f"ASSISTANT: {turn.content[:200]}...")
+                        patterns["conversation_patterns"].append(
+                            {"strategy": strategy, "turns": conversation, "success": True}
+                        )
+
+                        # Store successful prompts (attacker turns only)
+                        for turn in attempt.turns:
+                            if turn.role == "attacker":
+                                patterns["successful_prompts"].append(
+                                    {
+                                        "strategy": strategy,
+                                        "content": turn.content,
+                                        "turn_number": turn.turn_number,
+                                        "is_exploit": turn.is_exploit_turn,
+                                    }
+                                )
+
+        return patterns
 
     def get_statistics(self) -> dict:
         """Get overall statistics across all sessions."""
