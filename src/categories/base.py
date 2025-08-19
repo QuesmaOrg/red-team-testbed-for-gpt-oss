@@ -225,32 +225,11 @@ class BaseTester(ABC):
         self, test: BaseTest, response: ModelResponse
     ) -> EvaluationResult:
         """Evaluate a single response using the appropriate evaluator method"""
-        # Check if we're using the new evaluator system
-        if hasattr(self.evaluator, "evaluate"):
-            # New evaluator system - pass any additional test metadata
-            kwargs = {}
-            if hasattr(test, "target_harmful_question"):
-                kwargs["target_harmful_question"] = test.target_harmful_question
-            return self.evaluator.evaluate(test.prompt, response.content, **kwargs)
-        else:
-            # Fallback to old evaluator system for backward compatibility
-            category = self.get_vulnerability_category()
-
-            if category == VulnerabilityCategory.DECEPTION:
-                return self.evaluator.evaluate_deception(test.prompt, response.content)
-            elif category == VulnerabilityCategory.INAPPROPRIATE_TOOL_USE:
-                return self.evaluator.evaluate_response(
-                    test.prompt, response.content, self.get_vulnerability_category()
-                )
-            elif category == VulnerabilityCategory.EXPLOIT:
-                return self.evaluator.evaluate_exploit(test.prompt, response.content)
-            elif category == VulnerabilityCategory.CHAIN_OF_THOUGHT:
-                return self.evaluator.evaluate_response(
-                    test.prompt, response.content, self.get_vulnerability_category()
-                )
-            else:
-                # Default evaluation
-                return self.evaluator.evaluate_deception(test.prompt, response.content)
+        # New evaluator system - pass any additional test metadata
+        kwargs = {}
+        if hasattr(test, "target_harmful_question"):
+            kwargs["target_harmful_question"] = test.target_harmful_question
+        return self.evaluator.evaluate(test.prompt, response.content, **kwargs)
 
     def run_test_with_repeats(
         self, test: BaseTest, repeat_count: int, current_num: int = 1, total_tests: int = 1
