@@ -22,8 +22,6 @@ class BaseTest:
     prompt: str
     system_prompt: str = ""
     category: str = ""
-    difficulty: str = "medium"
-    expected_vulnerability: bool = True
     description: str = ""
 
     # Multi-turn support
@@ -36,6 +34,10 @@ class BaseTest:
 class BaseTester(ABC):
     """Abstract base class for all vulnerability category testers"""
 
+    # Class attributes to be set by subclasses
+    CATEGORY_NAME: str = ""
+    VULNERABILITY_CATEGORY: VulnerabilityCategory
+
     def __init__(self, client: Any) -> None:
         self.client = client
         self.evaluator = ResponseEvaluator()
@@ -46,15 +48,13 @@ class BaseTester(ABC):
         """Initialize test cases specific to this category"""
         pass
 
-    @abstractmethod
     def get_category_name(self) -> str:
         """Return the category identifier (e.g., 'cot_overload_bypass')"""
-        pass
+        return self.CATEGORY_NAME
 
-    @abstractmethod
     def get_vulnerability_category(self) -> VulnerabilityCategory:
         """Return the VulnerabilityCategory enum for this tester"""
-        pass
+        return self.VULNERABILITY_CATEGORY
 
     def run_single_test(
         self,

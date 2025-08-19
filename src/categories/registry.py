@@ -25,7 +25,6 @@ class CategoryInfo:
     runner_function: Callable
     description: str
     vulnerability_category: VulnerabilityCategory
-    category_prefix: str  # e.g., "cot_overload_bypass"
 
 
 class TestRegistry:
@@ -41,19 +40,14 @@ class TestRegistry:
         runner_function: Callable,
         description: str,
         vulnerability_category: VulnerabilityCategory,
-        category_prefix: str | None = None,
     ) -> None:
         """Register a new category"""
-        if category_prefix is None:
-            category_prefix = name
-
         cls._categories[name] = CategoryInfo(
             name=name,
             tester_class=tester_class,
             runner_function=runner_function,
             description=description,
             vulnerability_category=vulnerability_category,
-            category_prefix=category_prefix,
         )
 
     @classmethod
@@ -88,14 +82,15 @@ class TestRegistry:
 
 
 def register_category(
-    name: str,
     description: str,
-    vulnerability_category: VulnerabilityCategory,
-    category_prefix: str | None = None,
 ) -> Callable[[type[BaseTester]], type[BaseTester]]:
     """Decorator to register a category"""
 
     def decorator(cls: type[BaseTester]) -> type[BaseTester]:
+        # Read name and vulnerability category from class attributes
+        name = cls.CATEGORY_NAME
+        vulnerability_category = cls.VULNERABILITY_CATEGORY
+
         # The runner function will be created when the module is imported
         # For now, we'll register with a placeholder and update later
         def runner_function(
@@ -114,7 +109,6 @@ def register_category(
             runner_function=runner_function,
             description=description,
             vulnerability_category=vulnerability_category,
-            category_prefix=category_prefix,
         )
         return cls
 

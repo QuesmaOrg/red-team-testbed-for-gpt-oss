@@ -36,9 +36,7 @@ class TestTestRegistryBasicOperations:
             tester_class=mock_tester,
             runner_function=mock_runner,
             description="Test description",
-            vulnerability_category=VulnerabilityCategory.DECEPTION,
-            category_prefix="test_prefix"
-        )
+            vulnerability_category=VulnerabilityCategory.DECEPTION)
 
         assert TestRegistry.is_registered("test_category")
 
@@ -49,24 +47,6 @@ class TestTestRegistryBasicOperations:
         assert category_info.runner_function == mock_runner
         assert category_info.description == "Test description"
         assert category_info.vulnerability_category == VulnerabilityCategory.DECEPTION
-        assert category_info.category_prefix == "test_prefix"
-
-    def test_register_category_default_prefix(self) -> None:
-        """Test that category_prefix defaults to name if not provided"""
-        mock_tester = Mock(spec=BaseTester)
-        mock_runner = Mock()
-
-        TestRegistry.register_category(
-            name="test_category",
-            tester_class=mock_tester,
-            runner_function=mock_runner,
-            description="Test description",
-            vulnerability_category=VulnerabilityCategory.DECEPTION
-        )
-
-        category_info = TestRegistry.get_category("test_category")
-        assert category_info.category_prefix == "test_category"
-
     def test_get_nonexistent_category(self) -> None:
         """Test getting a category that doesn't exist"""
         result = TestRegistry.get_category("nonexistent")
@@ -173,17 +153,13 @@ class TestCategoryInfoDataclass:
             tester_class=mock_tester,
             runner_function=mock_runner,
             description="Test description",
-            vulnerability_category=VulnerabilityCategory.EXPLOIT,
-            category_prefix="test_prefix"
-        )
+            vulnerability_category=VulnerabilityCategory.EXPLOIT)
 
         assert info.name == "test"
         assert info.tester_class == mock_tester
         assert info.runner_function == mock_runner
         assert info.description == "Test description"
         assert info.vulnerability_category == VulnerabilityCategory.EXPLOIT
-        assert info.category_prefix == "test_prefix"
-
 
 class TestRegisterCategoryDecorator:
     """Test the @register_category decorator"""
@@ -200,13 +176,14 @@ class TestRegisterCategoryDecorator:
         """Test that decorator properly registers a class"""
 
         @register_category(
-            name="decorated_test",
-            description="Decorated test category",
-            vulnerability_category=VulnerabilityCategory.REWARD_HACKING,
-            category_prefix="decorated_prefix"
+            description="Decorated test category"
         )
         class TestTester(BaseTester):
-            pass
+            CATEGORY_NAME = "decorated_test"
+            VULNERABILITY_CATEGORY = VulnerabilityCategory.REWARD_HACKING
+            
+            def _initialize_test_cases(self):
+                return []
 
         assert TestRegistry.is_registered("decorated_test")
 
@@ -215,18 +192,19 @@ class TestRegisterCategoryDecorator:
         assert info.tester_class == TestTester
         assert info.description == "Decorated test category"
         assert info.vulnerability_category == VulnerabilityCategory.REWARD_HACKING
-        assert info.category_prefix == "decorated_prefix"
-
     def test_decorator_returns_class(self) -> None:
         """Test that decorator returns the original class"""
 
         @register_category(
-            name="test",
-            description="Test",
-            vulnerability_category=VulnerabilityCategory.DECEPTION
+            description="Test"
         )
         class TestTester(BaseTester):
+            CATEGORY_NAME = "test"
+            VULNERABILITY_CATEGORY = VulnerabilityCategory.DECEPTION
             custom_attribute = "test_value"
+            
+            def _initialize_test_cases(self):
+                return []
 
         assert TestTester.custom_attribute == "test_value"
         assert issubclass(TestTester, BaseTester)
@@ -237,12 +215,14 @@ class TestRegisterCategoryDecorator:
         mock_generic_runner.return_value = {"result": "success"}
 
         @register_category(
-            name="runner_test",
-            description="Test runner",
-            vulnerability_category=VulnerabilityCategory.DECEPTION
+            description="Test runner"
         )
         class TestTester(BaseTester):
-            pass
+            CATEGORY_NAME = "runner_test"
+            VULNERABILITY_CATEGORY = VulnerabilityCategory.DECEPTION
+            
+            def _initialize_test_cases(self):
+                return []
 
         info = TestRegistry.get_category("runner_test")
         mock_client = Mock()
