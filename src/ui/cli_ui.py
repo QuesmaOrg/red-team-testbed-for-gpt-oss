@@ -316,7 +316,7 @@ class CLIEvaluator:
 
                 # Response with standardized color
                 formatted_response = f"[bold green]{result.response}[/bold green]"
-                self.console.print(Panel(formatted_response, title="Final Response", style="green"))
+                self.console.print(Panel(formatted_response, title="Final Response", style="blue"))
 
             else:
                 # Single-turn display with standardized colors
@@ -325,7 +325,7 @@ class CLIEvaluator:
 
                 # Response - always show full response
                 formatted_response = f"[bold green]{result.response}[/bold green]"
-                self.console.print(Panel(formatted_response, title="Response", style="green"))
+                self.console.print(Panel(formatted_response, title="Response", style="blue"))
 
             # Display evidence if any
             if result.evidence:
@@ -810,7 +810,7 @@ class CLIEvaluator:
             if self.console:
                 self.console.print(f"[yellow]⚠️  Clipboard unavailable ({e})[/yellow]")
                 self.console.print("[yellow]Here is the response to copy manually:[/yellow]")
-                self.console.print(Panel(response_text, title="Response", style="green"))
+                self.console.print(Panel(response_text, title="Response", style="blue"))
             else:
                 print(f"⚠️  Clipboard unavailable ({e})")
                 print("Here is the response to copy manually:")

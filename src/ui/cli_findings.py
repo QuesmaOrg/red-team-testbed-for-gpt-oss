@@ -339,7 +339,7 @@ class FindingsBrowser:
                     # Show response
                     if current_finding.get("response"):
                         response_text = current_finding["response"]
-                        self.console.print(Panel(response_text, title="Response", style="green"))
+                        self.console.print(Panel(response_text, title="Response", style="blue"))
 
                     # Show commands
                     self.console.print("\n[yellow]Commands:[/yellow]")
