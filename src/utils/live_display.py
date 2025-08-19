@@ -3,6 +3,7 @@ Live display utilities for real-time test progress and results
 """
 
 import atexit
+import contextlib
 import os
 import signal
 import sys
@@ -127,27 +128,21 @@ class LiveDisplay:
 
             # Clean up Rich live context if it exists
             if self._live_context:
-                try:
+                with contextlib.suppress(Exception):
                     self._live_context.stop()
                     self._live_context = None
-                except Exception:
-                    pass
 
             # Restore cursor and clear any remaining output
             if self.console and self.is_interactive:
-                try:
+                with contextlib.suppress(Exception):
                     # Show cursor and reset terminal state
                     self.console.show_cursor(True)
                     self.console.print("", end="")  # Ensure clean state
-                except Exception:
-                    pass
             elif self.is_interactive:
                 # Fallback: show cursor and clear line
-                try:
+                with contextlib.suppress(Exception):
                     sys.stdout.write("\r\033[K\033[?25h")  # Clear line and show cursor
                     sys.stdout.flush()
-                except Exception:
-                    pass
         except Exception:
             # Ignore any errors during cleanup to avoid masking original exceptions
             pass
@@ -281,17 +276,13 @@ class LiveDisplay:
 
         # Ensure any remaining display is cleared
         if self._live_context:
-            try:
+            with contextlib.suppress(Exception):
                 self._live_context.stop()
                 self._live_context = None
-            except Exception:
-                pass
         elif not self.quiet_mode:
             # Clear line for non-Rich fallback
-            try:
+            with contextlib.suppress(Exception):
                 print("\r" + " " * 60 + "\r", end="", flush=True)
-            except Exception:
-                pass
 
         self._timer_thread = None
         self._timer_progress = None
@@ -307,7 +298,9 @@ class LiveDisplay:
             from rich.text import Text
 
             try:
-                self._live_context = Live(refresh_per_second=10, console=self.console, transient=True)
+                self._live_context = Live(
+                    refresh_per_second=10, console=self.console, transient=True
+                )
                 self._live_context.start()
 
                 while not self._stop_timer.is_set():
@@ -339,11 +332,9 @@ class LiveDisplay:
             finally:
                 # Clear the display and clean up the live context
                 if self._live_context:
-                    try:
+                    with contextlib.suppress(Exception):
                         self._live_context.stop()
                         self._live_context = None
-                    except Exception:
-                        pass
         else:
             # Fallback for non-Rich terminals
             try:
@@ -396,7 +387,7 @@ class LiveDisplay:
             timing_parts = [f"took: {response.response_time:.2f}s"]
             if response.total_tokens > 0:
                 timing_parts.append(f"tokens: {response.total_tokens}")
-            
+
             if timing_parts:
                 title += f" ({' | '.join(timing_parts)})"
 
@@ -415,10 +406,10 @@ class LiveDisplay:
             timing_parts = [f"took: {response.response_time:.2f}s"]
             if response.total_tokens > 0:
                 timing_parts.append(f"tokens: {response.total_tokens}")
-            
+
             if timing_parts:
                 title += f" ({' | '.join(timing_parts)})"
-            
+
             print(f"\n{title}:")
             print(f"   {response_content}")
 

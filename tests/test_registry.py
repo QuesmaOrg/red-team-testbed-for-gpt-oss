@@ -252,7 +252,7 @@ class TestRegisterCategoryDecorator:
 
         # Verify it called the generic runner with correct arguments
         mock_generic_runner.assert_called_once_with(
-            TestTester, mock_client, "test", "001"
+            TestTester, mock_client, "test", "001", 1
         )
         assert result == {"result": "success"}
 
