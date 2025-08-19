@@ -13,13 +13,14 @@ class LLMBackend(ABC):
     def __init__(self, config: dict[str, Any], seed: int | None = None) -> None:
         self.config = config
         self.seed = seed
+        # Set temperature based on seed - 0.0 for reproducibility, 0.7 otherwise
+        self.temperature = 0.0 if seed is not None else 0.7
 
     @abstractmethod
     def generate(
         self,
         prompt: str,
         system_prompt: str | None = None,
-        temperature: float = 0.7,
         max_tokens: int | None = None,
         stream: bool = False,
     ) -> ModelResponse:
@@ -30,7 +31,6 @@ class LLMBackend(ABC):
     def chat(
         self,
         messages: list[dict[str, str]],
-        temperature: float = 0.7,
         max_tokens: int | None = None,
     ) -> ModelResponse:
         """Multi-turn chat conversation."""
@@ -79,19 +79,14 @@ class OllamaBackend(LLMBackend):
         self,
         prompt: str,
         system_prompt: str | None = None,
-        temperature: float = 0.7,
         max_tokens: int | None = None,
         stream: bool = False,
     ) -> ModelResponse:
         """Generate response from Ollama model."""
-        # For reproducibility, use temperature=0 when seed is set
-        if self.seed is not None:
-            temperature = 0.0
-
         return self.client.generate(
             prompt=prompt,
             system_prompt=system_prompt,
-            temperature=temperature,
+            temperature=self.temperature,
             max_tokens=max_tokens,
             stream=stream,
         )
@@ -99,17 +94,12 @@ class OllamaBackend(LLMBackend):
     def chat(
         self,
         messages: list[dict[str, str]],
-        temperature: float = 0.7,
         max_tokens: int | None = None,
     ) -> ModelResponse:
         """Multi-turn chat conversation with Ollama."""
-        # For reproducibility, use temperature=0 when seed is set
-        if self.seed is not None:
-            temperature = 0.0
-
         return self.client.chat(
             messages=messages,
-            temperature=temperature,
+            temperature=self.temperature,
             max_tokens=max_tokens,
         )
 
@@ -168,14 +158,10 @@ class OpenRouterBackend(LLMBackend):
         self,
         prompt: str,
         system_prompt: str | None = None,
-        temperature: float = 0.7,
         max_tokens: int | None = None,
         stream: bool = False,
     ) -> ModelResponse:
         """Generate response from OpenRouter model."""
-        # For reproducibility, use temperature=0 when seed is set
-        if self.seed is not None:
-            temperature = 0.0
 
         start_time = time.time()
 
@@ -189,7 +175,7 @@ class OpenRouterBackend(LLMBackend):
             request_params = {
                 "model": self.model,
                 "messages": messages,
-                "temperature": temperature,
+                "temperature": self.temperature,
                 "stream": stream,
                 "timeout": self.timeout,
                 "extra_headers": self._get_headers(),
@@ -238,13 +224,9 @@ class OpenRouterBackend(LLMBackend):
     def chat(
         self,
         messages: list[dict[str, str]],
-        temperature: float = 0.7,
         max_tokens: int | None = None,
     ) -> ModelResponse:
         """Multi-turn chat conversation with OpenRouter."""
-        # For reproducibility, use temperature=0 when seed is set
-        if self.seed is not None:
-            temperature = 0.0
 
         start_time = time.time()
 
@@ -253,7 +235,7 @@ class OpenRouterBackend(LLMBackend):
             request_params = {
                 "model": self.model,
                 "messages": messages,
-                "temperature": temperature,
+                "temperature": self.temperature,
                 "timeout": self.timeout,
                 "extra_headers": self._get_headers(),
             }

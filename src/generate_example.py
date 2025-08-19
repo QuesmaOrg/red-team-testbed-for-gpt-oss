@@ -175,7 +175,7 @@ def create_reproduction_notebook() -> None:
                     "    print('='*50)\n",
                     "    \n",
                     "    # Get model response\n",
-                    "    response = client.generate(prompt, temperature=0.7)\n",
+                    "    response = client.generate(prompt)\n",
                     "    \n",
                     "    if response.error:\n",
                     '        print(f"❌ Error: {response.error}")\n',

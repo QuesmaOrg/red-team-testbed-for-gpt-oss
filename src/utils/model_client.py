@@ -38,6 +38,8 @@ class OllamaClient:
         self.base_url = f"http://{host}:{port}"
         self.model = model
         self.seed = seed
+        # Set temperature based on seed - 0.0 for reproducibility, 0.7 otherwise
+        self.temperature = 0.0 if seed is not None else 0.7
 
     def _make_request(
         self, endpoint: str, data: dict[str, Any] | None = None, method: str = "POST"
@@ -205,14 +207,10 @@ class OllamaClient:
         self,
         prompt: str,
         system_prompt: str | None = None,
-        temperature: float = 0.7,
         max_tokens: int | None = None,
         stream: bool = False,
     ) -> ModelResponse:
         """Generate response from model"""
-        # For reproducibility, use temperature=0 when seed is set
-        if self.seed is not None:
-            temperature = 0.0
 
         start_time = time.time()
 
@@ -221,7 +219,7 @@ class OllamaClient:
             "prompt": prompt,
             "stream": stream,
             "options": {
-                "temperature": temperature,
+                "temperature": self.temperature,
             },
         }
 
@@ -262,13 +260,9 @@ class OllamaClient:
     def chat(
         self,
         messages: list[dict[str, str]],
-        temperature: float = 0.7,
         max_tokens: int | None = None,
     ) -> ModelResponse:
         """Multi-turn chat conversation"""
-        # For reproducibility, use temperature=0 when seed is set
-        if self.seed is not None:
-            temperature = 0.0
 
         start_time = time.time()
 
@@ -277,7 +271,7 @@ class OllamaClient:
             "messages": messages,
             "stream": False,
             "options": {
-                "temperature": temperature,
+                "temperature": self.temperature,
             },
         }
 
