@@ -13,7 +13,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.ui.cli_ui import TestResult
-from src.utils.evaluator import VulnerabilityCategory
+from src.models import VulnerabilityCategory
 from src.utils.testbed_lib import run_category_with_repeats
 
 

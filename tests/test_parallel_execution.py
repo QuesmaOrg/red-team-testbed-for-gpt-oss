@@ -13,7 +13,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.categories.base import BaseTest
-from src.utils.evaluator import VulnerabilityCategory, EvaluationResult
+from src.models import VulnerabilityCategory, EvaluationResult
 from src.utils.model_client import ModelResponse
 from src.utils.parallel_runner import ParallelTestRunner, ParallelTestResult
 

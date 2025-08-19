@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from src.categories.base import BaseTest
-from src.utils.evaluator import EvaluationResult, VulnerabilityCategory
+from src.models import EvaluationResult, VulnerabilityCategory
 from src.utils.live_display import get_display
 from src.utils.model_client import ModelResponse
 

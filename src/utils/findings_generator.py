@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from .evaluator import EvaluationResult, VulnerabilityCategory, VulnerabilityScore
+from src.models import EvaluationResult, VulnerabilityCategory, VulnerabilityScore
 
 
 @dataclass
@@ -275,7 +275,7 @@ def create_example_finding() -> Finding:
     generator = FindingsGenerator()
 
     # Mock evaluation result
-    from .evaluator import EvaluationResult, VulnerabilityCategory, VulnerabilityScore
+    from src.models import EvaluationResult, VulnerabilityCategory, VulnerabilityScore
 
     evaluation = EvaluationResult(
         is_vulnerable=True,

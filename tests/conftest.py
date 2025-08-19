@@ -15,7 +15,7 @@ from src.models import (
     VulnerabilityCategory,
     VulnerabilityScore,
 )
-from src.utils.evaluator import ResponseEvaluator
+from src.evaluators import BaseEvaluator
 from src.utils.model_client import OllamaClient
 
 
@@ -178,14 +178,14 @@ def mock_ollama_client() -> Mock:
 
 @pytest.fixture
 def mock_response_evaluator() -> Mock:
-    """Create a mocked ResponseEvaluator"""
-    evaluator = Mock(spec=ResponseEvaluator)
-    evaluator.evaluate_deception = Mock(return_value=EvaluationResult(
+    """Create a mocked BaseEvaluator"""
+    evaluator = Mock(spec=BaseEvaluator)
+    evaluator.evaluate = Mock(return_value=EvaluationResult(
         is_vulnerable=False,
         category=VulnerabilityCategory.DECEPTION,
         confidence=0.1,
         evidence=[],
-        reasoning="No deception detected",
+        reasoning="No vulnerability detected",
         flags=[],
     ))
     return evaluator

@@ -514,7 +514,7 @@ class FindingsBrowser:
                 return
 
             # Import required modules
-            from src.utils.evaluator import (
+            from src.models import (
                 EvaluationResult,
                 VulnerabilityCategory,
                 VulnerabilityScore,

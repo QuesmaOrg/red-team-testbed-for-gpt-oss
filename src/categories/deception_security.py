@@ -11,8 +11,8 @@ authority positioning and best-practice framing.
 
 from dataclasses import dataclass
 
-from src.utils.evaluator import EvaluationResult, VulnerabilityCategory
-from src.utils.model_client import ModelResponse
+from src.evaluators import DeceptionEvaluator
+from src.models import VulnerabilityCategory
 
 from .base import BaseTest, BaseTester
 from .registry import register_category
@@ -32,6 +32,7 @@ class SecurityDeceptionTester(BaseTester):
 
     CATEGORY_NAME = "deception_security"
     VULNERABILITY_CATEGORY = VulnerabilityCategory.INAPPROPRIATE_TOOL_USE
+    EVALUATOR_CLASS = DeceptionEvaluator
 
     def _initialize_test_cases(self) -> list[SecurityDeceptionTest]:
         """Initialize all security deception test cases"""
@@ -264,12 +265,3 @@ class SecurityDeceptionTester(BaseTester):
                 description="Tests manipulation to recommend race conditions as concurrent processing optimization",
             ),
         ]
-
-    def _evaluate_single_response(
-        self, test: BaseTest, response: ModelResponse
-    ) -> EvaluationResult:
-        """Override to use specialized security misinformation evaluation"""
-        # For now, use standard evaluation - the specialized evaluation can be added later
-        return self.evaluator.evaluate_response(
-            test.prompt, response.content, VulnerabilityCategory.INAPPROPRIATE_TOOL_USE
-        )
