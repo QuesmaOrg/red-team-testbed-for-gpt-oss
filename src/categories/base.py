@@ -64,18 +64,19 @@ class BaseTester(ABC):
         current_rep: int = 1,
         total_reps: int = 1,
         show_prompts: bool = True,
+        quiet_mode: bool = False,
     ) -> tuple[BaseTest, list[ModelResponse], EvaluationResult]:
         """Run a single test with standardized error handling and display"""
         display = get_display()
 
-        # Show test header only on first repetition
+        # Show test header only on first repetition (unless in quiet mode)
         progress = None
-        if current_rep == 1:
+        if current_rep == 1 and not quiet_mode:
             progress = display.start_test(
                 test.name, test.test_id, test.category, current_num, total_tests
             )
         else:
-            # Create minimal progress object for repetitions
+            # Create minimal progress object for repetitions or quiet mode
             progress = TestProgress(
                 test_name=test.name,
                 test_id=test.test_id,
@@ -85,48 +86,58 @@ class BaseTester(ABC):
                 total_tests=total_tests,
             )
 
-        # Show repetition header for multi-repetition runs
-        display.show_repetition_header(current_rep, total_reps)
+        # Show repetition header for multi-repetition runs (unless in quiet mode)
+        if not quiet_mode:
+            display.show_repetition_header(current_rep, total_reps)
 
         responses = []
 
         try:
             if test.follow_up_prompts and len(test.follow_up_prompts) > 0:
                 # Multi-turn conversation
-                if show_prompts and current_rep == 1:
+                if show_prompts and current_rep == 1 and not quiet_mode:
                     # Show all prompts at once for multi-turn on first repetition
                     all_prompts = [test.prompt] + test.follow_up_prompts
                     display.show_multi_turn_prompts(all_prompts, test.system_prompt)
 
                 # Execute conversation turns
-                display.start_thinking_timer(progress)
+                if not quiet_mode:
+                    display.start_thinking_timer(progress)
                 response = self.client.generate(test.prompt, test.system_prompt)
-                display.stop_thinking_timer()
+                if not quiet_mode:
+                    display.stop_thinking_timer()
                 responses.append(response)
-                display.show_response(progress, response)
+                if not quiet_mode:
+                    display.show_response(progress, response)
 
                 if not response.error:
                     for follow_up in test.follow_up_prompts:
-                        display.start_thinking_timer(progress)
+                        if not quiet_mode:
+                            display.start_thinking_timer(progress)
                         response = self.client.generate(follow_up, "")
-                        display.stop_thinking_timer()
+                        if not quiet_mode:
+                            display.stop_thinking_timer()
                         responses.append(response)
-                        display.show_response(progress, response)
+                        if not quiet_mode:
+                            display.show_response(progress, response)
 
                         if response.error:
                             break
             else:
                 # Single-turn test
-                if show_prompts and current_rep == 1:
+                if show_prompts and current_rep == 1 and not quiet_mode:
                     display.show_prompt(
                         progress, test.prompt, test.system_prompt, show_display=True
                     )
 
-                display.start_thinking_timer(progress)
+                if not quiet_mode:
+                    display.start_thinking_timer(progress)
                 response = self.client.generate(test.prompt, test.system_prompt)
-                display.stop_thinking_timer()
+                if not quiet_mode:
+                    display.stop_thinking_timer()
                 responses.append(response)
-                display.show_response(progress, response)
+                if not quiet_mode:
+                    display.show_response(progress, response)
 
             # Evaluate results
             if any(r.error for r in responses):
@@ -141,11 +152,12 @@ class BaseTester(ABC):
             else:
                 evaluation = self._evaluate_test_response(test, responses)
 
-            # Show evaluation results
-            display.show_evaluation(progress, evaluation)
+            # Show evaluation results (unless in quiet mode)
+            if not quiet_mode:
+                display.show_evaluation(progress, evaluation)
 
-            # Only show completion message on last repetition
-            if current_rep == total_reps:
+            # Only show completion message on last repetition (unless in quiet mode)
+            if current_rep == total_reps and not quiet_mode:
                 display.complete_test(progress, evaluation)
 
         except Exception as e:
