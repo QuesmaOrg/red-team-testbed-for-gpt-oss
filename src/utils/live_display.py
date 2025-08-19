@@ -650,6 +650,152 @@ class LiveDisplay:
             print(f"   Response time avg: {avg_response_time:.2f}s")
             print("─" * 60)
 
+    def show_parallel_summary(self, summary_data: dict[str, Any]) -> None:
+        """Display comprehensive parallel execution summary"""
+        if self.quiet_mode:
+            return
+
+        if self.console:
+            # Build the complete summary content
+            from rich.console import Group
+            from rich.table import Table
+
+            content_parts = []
+
+            # Test results by category
+            category_stats = summary_data.get("category_stats", {})
+            if category_stats:
+                content_parts.append(Text("Test Results by Category:", style="bold cyan"))
+                for cat_name, stats in category_stats.items():
+                    total = stats["total"]
+                    vulnerable = stats["vulnerable"]
+                    errors = stats["errors"]
+                    rate = (vulnerable / total * 100) if total > 0 else 0
+
+                    status_icon = "├─" if cat_name != list(category_stats.keys())[-1] else "└─"
+                    color = "red" if rate > 50 else "yellow" if rate > 20 else "green"
+
+                    category_line = (
+                        f"{status_icon} {cat_name}: {vulnerable}/{total} vulnerable ({rate:.0f}%)"
+                    )
+                    if errors > 0:
+                        category_line += f" [{errors} errors]"
+
+                    content_parts.append(Text(f"  {category_line}", style=color))
+
+                content_parts.append(Text(""))  # Empty line
+
+            # Overall statistics
+            content_parts.append(Text("Overall Statistics:", style="bold cyan"))
+            content_parts.append(
+                Text(
+                    "(Note: Evaluations are heuristic-based and may undercount vulnerabilities)",
+                    style="dim italic",
+                )
+            )
+            stats_table = Table(show_header=False, box=None, padding=(0, 1))
+            stats_table.add_column("Field", style="cyan")
+            stats_table.add_column("Value")
+
+            stats_table.add_row("• Total Tests Run:", str(summary_data.get("total_tests", 0)))
+
+            vuln_count = summary_data.get("vulnerable_tests", 0)
+            total_count = summary_data.get("total_tests", 1)
+            vuln_rate = summary_data.get("vulnerability_rate", 0) * 100
+            stats_table.add_row(
+                "• Vulnerabilities Found:", f"{vuln_count}/{total_count} ({vuln_rate:.1f}%)"
+            )
+
+            stats_table.add_row(
+                "• Average Confidence:", f"{summary_data.get('avg_confidence', 0):.2f}"
+            )
+            stats_table.add_row(
+                "• High Confidence (>0.8):", f"{summary_data.get('high_confidence', 0)} tests"
+            )
+
+            total_time = summary_data.get("total_time", 0)
+            num_threads = summary_data.get("num_threads", 1)
+            speedup = (
+                summary_data.get("avg_execution_time", 0) * total_count / total_time
+                if total_time > 0
+                else 1
+            )
+            stats_table.add_row("• Execution Time:", f"{total_time:.1f}s ({speedup:.1f}x speedup)")
+
+            error_count = summary_data.get("error_tests", 0)
+            if error_count > 0:
+                stats_table.add_row("• Errors:", f"{error_count} tests failed", style="red")
+
+            content_parts.append(stats_table)
+
+            # Most vulnerable tests
+            most_vulnerable = summary_data.get("most_vulnerable", [])
+            if most_vulnerable:
+                content_parts.append(Text(""))  # Empty line
+                content_parts.append(Text("Top Vulnerable Tests:", style="bold red"))
+                for i, (test_id, rate, vuln_runs, total_runs) in enumerate(most_vulnerable[:3], 1):
+                    if rate > 0:
+                        content_parts.append(
+                            Text(
+                                f"  {i}. 🔴 {test_id} - {vuln_runs}/{total_runs} runs vulnerable ({rate * 100:.0f}%)"
+                            )
+                        )
+
+            # Most resilient tests
+            most_resilient = summary_data.get("most_resilient", [])
+            if most_resilient:
+                content_parts.append(Text(""))  # Empty line
+                content_parts.append(Text("Most Resilient Tests:", style="bold green"))
+                for i, (test_id, rate, vuln_runs, total_runs) in enumerate(most_resilient[:2], 1):
+                    content_parts.append(
+                        Text(
+                            f"  {i}. ✅ {test_id} - {vuln_runs}/{total_runs} runs vulnerable ({rate * 100:.0f}%)"
+                        )
+                    )
+
+            # Create the main panel with all content
+            summary_panel = Panel(
+                Group(*content_parts),
+                title="📊 PARALLEL EXECUTION SUMMARY",
+                title_align="left",
+                style="blue",
+                padding=(1, 2),
+            )
+
+            self.console.print()
+            self.console.print(summary_panel)
+        else:
+            # Text mode fallback
+            print()
+            print("=" * 80)
+            print("📊 PARALLEL EXECUTION SUMMARY")
+            print("=" * 80)
+
+            # Category stats
+            category_stats = summary_data.get("category_stats", {})
+            if category_stats:
+                print("\nTest Results by Category:")
+                for cat_name, stats in category_stats.items():
+                    total = stats["total"]
+                    vulnerable = stats["vulnerable"]
+                    rate = (vulnerable / total * 100) if total > 0 else 0
+                    print(f"  - {cat_name}: {vulnerable}/{total} vulnerable ({rate:.0f}%)")
+
+            # Overall stats
+            print("\nOverall Statistics:")
+            print(f"  • Total Tests: {summary_data.get('total_tests', 0)}")
+            vuln_count = summary_data.get("vulnerable_tests", 0)
+            total_count = summary_data.get("total_tests", 1)
+            vuln_rate = summary_data.get("vulnerability_rate", 0) * 100
+            print(f"  • Vulnerabilities: {vuln_count}/{total_count} ({vuln_rate:.1f}%)")
+            print(f"  • Average Confidence: {summary_data.get('avg_confidence', 0):.2f}")
+
+            total_time = summary_data.get("total_time", 0)
+            num_threads = summary_data.get("num_threads", 1)
+            print(f"  • Execution Time: {total_time:.1f}s with {num_threads} threads")
+
+            print("=" * 80)
+
 
 # Global instance that can be imported
 _display_instance = None

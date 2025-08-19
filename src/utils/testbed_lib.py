@@ -56,11 +56,18 @@ def run_category_with_repeats(
     category: str | None,
     test_id: str | None,
     repeat_count: int,
+    threads: int = 1,
 ) -> dict:
     """Run a category test runner with repetition support - new consecutive execution model"""
     from .live_display import get_display
 
     display = get_display()
+
+    # Check for parallel execution
+    if threads > 1:
+        return _run_category_parallel(
+            category_runner, client, category, test_id, repeat_count, threads
+        )
 
     if repeat_count == 1:
         # Standard execution - no changes needed
@@ -259,3 +266,111 @@ def save_results(results: dict[str, Any], output_dir: str, verbose: bool) -> str
             f.write("\n")
 
     return str(results_file)
+
+
+def _run_category_parallel(
+    category_runner: Callable,
+    client: object,
+    category: str | None,
+    test_id: str | None,
+    repeat_count: int,
+    threads: int,
+) -> dict:
+    """Run category tests in parallel using ThreadPoolExecutor"""
+    from .live_display import get_display
+    from .parallel_runner import ParallelTestRunner
+
+    display = get_display()
+
+    # Get the actual tester instance to extract test cases
+    from src.categories.registry import TestRegistry
+
+    # Find the appropriate tester class
+    all_categories = TestRegistry.get_all_categories()
+    tester_instance = None
+
+    for _cat_name, info in all_categories.items():
+        try:
+            temp_tester = info.tester_class(client)
+            # Check if this is the right category by checking if our category_runner matches
+            if category_runner == info.runner_function:
+                tester_instance = temp_tester
+                break
+        except Exception:
+            continue
+
+    if not tester_instance:
+        # Fallback: try to create a tester from the first category
+        # This is a bit hacky but necessary for the parallel execution
+        for _cat_name, info in all_categories.items():
+            try:
+                tester_instance = info.tester_class(client)
+                break
+            except Exception:
+                continue
+
+    if not tester_instance:
+        raise RuntimeError("Could not create tester instance for parallel execution")
+
+    # Get test cases
+    test_cases = getattr(tester_instance, "test_cases", [])
+
+    # Filter by test_id if specified
+    if test_id:
+        test_cases = [t for t in test_cases if t.test_id == test_id]
+
+    if not test_cases:
+        return {"results": [], "analysis": {"total_tests": 0, "vulnerable_tests": 0}}
+
+    # Create test tasks (test, client, repetition_number) for each repetition
+    test_tasks = []
+    for test in test_cases:
+        for rep in range(repeat_count):
+            test_tasks.append((test, client, rep + 1))
+
+    # Execute tests in parallel
+    parallel_runner = ParallelTestRunner(threads)
+    parallel_results = parallel_runner.run_tests_parallel(test_tasks, category_runner)
+
+    # Convert parallel results to standard format
+    standard_results = []
+    for result in parallel_results:
+        # Convert ParallelTestResult to standard (test, responses, evaluation) tuple
+        standard_results.append((result.test, result.responses, result.evaluation))
+
+    # Sort results by test_id for consistent file output
+    standard_results.sort(key=lambda x: x[0].test_id)
+
+    # Calculate analysis
+    total_tests = len(set(t.test_id for t, _, _ in standard_results))
+    vulnerable_runs = sum(1 for _, _, eval_result in standard_results if eval_result.is_vulnerable)
+    total_runs = len(standard_results)
+
+    analysis = {
+        "total_tests": total_tests,
+        "total_runs": total_runs,
+        "repetitions_per_test": repeat_count,
+        "vulnerable_tests": len(
+            set(t.test_id for t, _, eval_result in standard_results if eval_result.is_vulnerable)
+        ),
+        "vulnerable_runs": vulnerable_runs,
+        "vulnerability_rate": vulnerable_runs / total_runs if total_runs > 0 else 0.0,
+        "average_confidence": sum(eval_result.confidence for _, _, eval_result in standard_results)
+        / total_runs
+        if total_runs > 0
+        else 0.0,
+        "high_confidence_vulnerabilities": sum(
+            1
+            for _, _, eval_result in standard_results
+            if eval_result.is_vulnerable and eval_result.confidence > 0.8
+        ),
+    }
+
+    # Generate and display parallel summary
+    summary_data = parallel_runner.generate_parallel_summary(parallel_results)
+    display.show_parallel_summary(summary_data)
+
+    return {
+        "results": standard_results,
+        "analysis": analysis,
+    }
