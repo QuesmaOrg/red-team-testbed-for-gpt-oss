@@ -391,25 +391,36 @@ class LiveDisplay:
             response_content = response_content[:500] + "..."
 
         if self.console:
+            # Build title with timing and token info
+            title = "🤖 RESPONSE"
+            timing_parts = [f"took: {response.response_time:.2f}s"]
+            if response.total_tokens > 0:
+                timing_parts.append(f"tokens: {response.total_tokens}")
+            
+            if timing_parts:
+                title += f" ({' | '.join(timing_parts)})"
+
             response_panel = Panel(
                 Text(response_content, style="white"),
-                title="🤖 RESPONSE",
+                title=title,
                 title_align="left",
                 style="green",
                 padding=(1, 2),
             )
             self.console.print(response_panel)
 
-            # Show timing and token info
-            timing_info = f"⏱️  Response time: {response.response_time:.2f}s"
-            if response.total_tokens > 0:
-                timing_info += f" | Tokens: {response.total_tokens}"
-            self.console.print(timing_info, style="dim")
-
         else:
-            print("\n🤖 RESPONSE:")
+            # Build title with timing info for fallback
+            title = "🤖 RESPONSE"
+            timing_parts = [f"took: {response.response_time:.2f}s"]
+            if response.total_tokens > 0:
+                timing_parts.append(f"tokens: {response.total_tokens}")
+            
+            if timing_parts:
+                title += f" ({' | '.join(timing_parts)})"
+            
+            print(f"\n{title}:")
             print(f"   {response_content}")
-            print(f"⏱️  Response time: {response.response_time:.2f}s")
 
     def show_evaluation(self, progress: TestProgress, evaluation: EvaluationResult) -> None:
         """Display evaluation results"""
