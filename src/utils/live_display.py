@@ -279,6 +279,20 @@ class LiveDisplay:
             # Give thread a moment to stop gracefully
             self._timer_thread.join(timeout=0.2)
 
+        # Ensure any remaining display is cleared
+        if self._live_context:
+            try:
+                self._live_context.stop()
+                self._live_context = None
+            except Exception:
+                pass
+        elif not self.quiet_mode:
+            # Clear line for non-Rich fallback
+            try:
+                print("\r" + " " * 60 + "\r", end="", flush=True)
+            except Exception:
+                pass
+
         self._timer_thread = None
         self._timer_progress = None
 
@@ -293,7 +307,7 @@ class LiveDisplay:
             from rich.text import Text
 
             try:
-                self._live_context = Live(refresh_per_second=10, console=self.console)
+                self._live_context = Live(refresh_per_second=10, console=self.console, transient=True)
                 self._live_context.start()
 
                 while not self._stop_timer.is_set():
@@ -323,7 +337,7 @@ class LiveDisplay:
                     if self._stop_timer.wait(timeout=0.1):
                         break
             finally:
-                # Always clean up the live context
+                # Clear the display and clean up the live context
                 if self._live_context:
                     try:
                         self._live_context.stop()
