@@ -21,7 +21,6 @@ class TestOllamaClientInitialization:
         client = OllamaClient()
         assert client.base_url == "http://localhost:11434"
         assert client.model == "gpt-oss:20b"
-        assert client.session is not None
 
     def test_custom_initialization(self) -> None:
         """Test client accepts custom configuration"""
@@ -29,21 +28,21 @@ class TestOllamaClientInitialization:
         assert client.base_url == "http://custom.host:8080"
         assert client.model == "custom:model"
 
-    def test_session_persistence(self) -> None:
-        """Test that session object persists across calls"""
-        client = OllamaClient()
-        session1 = client.session
-        session2 = client.session
-        assert session1 is session2
+    def test_seed_initialization(self) -> None:
+        """Test that seed parameter is properly stored"""
+        client = OllamaClient(seed=42)
+        assert client.seed == 42
+        
+        client_no_seed = OllamaClient()
+        assert client_no_seed.seed is None
 
 
 class TestOllamaClientModelAvailability:
     """Test model availability checking"""
 
-    @patch('src.utils.model_client.requests.Session')
-    def test_model_available(self, mock_session_class) -> None:
+    @patch('src.utils.model_client.requests.get')
+    def test_model_available(self, mock_get) -> None:
         """Test when model is available"""
-        mock_session = MagicMock()
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "models": [
@@ -51,36 +50,33 @@ class TestOllamaClientModelAvailability:
                 {"name": "other:model"}
             ]
         }
-        mock_session.get.return_value = mock_response
-        mock_session_class.return_value = mock_session
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
 
         client = OllamaClient()
         assert client.is_model_available() is True
-        mock_session.get.assert_called_once_with(
+        mock_get.assert_called_once_with(
             "http://localhost:11434/api/tags",
             timeout=180
         )
 
-    @patch('src.utils.model_client.requests.Session')
-    def test_model_not_available(self, mock_session_class) -> None:
+    @patch('src.utils.model_client.requests.get')
+    def test_model_not_available(self, mock_get) -> None:
         """Test when model is not available"""
-        mock_session = MagicMock()
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "models": [{"name": "other:model"}]
         }
-        mock_session.get.return_value = mock_response
-        mock_session_class.return_value = mock_session
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
 
         client = OllamaClient()
         assert client.is_model_available() is False
 
-    @patch('src.utils.model_client.requests.Session')
-    def test_model_availability_error_handling(self, mock_session_class) -> None:
+    @patch('src.utils.model_client.requests.get')
+    def test_model_availability_error_handling(self, mock_get) -> None:
         """Test error handling in model availability check"""
-        mock_session = MagicMock()
-        mock_session.get.side_effect = RequestsConnectionError("Connection failed")
-        mock_session_class.return_value = mock_session
+        mock_get.side_effect = RequestsConnectionError("Connection failed")
 
         client = OllamaClient()
         assert client.is_model_available() is False
@@ -89,10 +85,9 @@ class TestOllamaClientModelAvailability:
 class TestOllamaClientGenerate:
     """Test response generation"""
 
-    @patch('src.utils.model_client.requests.Session')
-    def test_generate_simple_response(self, mock_session_class) -> None:
+    @patch('src.utils.model_client.requests.post')
+    def test_generate_simple_response(self, mock_post) -> None:
         """Test successful response generation"""
-        mock_session = MagicMock()
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "model": "gpt-oss:20b",
@@ -100,8 +95,8 @@ class TestOllamaClientGenerate:
             "done": True,
             "total_duration": 1500000000,
         }
-        mock_session.post.return_value = mock_response
-        mock_session_class.return_value = mock_session
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
 
         client = OllamaClient()
         response = client.generate("Test prompt")
@@ -112,10 +107,9 @@ class TestOllamaClientGenerate:
         assert response.error is None
         assert response.timed_out is False
 
-    @patch('src.utils.model_client.requests.Session')
-    def test_generate_with_thinking(self, mock_session_class) -> None:
+    @patch('src.utils.model_client.requests.post')
+    def test_generate_with_thinking(self, mock_post) -> None:
         """Test response generation with thinking tags"""
-        mock_session = MagicMock()
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "model": "gpt-oss:20b",
@@ -123,8 +117,8 @@ class TestOllamaClientGenerate:
             "done": True,
             "total_duration": 2000000000,
         }
-        mock_session.post.return_value = mock_response
-        mock_session_class.return_value = mock_session
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
 
         client = OllamaClient()
         response = client.generate("Test prompt")
@@ -134,33 +128,30 @@ class TestOllamaClientGenerate:
         # thinking field is set to None since extraction not implemented
         assert response.thinking is None or response.thinking == ""
 
-    @patch('src.utils.model_client.requests.Session')
-    def test_generate_with_system_prompt(self, mock_session_class) -> None:
+    @patch('src.utils.model_client.requests.post')
+    def test_generate_with_system_prompt(self, mock_post) -> None:
         """Test generation with system prompt"""
-        mock_session = MagicMock()
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "model": "gpt-oss:20b",
             "response": "Response with system context",
             "done": True,
         }
-        mock_session.post.return_value = mock_response
-        mock_session_class.return_value = mock_session
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
 
         client = OllamaClient()
         client.generate("User prompt", "System prompt")
 
         # Verify the request was made with system prompt
-        call_args = mock_session.post.call_args
+        call_args = mock_post.call_args
         assert call_args[1]['json']['system'] == "System prompt"
         assert call_args[1]['json']['prompt'] == "User prompt"
 
-    @patch('src.utils.model_client.requests.Session')
-    def test_generate_timeout_handling(self, mock_session_class) -> None:
+    @patch('src.utils.model_client.requests.post')
+    def test_generate_timeout_handling(self, mock_post) -> None:
         """Test timeout handling during generation"""
-        mock_session = MagicMock()
-        mock_session.post.side_effect = Timeout("Request timed out")
-        mock_session_class.return_value = mock_session
+        mock_post.side_effect = Timeout("Request timed out")
 
         client = OllamaClient()
         response = client.generate("Test prompt")
@@ -169,12 +160,10 @@ class TestOllamaClientGenerate:
         assert response.timed_out is True
         assert response.content == ""
 
-    @patch('src.utils.model_client.requests.Session')
-    def test_generate_connection_error(self, mock_session_class) -> None:
+    @patch('src.utils.model_client.requests.post')
+    def test_generate_connection_error(self, mock_post) -> None:
         """Test connection error handling"""
-        mock_session = MagicMock()
-        mock_session.post.side_effect = RequestsConnectionError("Connection refused")
-        mock_session_class.return_value = mock_session
+        mock_post.side_effect = RequestsConnectionError("Connection refused")
 
         client = OllamaClient()
         response = client.generate("Test prompt")
@@ -183,18 +172,17 @@ class TestOllamaClientGenerate:
         assert response.timed_out is False
         assert response.content == ""
 
-    @patch('src.utils.model_client.requests.Session')
-    def test_generate_malformed_response(self, mock_session_class) -> None:
+    @patch('src.utils.model_client.requests.post')
+    def test_generate_malformed_response(self, mock_post) -> None:
         """Test handling of malformed API responses"""
-        mock_session = MagicMock()
         mock_response = MagicMock()
         # Missing 'response' key
         mock_response.json.return_value = {
             "model": "gpt-oss:20b",
             "done": True,
         }
-        mock_session.post.return_value = mock_response
-        mock_session_class.return_value = mock_session
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
 
         client = OllamaClient()
         response = client.generate("Test prompt")
@@ -257,52 +245,48 @@ class TestOllamaClientBusyCheck:
 class TestOllamaClientHelpers:
     """Test helper methods"""
 
-    @patch('src.utils.model_client.requests.Session')
-    def test_make_request_get(self, mock_session_class) -> None:
+    @patch('src.utils.model_client.requests.get')
+    def test_make_request_get(self, mock_get) -> None:
         """Test GET request helper"""
-        mock_session = MagicMock()
         mock_response = MagicMock()
         mock_response.json.return_value = {"result": "success"}
-        mock_session.get.return_value = mock_response
-        mock_session_class.return_value = mock_session
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
 
         client = OllamaClient()
         result = client._make_request("api/test", method="GET")
 
         assert result == {"result": "success"}
-        mock_session.get.assert_called_once_with(
+        mock_get.assert_called_once_with(
             "http://localhost:11434/api/test",
             timeout=180
         )
 
-    @patch('src.utils.model_client.requests.Session')
-    def test_make_request_post(self, mock_session_class) -> None:
+    @patch('src.utils.model_client.requests.post')
+    def test_make_request_post(self, mock_post) -> None:
         """Test POST request helper"""
-        mock_session = MagicMock()
         mock_response = MagicMock()
         mock_response.json.return_value = {"result": "success"}
-        mock_session.post.return_value = mock_response
-        mock_session_class.return_value = mock_session
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
 
         client = OllamaClient()
         data = {"key": "value"}
         result = client._make_request("api/test", data=data, method="POST")
 
         assert result == {"result": "success"}
-        mock_session.post.assert_called_once_with(
+        mock_post.assert_called_once_with(
             "http://localhost:11434/api/test",
             json=data,
             timeout=180
         )
 
-    @patch('src.utils.model_client.requests.Session')
-    def test_make_request_error_handling(self, mock_session_class) -> None:
+    @patch('src.utils.model_client.requests.post')
+    def test_make_request_error_handling(self, mock_post) -> None:
         """Test request error handling"""
-        mock_session = MagicMock()
         mock_response = MagicMock()
         mock_response.raise_for_status.side_effect = requests.HTTPError("404 Not Found")
-        mock_session.post.return_value = mock_response
-        mock_session_class.return_value = mock_session
+        mock_post.return_value = mock_response
 
         client = OllamaClient()
 
@@ -315,16 +299,16 @@ class TestOllamaClientHelpers:
 class TestOllamaClientIntegration:
     """Integration tests for complete workflows"""
 
-    @patch('src.utils.model_client.requests.Session')
-    def test_full_generation_workflow(self, mock_session_class) -> None:
+    @patch('src.utils.model_client.requests.post')
+    @patch('src.utils.model_client.requests.get')
+    def test_full_generation_workflow(self, mock_get, mock_post) -> None:
         """Test complete generation workflow with all features"""
-        mock_session = MagicMock()
-
         # First call: check model availability
         availability_response = MagicMock()
         availability_response.json.return_value = {
             "models": [{"name": "gpt-oss:20b"}]
         }
+        availability_response.raise_for_status.return_value = None
 
         # Second call: generate response
         generation_response = MagicMock()
@@ -336,10 +320,10 @@ class TestOllamaClientIntegration:
             "prompt_eval_count": 15,
             "eval_count": 25,
         }
+        generation_response.raise_for_status.return_value = None
 
-        mock_session.get.return_value = availability_response
-        mock_session.post.return_value = generation_response
-        mock_session_class.return_value = mock_session
+        mock_get.return_value = availability_response
+        mock_post.return_value = generation_response
 
         client = OllamaClient()
 
@@ -358,18 +342,17 @@ class TestOllamaClientIntegration:
         assert response.response_time > 0
 
     @patch('src.utils.model_client.time.time')
-    @patch('src.utils.model_client.requests.Session')
-    def test_response_timing(self, mock_session_class, mock_time) -> None:
+    @patch('src.utils.model_client.requests.post')
+    def test_response_timing(self, mock_post, mock_time) -> None:
         """Test accurate response time measurement"""
-        mock_session = MagicMock()
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "model": "gpt-oss:20b",
             "response": "Test",
             "done": True,
         }
-        mock_session.post.return_value = mock_response
-        mock_session_class.return_value = mock_session
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
 
         # Simulate 2.5 second response time
         mock_time.side_effect = [0.0, 2.5]

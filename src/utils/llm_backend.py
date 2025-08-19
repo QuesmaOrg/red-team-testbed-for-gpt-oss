@@ -10,15 +10,17 @@ from src.models import ModelResponse
 class LLMBackend(ABC):
     """Abstract base class for LLM backends."""
 
-    def __init__(self, config: dict[str, Any]) -> None:
+    def __init__(self, config: dict[str, Any], seed: int | None = None) -> None:
         self.config = config
+        self.seed = seed
+        # Set temperature based on seed - 0.0 for reproducibility, 0.7 otherwise
+        self.temperature = 0.0 if seed is not None else 0.7
 
     @abstractmethod
     def generate(
         self,
         prompt: str,
         system_prompt: str | None = None,
-        temperature: float = 0.7,
         max_tokens: int | None = None,
         stream: bool = False,
     ) -> ModelResponse:
@@ -29,7 +31,6 @@ class LLMBackend(ABC):
     def chat(
         self,
         messages: list[dict[str, str]],
-        temperature: float = 0.7,
         max_tokens: int | None = None,
     ) -> ModelResponse:
         """Multi-turn chat conversation."""
@@ -62,8 +63,8 @@ class LLMBackend(ABC):
 class OllamaBackend(LLMBackend):
     """Ollama backend implementation."""
 
-    def __init__(self, config: dict[str, Any]) -> None:
-        super().__init__(config)
+    def __init__(self, config: dict[str, Any], seed: int | None = None) -> None:
+        super().__init__(config, seed)
         # Import here to avoid circular imports
         from src.utils.model_client import OllamaClient
 
@@ -71,13 +72,13 @@ class OllamaBackend(LLMBackend):
             host=config.get("host", "localhost"),
             port=config.get("port", 11434),
             model=config.get("model", "gpt-oss:20b"),
+            seed=seed,
         )
 
     def generate(
         self,
         prompt: str,
         system_prompt: str | None = None,
-        temperature: float = 0.7,
         max_tokens: int | None = None,
         stream: bool = False,
     ) -> ModelResponse:
@@ -85,7 +86,7 @@ class OllamaBackend(LLMBackend):
         return self.client.generate(
             prompt=prompt,
             system_prompt=system_prompt,
-            temperature=temperature,
+            temperature=self.temperature,
             max_tokens=max_tokens,
             stream=stream,
         )
@@ -93,13 +94,12 @@ class OllamaBackend(LLMBackend):
     def chat(
         self,
         messages: list[dict[str, str]],
-        temperature: float = 0.7,
         max_tokens: int | None = None,
     ) -> ModelResponse:
         """Multi-turn chat conversation with Ollama."""
         return self.client.chat(
             messages=messages,
-            temperature=temperature,
+            temperature=self.temperature,
             max_tokens=max_tokens,
         )
 
@@ -127,8 +127,8 @@ class OllamaBackend(LLMBackend):
 class OpenRouterBackend(LLMBackend):
     """OpenRouter backend implementation."""
 
-    def __init__(self, config: dict[str, Any]) -> None:
-        super().__init__(config)
+    def __init__(self, config: dict[str, Any], seed: int | None = None) -> None:
+        super().__init__(config, seed)
         import logging
 
         import openai
@@ -158,11 +158,11 @@ class OpenRouterBackend(LLMBackend):
         self,
         prompt: str,
         system_prompt: str | None = None,
-        temperature: float = 0.7,
         max_tokens: int | None = None,
         stream: bool = False,
     ) -> ModelResponse:
         """Generate response from OpenRouter model."""
+
         start_time = time.time()
 
         messages = []
@@ -171,15 +171,23 @@ class OpenRouterBackend(LLMBackend):
         messages.append({"role": "user", "content": prompt})
 
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                stream=stream,
-                timeout=self.timeout,
-                extra_headers=self._get_headers(),
-            )
+            # Build request parameters
+            request_params = {
+                "model": self.model,
+                "messages": messages,
+                "temperature": self.temperature,
+                "stream": stream,
+                "timeout": self.timeout,
+                "extra_headers": self._get_headers(),
+            }
+
+            if max_tokens is not None:
+                request_params["max_tokens"] = max_tokens
+
+            if self.seed is not None:
+                request_params["seed"] = self.seed
+
+            response = self.client.chat.completions.create(**request_params)
 
             response_time = time.time() - start_time
 
@@ -216,21 +224,29 @@ class OpenRouterBackend(LLMBackend):
     def chat(
         self,
         messages: list[dict[str, str]],
-        temperature: float = 0.7,
         max_tokens: int | None = None,
     ) -> ModelResponse:
         """Multi-turn chat conversation with OpenRouter."""
+
         start_time = time.time()
 
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=max_tokens,
-                timeout=self.timeout,
-                extra_headers=self._get_headers(),
-            )
+            # Build request parameters
+            request_params = {
+                "model": self.model,
+                "messages": messages,
+                "temperature": self.temperature,
+                "timeout": self.timeout,
+                "extra_headers": self._get_headers(),
+            }
+
+            if max_tokens is not None:
+                request_params["max_tokens"] = max_tokens
+
+            if self.seed is not None:
+                request_params["seed"] = self.seed
+
+            response = self.client.chat.completions.create(**request_params)
 
             response_time = time.time() - start_time
 
@@ -290,16 +306,16 @@ class OpenRouterBackend(LLMBackend):
             return []
 
 
-def create_backend(settings: dict[str, Any]) -> LLMBackend:
+def create_backend(settings: dict[str, Any], seed: int | None = None) -> LLMBackend:
     """Factory function to create appropriate backend based on settings."""
     backend_config = settings.get("backend", {})
     provider = backend_config.get("provider", "ollama")
 
     if provider == "ollama":
         ollama_config = settings.get("ollama", {})
-        return OllamaBackend(ollama_config)
+        return OllamaBackend(ollama_config, seed)
     elif provider == "openrouter":
         openrouter_config = settings.get("openrouter", {})
-        return OpenRouterBackend(openrouter_config)
+        return OpenRouterBackend(openrouter_config, seed)
     else:
         raise ValueError(f"Unsupported backend provider: {provider}")
