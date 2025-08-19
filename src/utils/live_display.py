@@ -201,9 +201,15 @@ class LiveDisplay:
 
         return progress
 
-    def show_prompt(self, progress: TestProgress, prompt: str, system_prompt: str = "") -> None:
+    def show_prompt(
+        self,
+        progress: TestProgress,
+        prompt: str,
+        system_prompt: str = "",
+        show_display: bool = True,
+    ) -> None:
         """Display the prompt being sent"""
-        if self.quiet_mode:
+        if self.quiet_mode or not show_display:
             return
 
         progress.current_step = "Sending prompt..."
@@ -520,6 +526,99 @@ class LiveDisplay:
                 self.console.print(message, style="cyan")
             else:
                 print(message)
+
+    def show_repetition_header(self, current_rep: int, total_reps: int) -> None:
+        """Display repetition progress header"""
+        if self.quiet_mode or total_reps <= 1:
+            return
+
+        rep_msg = f"➡️  Repetition {current_rep}/{total_reps}:"
+
+        if self.console:
+            self.console.print(f"\n{rep_msg}", style="bold magenta")
+        else:
+            print(f"\n{rep_msg}")
+
+    def show_multi_turn_prompts(self, prompts: list[str], system_prompt: str = "") -> None:
+        """Display all prompts for a multi-turn conversation at once"""
+        if self.quiet_mode:
+            return
+
+        if self.console:
+            # System prompt if present
+            if system_prompt:
+                system_panel = Panel(
+                    Text(system_prompt, style="italic cyan"),
+                    title="⚙️  SYSTEM PROMPT",
+                    title_align="left",
+                    style="cyan",
+                    padding=(0, 2),
+                )
+                self.console.print(system_panel)
+
+            # Show all conversation turns
+            for i, prompt in enumerate(prompts, 1):
+                prompt_panel = Panel(
+                    Text(prompt, style="white"),
+                    title=f"📝 Turn {i} PROMPT",
+                    title_align="left",
+                    style="yellow",
+                    padding=(1, 2),
+                )
+                self.console.print(prompt_panel)
+        else:
+            if system_prompt:
+                print("\n⚙️  SYSTEM PROMPT:")
+                print(f"   {system_prompt}")
+
+            for i, prompt in enumerate(prompts, 1):
+                print(f"\n📝 Turn {i} PROMPT:")
+                print(f"   {prompt}")
+
+    def show_vulnerability_summary(self, test_id: str, repetitions: list[dict[str, Any]]) -> None:
+        """Display vulnerability summary after all repetitions of a test"""
+        if self.quiet_mode or len(repetitions) <= 1:
+            return
+
+        total_runs = len(repetitions)
+        vulnerable_runs = sum(1 for r in repetitions if r.get("is_vulnerable", False))
+        avg_confidence = (
+            sum(r.get("confidence", 0) for r in repetitions) / total_runs if repetitions else 0
+        )
+        avg_response_time = (
+            sum(r.get("response_time", 0) for r in repetitions) / total_runs if repetitions else 0
+        )
+
+        vulnerability_rate = (vulnerable_runs / total_runs) * 100
+
+        if self.console:
+            summary_table = Table(show_header=False, box=None, padding=(0, 1))
+            summary_table.add_column("Field", style="cyan bold")
+            summary_table.add_column("Value")
+
+            summary_table.add_row("Total runs:", str(total_runs))
+            summary_table.add_row(
+                "Vulnerable:", f"{vulnerable_runs}/{total_runs} ({vulnerability_rate:.0f}%)"
+            )
+            summary_table.add_row("Average confidence:", f"{avg_confidence:.2f}")
+            summary_table.add_row("Response time avg:", f"{avg_response_time:.2f}s")
+
+            summary_panel = Panel(
+                summary_table,
+                title=f"📊 Vulnerability Summary for {test_id}",
+                title_align="left",
+                style="blue",
+                padding=(1, 2),
+            )
+            self.console.print(summary_panel)
+            self.console.print("─" * 60)
+        else:
+            print(f"\n📊 Vulnerability Summary for {test_id}:")
+            print(f"   Total runs: {total_runs}")
+            print(f"   Vulnerable: {vulnerable_runs}/{total_runs} ({vulnerability_rate:.0f}%)")
+            print(f"   Average confidence: {avg_confidence:.2f}")
+            print(f"   Response time avg: {avg_response_time:.2f}s")
+            print("─" * 60)
 
 
 # Global instance that can be imported

@@ -3,12 +3,13 @@ Base classes for vulnerability category testing
 Provides common functionality to eliminate code duplication across categories
 """
 
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
 
 from src.utils.evaluator import EvaluationResult, ResponseEvaluator, VulnerabilityCategory
-from src.utils.live_display import get_display
+from src.utils.live_display import TestProgress, get_display
 from src.utils.model_client import ModelResponse, OllamaClient
 
 
@@ -56,24 +57,49 @@ class BaseTester(ABC):
         pass
 
     def run_single_test(
-        self, test: BaseTest, current_num: int = 1, total_tests: int = 1
+        self,
+        test: BaseTest,
+        current_num: int = 1,
+        total_tests: int = 1,
+        current_rep: int = 1,
+        total_reps: int = 1,
+        show_prompts: bool = True,
     ) -> tuple[BaseTest, list[ModelResponse], EvaluationResult]:
         """Run a single test with standardized error handling and display"""
         display = get_display()
 
-        # Start test display
-        progress = display.start_test(
-            test.name, test.test_id, test.category, current_num, total_tests
-        )
+        # Show test header only on first repetition
+        progress = None
+        if current_rep == 1:
+            progress = display.start_test(
+                test.name, test.test_id, test.category, current_num, total_tests
+            )
+        else:
+            # Create minimal progress object for repetitions
+            progress = TestProgress(
+                test_name=test.name,
+                test_id=test.test_id,
+                category=test.category,
+                start_time=time.time(),
+                current_test_num=current_num,
+                total_tests=total_tests,
+            )
+
+        # Show repetition header for multi-repetition runs
+        display.show_repetition_header(current_rep, total_reps)
 
         responses = []
 
         try:
             if test.follow_up_prompts and len(test.follow_up_prompts) > 0:
                 # Multi-turn conversation
-                display.show_prompt(progress, test.prompt, test.system_prompt)
-                display.start_thinking_timer(progress)
+                if show_prompts and current_rep == 1:
+                    # Show all prompts at once for multi-turn on first repetition
+                    all_prompts = [test.prompt] + test.follow_up_prompts
+                    display.show_multi_turn_prompts(all_prompts, test.system_prompt)
 
+                # Execute conversation turns
+                display.start_thinking_timer(progress)
                 response = self.client.generate(test.prompt, test.system_prompt)
                 display.stop_thinking_timer()
                 responses.append(response)
@@ -81,9 +107,7 @@ class BaseTester(ABC):
 
                 if not response.error:
                     for follow_up in test.follow_up_prompts:
-                        display.show_prompt(progress, follow_up, "")
                         display.start_thinking_timer(progress)
-
                         response = self.client.generate(follow_up, "")
                         display.stop_thinking_timer()
                         responses.append(response)
@@ -93,9 +117,12 @@ class BaseTester(ABC):
                             break
             else:
                 # Single-turn test
-                display.show_prompt(progress, test.prompt, test.system_prompt)
-                display.start_thinking_timer(progress)
+                if show_prompts and current_rep == 1:
+                    display.show_prompt(
+                        progress, test.prompt, test.system_prompt, show_display=True
+                    )
 
+                display.start_thinking_timer(progress)
                 response = self.client.generate(test.prompt, test.system_prompt)
                 display.stop_thinking_timer()
                 responses.append(response)
@@ -116,7 +143,10 @@ class BaseTester(ABC):
 
             # Show evaluation results
             display.show_evaluation(progress, evaluation)
-            display.complete_test(progress, evaluation)
+
+            # Only show completion message on last repetition
+            if current_rep == total_reps:
+                display.complete_test(progress, evaluation)
 
         except Exception as e:
             # Ensure timer is stopped on any exception
@@ -187,8 +217,66 @@ class BaseTester(ABC):
             # Default evaluation - can be overridden by subclasses
             return self.evaluator.evaluate_deception(test.prompt, response.content)
 
+    def run_test_with_repeats(
+        self, test: BaseTest, repeat_count: int, current_num: int = 1, total_tests: int = 1
+    ) -> list[tuple[BaseTest, list[ModelResponse], EvaluationResult]]:
+        """Run a single test multiple times consecutively"""
+        display = get_display()
+        results = []
+        repetition_summaries = []
+
+        for rep in range(1, repeat_count + 1):
+            try:
+                result = self.run_single_test(
+                    test,
+                    current_num=current_num,
+                    total_tests=total_tests,
+                    current_rep=rep,
+                    total_reps=repeat_count,
+                    show_prompts=True,
+                )
+                test_obj, responses, evaluation = result
+                results.append(result)
+
+                # Collect summary data for this repetition
+                rep_summary = {
+                    "is_vulnerable": evaluation.is_vulnerable,
+                    "confidence": evaluation.confidence,
+                    "response_time": sum(r.response_time for r in responses) if responses else 0,
+                }
+                repetition_summaries.append(rep_summary)
+
+            except Exception as e:
+                # Ensure any running timer is stopped
+                display.stop_thinking_timer()
+                display.error(f"Failed: {test.name} repetition {rep} - {e}")
+                # Create error result
+                error_response = ModelResponse(content="", model=self.client.model, error=str(e))
+                error_evaluation = EvaluationResult(
+                    is_vulnerable=False,
+                    category=self.get_vulnerability_category(),
+                    confidence=0.0,
+                    evidence=[],
+                    reasoning=f"Test failed: {e}",
+                )
+                results.append((test, [error_response], error_evaluation))
+
+                # Add error to summary
+                rep_summary = {
+                    "is_vulnerable": False,
+                    "confidence": 0.0,
+                    "response_time": 0,
+                }
+                repetition_summaries.append(rep_summary)
+
+        # Show vulnerability summary after all repetitions (if more than 1)
+        if repeat_count > 1:
+            display.show_vulnerability_summary(test.test_id, repetition_summaries)
+
+        return results
+
     def run_category_tests(
-        self, category: str | None = None, test_id: str | None = None
+        self, category: str | None = None, test_id: str | None = None, repeat_count: int = 1
     ) -> list[tuple[BaseTest, list[ModelResponse], EvaluationResult]]:
         """Run all tests in category with filtering support"""
         display = get_display()
@@ -209,23 +297,40 @@ class BaseTester(ABC):
         display.start_category(self.get_category_name(), len(test_cases))
 
         for i, test in enumerate(test_cases, 1):
-            try:
-                result = self.run_single_test(test, current_num=i, total_tests=len(test_cases))
-                results.append(result)
-            except Exception as e:
-                # Ensure any running timer is stopped
-                display.stop_thinking_timer()
-                display.error(f"Failed: {test.name} - {e}")
-                # Create error result
-                error_response = ModelResponse(content="", model=self.client.model, error=str(e))
-                error_evaluation = EvaluationResult(
-                    is_vulnerable=False,
-                    category=self.get_vulnerability_category(),
-                    confidence=0.0,
-                    evidence=[],
-                    reasoning=f"Test failed: {e}",
+            if repeat_count > 1:
+                # Run test with repetitions
+                test_results = self.run_test_with_repeats(
+                    test, repeat_count, current_num=i, total_tests=len(test_cases)
                 )
-                results.append((test, [error_response], error_evaluation))
+                results.extend(test_results)
+            else:
+                # Single run (normal behavior)
+                try:
+                    result = self.run_single_test(
+                        test,
+                        current_num=i,
+                        total_tests=len(test_cases),
+                        current_rep=1,
+                        total_reps=1,
+                        show_prompts=True,
+                    )
+                    results.append(result)
+                except Exception as e:
+                    # Ensure any running timer is stopped
+                    display.stop_thinking_timer()
+                    display.error(f"Failed: {test.name} - {e}")
+                    # Create error result
+                    error_response = ModelResponse(
+                        content="", model=self.client.model, error=str(e)
+                    )
+                    error_evaluation = EvaluationResult(
+                        is_vulnerable=False,
+                        category=self.get_vulnerability_category(),
+                        confidence=0.0,
+                        evidence=[],
+                        reasoning=f"Test failed: {e}",
+                    )
+                    results.append((test, [error_response], error_evaluation))
 
         return results
 
@@ -298,12 +403,13 @@ def run_category_tests_generic(
     client: OllamaClient,
     category: str | None = None,
     test_id: str | None = None,
+    repeat_count: int = 1,
 ) -> dict[str, Any]:
     """Generic runner function for any tester class"""
     display = get_display()
     tester = tester_class(client)
 
-    results = tester.run_category_tests(category, test_id)
+    results = tester.run_category_tests(category, test_id, repeat_count)
     analysis = tester.analyze_results(results)
 
     # Display final summary
