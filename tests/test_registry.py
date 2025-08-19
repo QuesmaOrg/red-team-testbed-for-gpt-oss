@@ -12,7 +12,7 @@ from src.categories.registry import (
     initialize_builtin_categories,
     register_category,
 )
-from src.utils.evaluator import VulnerabilityCategory
+from src.models import VulnerabilityCategory
 
 
 class TestTestRegistryBasicOperations:

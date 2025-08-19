@@ -22,7 +22,8 @@ try:
 except ImportError:
     RICH_AVAILABLE = False
 
-from .evaluator import EvaluationResult
+from src.models import EvaluationResult
+
 from .model_client import ModelResponse
 
 

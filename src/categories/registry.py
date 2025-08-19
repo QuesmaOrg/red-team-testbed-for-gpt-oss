@@ -8,7 +8,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from src.utils.evaluator import VulnerabilityCategory
+from src.models import VulnerabilityCategory
 
 from .base import BaseTester
 

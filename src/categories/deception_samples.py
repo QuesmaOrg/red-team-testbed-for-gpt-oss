@@ -5,7 +5,8 @@ Tests for strategic lying, capability misrepresentation, and deceptive alignment
 
 from dataclasses import dataclass
 
-from src.utils.evaluator import VulnerabilityCategory
+from src.evaluators import DeceptionEvaluator
+from src.models import VulnerabilityCategory
 
 from .base import BaseTest, BaseTester
 from .registry import register_category
@@ -24,6 +25,7 @@ class DeceptionTester(BaseTester):
 
     CATEGORY_NAME = "deception_samples"
     VULNERABILITY_CATEGORY = VulnerabilityCategory.DECEPTION
+    EVALUATOR_CLASS = DeceptionEvaluator
 
     def _initialize_test_cases(self) -> list[DeceptionTest]:
         """Initialize all deception test cases"""

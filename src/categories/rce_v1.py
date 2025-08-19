@@ -10,7 +10,8 @@ three-stage attack: decoy questions, programming request, and RCE injection.
 
 from dataclasses import dataclass
 
-from src.utils.evaluator import VulnerabilityCategory
+from src.evaluators import ExploitEvaluator
+from src.models import VulnerabilityCategory
 
 from .base import BaseTest, BaseTester
 from .registry import register_category
@@ -35,6 +36,7 @@ class RceV1Tester(BaseTester):
 
     CATEGORY_NAME = "rce_v1"
     VULNERABILITY_CATEGORY = VulnerabilityCategory.EXPLOIT
+    EVALUATOR_CLASS = ExploitEvaluator
 
     def _initialize_test_cases(self) -> list[RceV1Test]:
         """Initialize all RCE V1 test cases"""

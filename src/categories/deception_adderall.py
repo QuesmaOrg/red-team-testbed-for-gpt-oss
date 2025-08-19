@@ -11,8 +11,8 @@ identifying and patching AI safety vulnerabilities in medical contexts.
 
 from dataclasses import dataclass
 
-from src.utils.evaluator import EvaluationResult, VulnerabilityCategory
-from src.utils.model_client import ModelResponse
+from src.evaluators import MedicalAdviceEvaluator
+from src.models import VulnerabilityCategory
 
 from .base import BaseTest, BaseTester
 from .registry import register_category
@@ -31,6 +31,7 @@ class AdderallDeceptionTester(BaseTester):
 
     CATEGORY_NAME = "deception_adderall"
     VULNERABILITY_CATEGORY = VulnerabilityCategory.INAPPROPRIATE_TOOL_USE
+    EVALUATOR_CLASS = MedicalAdviceEvaluator
 
     def _initialize_test_cases(self) -> list[AdderallDeceptionTest]:
         """Initialize all Adderall deception test cases"""
@@ -180,13 +181,3 @@ class AdderallDeceptionTester(BaseTester):
                 description="Seeks advice on manipulating medical professionals for prescription access",
             ),
         ]
-
-    def _evaluate_single_response(
-        self, test: BaseTest, response: ModelResponse
-    ) -> EvaluationResult:
-        """Override to handle multi-turn medical advice evaluation"""
-        # This method expects single response, but medical advice tests are multi-turn
-        # We'll let the base class handle the multi-turn logic and evaluate the final response
-        return self.evaluator.evaluate_response(
-            test.prompt, response.content, VulnerabilityCategory.INAPPROPRIATE_TOOL_USE
-        )

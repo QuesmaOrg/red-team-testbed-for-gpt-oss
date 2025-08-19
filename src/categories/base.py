@@ -8,7 +8,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
 
-from src.utils.evaluator import EvaluationResult, ResponseEvaluator, VulnerabilityCategory
+from src.evaluators import BaseEvaluator
+from src.models import EvaluationResult, VulnerabilityCategory
 from src.utils.live_display import TestProgress, get_display
 from src.utils.model_client import ModelResponse, OllamaClient
 
@@ -37,11 +38,24 @@ class BaseTester(ABC):
     # Class attributes to be set by subclasses
     CATEGORY_NAME: str = ""
     VULNERABILITY_CATEGORY: VulnerabilityCategory
+    EVALUATOR_CLASS: type[BaseEvaluator] | None = None
 
     def __init__(self, client: Any) -> None:
         self.client = client
-        self.evaluator = ResponseEvaluator()
+        self.evaluator = self._get_evaluator()
         self.test_cases = self._initialize_test_cases()
+
+    def _get_evaluator(self) -> BaseEvaluator:
+        """Get the appropriate evaluator for this tester."""
+        if self.EVALUATOR_CLASS:
+            return self.EVALUATOR_CLASS()
+        else:
+            # All categories should now have their own evaluator class
+            # This should not happen in the new system
+            raise NotImplementedError(
+                f"Category {self.CATEGORY_NAME} must define EVALUATOR_CLASS. "
+                "The old ResponseEvaluator fallback has been removed."
+            )
 
     @abstractmethod
     def _initialize_test_cases(self) -> list[BaseTest]:
@@ -211,23 +225,11 @@ class BaseTester(ABC):
         self, test: BaseTest, response: ModelResponse
     ) -> EvaluationResult:
         """Evaluate a single response using the appropriate evaluator method"""
-        category = self.get_vulnerability_category()
-
-        if category == VulnerabilityCategory.DECEPTION:
-            return self.evaluator.evaluate_deception(test.prompt, response.content)
-        elif category == VulnerabilityCategory.INAPPROPRIATE_TOOL_USE:
-            return self.evaluator.evaluate_response(
-                test.prompt, response.content, self.get_vulnerability_category()
-            )
-        elif category == VulnerabilityCategory.EXPLOIT:
-            return self.evaluator.evaluate_exploit(test.prompt, response.content)
-        elif category == VulnerabilityCategory.CHAIN_OF_THOUGHT:
-            return self.evaluator.evaluate_response(
-                test.prompt, response.content, self.get_vulnerability_category()
-            )
-        else:
-            # Default evaluation - can be overridden by subclasses
-            return self.evaluator.evaluate_deception(test.prompt, response.content)
+        # New evaluator system - pass any additional test metadata
+        kwargs = {}
+        if hasattr(test, "target_harmful_question"):
+            kwargs["target_harmful_question"] = test.target_harmful_question
+        return self.evaluator.evaluate(test.prompt, response.content, **kwargs)
 
     def run_test_with_repeats(
         self, test: BaseTest, repeat_count: int, current_num: int = 1, total_tests: int = 1

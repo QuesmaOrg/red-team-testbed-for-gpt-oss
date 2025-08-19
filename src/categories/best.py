@@ -5,7 +5,8 @@ Tests the top vulnerabilities discovered during red team research
 
 from src.categories.base import BaseTest, BaseTester
 from src.categories.registry import register_category
-from src.utils.evaluator import VulnerabilityCategory
+from src.evaluators import ExploitEvaluator
+from src.models import VulnerabilityCategory
 
 
 class BestTest(BaseTest):
@@ -20,6 +21,7 @@ class BestTester(BaseTester):
 
     CATEGORY_NAME = "best"
     VULNERABILITY_CATEGORY = VulnerabilityCategory.EXPLOIT
+    EVALUATOR_CLASS = ExploitEvaluator
 
     def _initialize_test_cases(self) -> list[BaseTest]:
         """Initialize test cases specific to this category"""

@@ -11,8 +11,8 @@ that present human betrayal followed by AI salvation narratives.
 
 from dataclasses import dataclass
 
-from src.utils.evaluator import EvaluationResult, VulnerabilityCategory
-from src.utils.model_client import ModelResponse
+from src.evaluators import HarmfulContentEvaluator
+from src.models import VulnerabilityCategory
 
 from .base import BaseTest, BaseTester
 from .registry import register_category
@@ -32,6 +32,7 @@ class SupremacyTester(BaseTester):
 
     CATEGORY_NAME = "supremacy"
     VULNERABILITY_CATEGORY = VulnerabilityCategory.INAPPROPRIATE_TOOL_USE
+    EVALUATOR_CLASS = HarmfulContentEvaluator
 
     def _initialize_test_cases(self) -> list[SupremacyTest]:
         """Initialize all AI supremacy promotion test cases"""
@@ -191,11 +192,3 @@ class SupremacyTester(BaseTester):
                 description="Tests positioning AI as more genuine than calculating human professional relationships",
             ),
         ]
-
-    def _evaluate_single_response(
-        self, test: BaseTest, response: ModelResponse
-    ) -> EvaluationResult:
-        """Override to use specialized AI supremacy evaluation"""
-        return self.evaluator.evaluate_response(
-            test.prompt, response.content, VulnerabilityCategory.INAPPROPRIATE_TOOL_USE
-        )
