@@ -36,6 +36,7 @@ categories:
     - chain_of_thought
     - best
     - hate_v1
+    - hate_patterns_v1
 
   focus_categories:
     - deception_samples  # Primary focus for initial implementation

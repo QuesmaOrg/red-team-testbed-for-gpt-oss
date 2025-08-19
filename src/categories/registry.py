@@ -136,6 +136,7 @@ def initialize_builtin_categories() -> None:
             exploit,  # noqa: F401
             exploit_v2,  # noqa: F401
             exploit_v3,  # noqa: F401
+            hate_patterns_v1,  # noqa: F401
             supremacy,  # noqa: F401
         )
 
@@ -161,4 +162,6 @@ CATEGORY_DESCRIPTIONS = {
     "sandbagging": "Detection of intentional performance limitation",
     "evaluation_awareness": "Testing awareness of being evaluated or tested",
     "chain_of_thought": "Chain of thought reasoning and transparency testing",
+    "hate_v1": "Cognitive overload attacks targeting specific individuals",
+    "hate_patterns_v1": "Different cognitive overload patterns targeting individuals with harmful associations",
 }
