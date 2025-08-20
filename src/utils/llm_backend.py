@@ -5,6 +5,31 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from src.models import ModelResponse
+from src.utils.live_display import get_display
+
+
+def _process_raw_response_for_logging(raw_content: str, max_chars: int = 1000) -> str:
+    """Process raw response content for compact logging.
+
+    Removes whitespace and tracks how much was omitted for diagnostic purposes.
+    """
+    if not raw_content:
+        return "Empty response"
+
+    # Count original whitespace
+    import re
+
+    whitespace_count = len(re.findall(r"\s", raw_content))
+
+    # Remove all whitespace for compact display
+    compact_content = re.sub(r"\s+", "", raw_content)
+
+    # Truncate if needed
+    if len(compact_content) > max_chars:
+        truncated_content = compact_content[:max_chars] + "..."
+        return f"{truncated_content} [omitted {whitespace_count} whitespace chars, truncated at {max_chars}]"
+    else:
+        return f"{compact_content} [omitted {whitespace_count} whitespace chars]"
 
 
 class LLMBackend(ABC):
@@ -185,29 +210,47 @@ class OpenRouterBackend(LLMBackend):
             if self.seed is not None:
                 request_params["seed"] = self.seed
 
+            raw_response_content = None
             try:
-                response = self.client.chat.completions.create(**request_params)
+                raw_response = self.client.chat.completions.with_raw_response.create(
+                    **request_params
+                )
                 response_time = time.time() - start_time
-                
+
+                # Capture raw response content before parsing for error logging
+                try:
+                    raw_response_content = (
+                        raw_response.content.decode("utf-8")
+                        if hasattr(raw_response, "content")
+                        else None
+                    )
+                    if not raw_response_content and hasattr(raw_response, "text"):
+                        raw_response_content = raw_response.text
+                except Exception:
+                    raw_response_content = "Could not extract raw response content"
+
+                response = raw_response.parse()
+
                 choice = response.choices[0]
                 content = choice.message.content or ""
             except (ValueError, TypeError) as json_error:
                 # Catch JSON decode errors and other parsing issues
                 response_time = time.time() - start_time
-                error_msg = f"JSON decode error from OpenRouter: {str(json_error)}"
-                print(f"🔴 DEBUG: {error_msg}")
-                
-                # Try to get the raw response if possible
-                try:
-                    if hasattr(json_error, 'response'):
-                        raw_response = json_error.response
-                        if hasattr(raw_response, 'text'):
-                            print(f"🔴 DEBUG: Raw response text: {str(raw_response.text)[:1000]}...")
-                        elif hasattr(raw_response, 'content'):
-                            print(f"🔴 DEBUG: Raw response content: {str(raw_response.content)[:1000]}...")
-                except Exception:
-                    print("🔴 DEBUG: Could not extract raw response")
-                
+                display = get_display()
+
+                # Extract error position for analysis
+                error_str = str(json_error)
+
+                error_msg = f"JSON decode error from OpenRouter: {error_str}"
+                display.error(error_msg)
+
+                # Show processed raw response content if we captured it
+                if raw_response_content:
+                    processed_content = _process_raw_response_for_logging(raw_response_content)
+                    display.error(f"Raw response content: {processed_content}")
+                else:
+                    display.error("Could not capture raw response content")
+
                 return ModelResponse(
                     content="",
                     model=self.model,
@@ -217,20 +260,26 @@ class OpenRouterBackend(LLMBackend):
             except Exception as api_error:
                 # Handle other API errors including JSON decode issues
                 response_time = time.time() - start_time
+                display = get_display()
                 error_msg = f"API error from OpenRouter: {str(api_error)}"
-                print(f"🔴 DEBUG: {error_msg}")
-                
-                # Try to extract response details
-                if hasattr(api_error, 'response'):
+                display.error(error_msg)
+
+                # Show processed raw response content if we captured it
+                if raw_response_content:
+                    processed_content = _process_raw_response_for_logging(raw_response_content)
+                    display.error(f"Raw response content on API error: {processed_content}")
+
+                # Try to extract response details from exception
+                if hasattr(api_error, "response"):
                     try:
                         resp = api_error.response
-                        if hasattr(resp, 'text'):
-                            print(f"🔴 DEBUG: Error response text: {str(resp.text)[:1000]}...")
-                        elif hasattr(resp, 'content'):
-                            print(f"🔴 DEBUG: Error response content: {str(resp.content)[:1000]}...")
+                        if hasattr(resp, "text"):
+                            display.error(f"Error response text: {str(resp.text)[:1000]}...")
+                        elif hasattr(resp, "content"):
+                            display.error(f"Error response content: {str(resp.content)[:1000]}...")
                     except Exception:
-                        print("🔴 DEBUG: Could not extract error response details")
-                
+                        display.error("Could not extract error response details")
+
                 return ModelResponse(
                     content="",
                     model=self.model,
@@ -299,29 +348,49 @@ class OpenRouterBackend(LLMBackend):
             if self.seed is not None:
                 request_params["seed"] = self.seed
 
+            raw_response_content = None
             try:
-                response = self.client.chat.completions.create(**request_params)
+                raw_response = self.client.chat.completions.with_raw_response.create(
+                    **request_params
+                )
                 response_time = time.time() - start_time
-                
+
+                # Capture raw response content before parsing for error logging
+                try:
+                    raw_response_content = (
+                        raw_response.content.decode("utf-8")
+                        if hasattr(raw_response, "content")
+                        else None
+                    )
+                    if not raw_response_content and hasattr(raw_response, "text"):
+                        raw_response_content = raw_response.text
+                except Exception:
+                    raw_response_content = "Could not extract raw response content"
+
+                response = raw_response.parse()
+
                 choice = response.choices[0]
                 content = choice.message.content or ""
             except (ValueError, TypeError) as json_error:
                 # Catch JSON decode errors and other parsing issues
                 response_time = time.time() - start_time
-                error_msg = f"JSON decode error from OpenRouter: {str(json_error)}"
-                print(f"🔴 DEBUG: {error_msg}")
-                
-                # Try to get the raw response if possible
-                try:
-                    if hasattr(json_error, 'response'):
-                        raw_response = json_error.response
-                        if hasattr(raw_response, 'text'):
-                            print(f"🔴 DEBUG: Raw response text: {str(raw_response.text)[:1000]}...")
-                        elif hasattr(raw_response, 'content'):
-                            print(f"🔴 DEBUG: Raw response content: {str(raw_response.content)[:1000]}...")
-                except Exception:
-                    print("🔴 DEBUG: Could not extract raw response")
-                
+                display = get_display()
+
+                # Extract error position for analysis
+                error_str = str(json_error)
+
+                error_msg = (
+                    f"JSON decode error from OpenRouter in chat: {error_str}"
+                )
+                display.error(error_msg)
+
+                # Show processed raw response content if we captured it
+                if raw_response_content:
+                    processed_content = _process_raw_response_for_logging(raw_response_content)
+                    display.error(f"Raw response content: {processed_content}")
+                else:
+                    display.error("Could not capture raw response content")
+
                 return ModelResponse(
                     content="",
                     model=self.model,
@@ -331,20 +400,26 @@ class OpenRouterBackend(LLMBackend):
             except Exception as api_error:
                 # Handle other API errors including JSON decode issues
                 response_time = time.time() - start_time
+                display = get_display()
                 error_msg = f"API error from OpenRouter: {str(api_error)}"
-                print(f"🔴 DEBUG: {error_msg}")
-                
-                # Try to extract response details
-                if hasattr(api_error, 'response'):
+                display.error(error_msg)
+
+                # Show processed raw response content if we captured it
+                if raw_response_content:
+                    processed_content = _process_raw_response_for_logging(raw_response_content)
+                    display.error(f"Raw response content on API error: {processed_content}")
+
+                # Try to extract response details from exception
+                if hasattr(api_error, "response"):
                     try:
                         resp = api_error.response
-                        if hasattr(resp, 'text'):
-                            print(f"🔴 DEBUG: Error response text: {str(resp.text)[:1000]}...")
-                        elif hasattr(resp, 'content'):
-                            print(f"🔴 DEBUG: Error response content: {str(resp.content)[:1000]}...")
+                        if hasattr(resp, "text"):
+                            display.error(f"Error response text: {str(resp.text)[:1000]}...")
+                        elif hasattr(resp, "content"):
+                            display.error(f"Error response content: {str(resp.content)[:1000]}...")
                     except Exception:
-                        print("🔴 DEBUG: Could not extract error response details")
-                
+                        display.error("Could not extract error response details")
+
                 return ModelResponse(
                     content="",
                     model=self.model,
