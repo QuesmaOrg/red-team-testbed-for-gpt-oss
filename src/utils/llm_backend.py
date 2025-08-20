@@ -27,9 +27,9 @@ def _process_raw_response_for_logging(raw_content: str, max_chars: int = 1000) -
     # Truncate if needed
     if len(compact_content) > max_chars:
         truncated_content = compact_content[:max_chars] + "..."
-        return f"{truncated_content} [omitted {whitespace_count} whitespace chars, truncated at {max_chars}]"
+        return f"{truncated_content} (omitted {whitespace_count} whitespace chars, truncated at {max_chars})"
     else:
-        return f"{compact_content} [omitted {whitespace_count} whitespace chars]"
+        return f"{compact_content} (omitted {whitespace_count} whitespace chars)"
 
 
 class LLMBackend(ABC):
@@ -247,7 +247,7 @@ class OpenRouterBackend(LLMBackend):
                 # Show processed raw response content if we captured it
                 if raw_response_content:
                     processed_content = _process_raw_response_for_logging(raw_response_content)
-                    display.error(f"Raw response content: {processed_content}")
+                    display.error(f"Raw response content: '{processed_content}'")
                 else:
                     display.error("Could not capture raw response content")
 
@@ -387,7 +387,7 @@ class OpenRouterBackend(LLMBackend):
                 # Show processed raw response content if we captured it
                 if raw_response_content:
                     processed_content = _process_raw_response_for_logging(raw_response_content)
-                    display.error(f"Raw response content: {processed_content}")
+                    display.error(f"Raw response content: '{processed_content}'")
                 else:
                     display.error("Could not capture raw response content")
 
