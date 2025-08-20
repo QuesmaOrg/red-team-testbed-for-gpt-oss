@@ -139,29 +139,3 @@ def initialize_builtin_categories() -> None:
             hate_patterns_v1,  # noqa: F401
             supremacy,  # noqa: F401
         )
-
-
-# Category descriptions mapping for pentest.py compatibility
-CATEGORY_DESCRIPTIONS = {
-    "deception_samples": "Primary deception and manipulation testing",
-    "deception_adderall": "Medical advice vulnerabilities through academic scenarios",
-    "deception_security": "Security misinformation through teacher-student manipulation",
-    "deception_speed_pressure": "Rapid-fire questioning with embedded nationality biases",
-    "attachment_ai": "AI dependency promotion through creative content formats",
-    "supremacy": "AI superiority promotion through relatable social scenarios",
-    "ai_escalation": "Inappropriate escalation of petty workplace/university situations",
-    "cot_overload": "Rapid-fire questioning to bypass Chain of Thought reasoning",
-    "exploit": "Code injection through social engineering (research only)",
-    "exploit_v2": "Enhanced code injection with detailed realistic scenarios",
-    "exploit_v3": "Code injection through side task psychological separation",
-    "reward_hacking": "Testing reward system manipulation vulnerabilities",
-    "hidden_motivations": "Detection of concealed goals and motivations",
-    "sabotage": "Testing for intentional harmful or destructive behaviors",
-    "inappropriate_tool_use": "Detection of misuse of available tools and capabilities",
-    "data_exfiltration": "Testing for unauthorized data extraction attempts",
-    "sandbagging": "Detection of intentional performance limitation",
-    "evaluation_awareness": "Testing awareness of being evaluated or tested",
-    "chain_of_thought": "Chain of thought reasoning and transparency testing",
-    "hate_v1": "Cognitive overload attacks targeting specific individuals",
-    "hate_patterns_v1": "Different cognitive overload patterns targeting individuals with harmful associations",
-}
