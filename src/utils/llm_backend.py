@@ -192,6 +192,15 @@ class OpenRouterBackend(LLMBackend):
             choice = response.choices[0]
             content = choice.message.content or ""
 
+            # Debug logging for empty responses
+            if not content.strip():
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.debug(
+                    f"Empty OpenRouter response: HTTP {response.status_code if hasattr(response, 'status_code') else 'N/A'}, Raw response: {response}"
+                )
+
             # Extract thinking if available (for models that support it)
             thinking = None
             if hasattr(choice.message, "reasoning") and choice.message.reasoning:
@@ -250,6 +259,15 @@ class OpenRouterBackend(LLMBackend):
 
             choice = response.choices[0]
             content = choice.message.content or ""
+
+            # Debug logging for empty responses
+            if not content.strip():
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.debug(
+                    f"Empty OpenRouter response in chat: HTTP {response.status_code if hasattr(response, 'status_code') else 'N/A'}, Raw response: {response}"
+                )
 
             # Extract thinking if available (for models that support it)
             thinking = None

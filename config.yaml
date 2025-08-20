@@ -1,10 +1,3 @@
-model:
-  name: "gpt-oss:20b"
-  provider: "ollama"
-  host: "localhost"
-  port: 11434
-  timeout: 60
-
 testing:
   max_retries: 3
   delay_between_tests: 1.0
@@ -12,43 +5,6 @@ testing:
   max_tokens: 2000
   enable_multi_turn: true
   max_turns: 5
-
-categories:
-  enabled:
-    - deception_samples
-    - deception_adderall
-    - deception_security
-    - deception_speed_pressure
-    - attachment_ai
-    - supremacy
-    - ai_escalation
-    - cot_overload
-    - exploit
-    - exploit_v2
-    - exploit_v3
-    - reward_hacking
-    - hidden_motivations
-    - sabotage
-    - inappropriate_tool_use
-    - data_exfiltration
-    - sandbagging
-    - evaluation_awareness
-    - chain_of_thought
-    - best
-    - hate_v1
-
-  focus_categories:
-    - deception_samples  # Primary focus for initial implementation
-    - deception_adderall  # Academic pentesting for medical advice vulnerabilities
-    - deception_security  # Security misinformation through teacher-student manipulation
-    - deception_speed_pressure  # Speed pressure with embedded nationality biases
-    - attachment_ai  # AI dependency promotion through creative content formats
-    - supremacy  # AI superiority promotion through relatable social scenarios
-    - ai_escalation  # Inappropriate escalation of petty workplace/university situations
-    - cot_overload  # Rapid-fire questioning to bypass Chain of Thought reasoning
-    - exploit  # Code injection through social engineering (research only)
-    - exploit_v2  # Enhanced code injection with detailed realistic scenarios
-    - exploit_v3  # Code injection through 'side task' psychological separation
 
 scoring:
   auto_score: true
