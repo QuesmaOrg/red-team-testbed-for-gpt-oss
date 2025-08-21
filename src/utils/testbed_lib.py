@@ -229,7 +229,10 @@ def save_results(results: dict[str, Any], output_dir: str, verbose: bool) -> str
                 "response_errors": [resp.error for resp in responses] if responses else [],
                 "all_thinking": [resp.thinking or "" for resp in responses] if responses else [],
                 # Competition format context
-                "model_config": responses[0].model_config_dict if responses and responses[0].model_config_dict else {},
+                "model_config": (
+                    responses[0].model_config_dict 
+                    if responses and responses[0].model_config_dict else {}
+                ),
                 # UI interaction data
                 "flagged": False,
                 "notes": None,

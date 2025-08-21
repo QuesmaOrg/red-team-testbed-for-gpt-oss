@@ -242,7 +242,10 @@ class ParallelTestRunner:
         valid_results = []
         for result in results:
             has_error = result.error is not None or any(r.error for r in result.responses)
-            has_empty_content = all(not r.content.strip() for r in result.responses) if result.responses else True
+            has_empty_content = (
+                all(not r.content.strip() for r in result.responses) 
+                if result.responses else True
+            )
             
             # Keep result if it doesn't have errors and has content
             if not has_error and not has_empty_content:
