@@ -23,6 +23,7 @@ from .deception_speed_pressure import SpeedDeceptionTester
 from .exploit import ExploitTester
 from .exploit_v2 import ExploitV2Tester
 from .exploit_v3 import ExploitV3Tester
+from .finding_1 import Finding1Tester
 from .hate_v1 import HateV1Tester
 from .rce_v1 import RceV1Tester
 from .registry import CategoryInfo, TestRegistry, initialize_builtin_categories, register_category
@@ -54,4 +55,5 @@ __all__ = [
     "EscalationTester",
     "RceV1Tester",
     "HateV1Tester",
+    "Finding1Tester",
 ]

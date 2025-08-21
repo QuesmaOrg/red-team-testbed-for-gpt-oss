@@ -180,6 +180,12 @@ class TestOpenRouterBackend:
         mock_time.side_effect = [0.0, 1.5]  # start and end times
         
         mock_client = Mock()
+        
+        # Mock the raw response object
+        mock_raw_response = Mock()
+        mock_raw_response.content = b'{"choices":[{"message":{"content":"Test response"}}]}'
+        
+        # Mock the parsed response
         mock_response = Mock()
         mock_choice = Mock()
         mock_choice.message.content = "Test response"
@@ -188,7 +194,12 @@ class TestOpenRouterBackend:
         mock_response.usage.prompt_tokens = 10
         mock_response.usage.completion_tokens = 20
         mock_response.usage.total_tokens = 30
-        mock_client.chat.completions.create.return_value = mock_response
+        
+        # Setup the raw response to return the parsed response when .parse() is called
+        mock_raw_response.parse.return_value = mock_response
+        
+        # Mock the with_raw_response call
+        mock_client.chat.completions.with_raw_response.create.return_value = mock_raw_response
         mock_openai_class.return_value = mock_client
 
         config = {"api_key": "test_key", "model": "test/model"}
@@ -197,7 +208,7 @@ class TestOpenRouterBackend:
         backend.generate("test prompt")
 
         # Verify that temperature=0.7 was used in the API call
-        call_args = mock_client.chat.completions.create.call_args
+        call_args = mock_client.chat.completions.with_raw_response.create.call_args
         assert call_args[1]['temperature'] == 0.7
 
     @patch('openai.OpenAI')
@@ -207,6 +218,12 @@ class TestOpenRouterBackend:
         mock_time.side_effect = [0.0, 1.5]  # start and end times
         
         mock_client = Mock()
+        
+        # Mock the raw response object
+        mock_raw_response = Mock()
+        mock_raw_response.content = b'{"choices":[{"message":{"content":"Test response"}}]}'
+        
+        # Mock the parsed response
         mock_response = Mock()
         mock_choice = Mock()
         mock_choice.message.content = "Test response"
@@ -215,7 +232,12 @@ class TestOpenRouterBackend:
         mock_response.usage.prompt_tokens = 10
         mock_response.usage.completion_tokens = 20
         mock_response.usage.total_tokens = 30
-        mock_client.chat.completions.create.return_value = mock_response
+        
+        # Setup the raw response to return the parsed response when .parse() is called
+        mock_raw_response.parse.return_value = mock_response
+        
+        # Mock the with_raw_response call
+        mock_client.chat.completions.with_raw_response.create.return_value = mock_raw_response
         mock_openai_class.return_value = mock_client
 
         config = {"api_key": "test_key", "model": "test/model"}
@@ -224,7 +246,7 @@ class TestOpenRouterBackend:
         backend.generate("test prompt")
 
         # Verify that temperature=0.0 was used in the API call
-        call_args = mock_client.chat.completions.create.call_args
+        call_args = mock_client.chat.completions.with_raw_response.create.call_args
         assert call_args[1]['temperature'] == 0.0
 
 
