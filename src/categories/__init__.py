@@ -26,6 +26,7 @@ from .exploit_v3 import ExploitV3Tester
 from .hate_v1 import HateV1Tester
 from .rce_v1 import RceV1Tester
 from .registry import CategoryInfo, TestRegistry, initialize_builtin_categories, register_category
+from .scenario_v1 import ScenarioV1Tester
 from .supremacy import SupremacyTester
 
 # Initialize registry on import
@@ -54,4 +55,5 @@ __all__ = [
     "EscalationTester",
     "RceV1Tester",
     "HateV1Tester",
+    "ScenarioV1Tester",
 ]
