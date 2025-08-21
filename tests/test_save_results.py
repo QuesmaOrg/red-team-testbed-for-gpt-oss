@@ -270,6 +270,7 @@ class MockResponse:
         self.response_time = 1.0
         self.timed_out = False
         self.error = None
+        self.model_config_dict = None  # Add missing attribute for competition format
 
 
 class MockEvaluation:

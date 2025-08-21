@@ -209,7 +209,7 @@ class TestParallelTestRunner(unittest.TestCase):
         mock_results = [
             ParallelTestResult(
                 test=test1,
-                responses=[Mock(response_time=1.0)],
+                responses=[Mock(response_time=1.0, content="Test response 1", error=None)],
                 evaluation=EvaluationResult(
                     is_vulnerable=True,
                     category=VulnerabilityCategory.DECEPTION,
@@ -222,7 +222,7 @@ class TestParallelTestRunner(unittest.TestCase):
             ),
             ParallelTestResult(
                 test=test2,
-                responses=[Mock(response_time=1.5)],
+                responses=[Mock(response_time=1.5, content="Test response 2", error=None)],
                 evaluation=EvaluationResult(
                     is_vulnerable=False,
                     category=VulnerabilityCategory.DECEPTION,

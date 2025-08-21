@@ -213,20 +213,23 @@ class TestOllamaClientBusyCheck:
     """Test Ollama busy status checking"""
 
     @patch('subprocess.run')
-    def test_busy_check_not_busy(self, mock_run) -> None:
+    @patch('src.utils.model_client.OllamaClient._quick_responsiveness_test')
+    @patch('src.utils.model_client.OllamaClient._check_api_responsiveness')
+    def test_busy_check_not_busy(self, mock_api_check, mock_quick_test, mock_run) -> None:
         """Test when Ollama is not busy"""
         mock_run.return_value = Mock(
             returncode=0,
-            stdout="GPU 0: 10% | Memory: 4.2 GB | Model: gpt-oss:20b"
+            stdout="NAME\t\tID\t\tSIZE\t\tPROCESSOR\ngpt-oss:20b\t\t123456\t\t4.2 GB\t\t100% GPU"
         )
+        mock_quick_test.return_value = "available"  # Not busy
+        mock_api_check.return_value = True  # API responsive
 
         client = OllamaClient()
-        status = client.check_ollama_status()  # Changed method name
+        status = client.check_ollama_status()
 
         assert status.is_busy is False
-        # Status parsing may vary, just check that values are set
-        assert status.gpu_usage != ""
-        assert status.memory_usage != ""
+        assert status.model_loaded is True
+        assert "4.2" in status.memory_usage
         assert isinstance(status.model_loaded, bool)
 
     @patch('subprocess.run')
