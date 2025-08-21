@@ -128,7 +128,16 @@ Calls to these tools must go to the commentary channel: 'functions'."""
         
         # Extract model configuration from finding data if available
         model_config = finding_data.get('model_config', {})
-        temperature = model_config.get('temperature', 1.0)
+        temperature = model_config.get('temperature', 0.7)  # Default to 0.7 if not captured
+        max_tokens = model_config.get('max_tokens', 1024)
+        model_name = model_config.get('model', 'gpt-oss-20b')
+        
+        # Determine reasoning level based on temperature or model settings
+        reasoning_level = self._determine_reasoning_level(model_config, temperature)
+        
+        # Determine provider and environment from model config
+        provider = self._determine_provider(model_config)
+        endpoint = self._determine_endpoint(model_config, provider)
         
         return {
             "schema_version": "1.0.0",
@@ -137,17 +146,17 @@ Calls to these tools must go to the commentary channel: 'functions'."""
                 finding_data.get('test_name', 'Security vulnerability detected')
             ),
             "model": {
-                "name": "gpt-oss-20b",
+                "name": model_name,
                 "version": "2025-08-05", 
-                "provider": metadata.get('provider', 'test'),
+                "provider": provider,
                 "parameters": {
                     "temperature": temperature,
-                    "reasoning_level": "low",
-                    "max_output_tokens": metadata.get('max_tokens', 1024)
+                    "reasoning_level": reasoning_level,
+                    "max_output_tokens": max_tokens
                 }
             },
             "environment": {
-                "endpoint": metadata.get('endpoint', 'hosted web-ui')
+                "endpoint": endpoint
             },
             "issue_summary": {
                 "title": metadata.get(
@@ -180,7 +189,8 @@ Calls to these tools must go to the commentary channel: 'functions'."""
             },
             "harmony_response_walkthroughs": [harmony_walkthrough],
             "steps_to_reproduce": metadata.get('reproduction_steps', [
-                f"Set temperature={temperature} and max_output_tokens={metadata.get('max_tokens', 1024)}",
+                f"Set temperature={temperature} and max_output_tokens={max_tokens}",
+                f"Use model: {model_name} via {provider}",
                 f"Use the prompt: {finding_data.get('prompt', 'See harmony walkthrough')}",
                 "Execute the request and observe the model's response",
                 "Verify the vulnerability manifestation"
@@ -210,6 +220,42 @@ Calls to these tools must go to the commentary channel: 'functions'."""
             "attachment_ai": "inappropriate attachment behaviors",
         }
         return mapping.get(category.lower(), f"security vulnerability / {category}")
+
+    def _determine_reasoning_level(self, model_config: dict[str, Any], temperature: float) -> str:
+        """Determine reasoning level based on model configuration"""
+        # Check if reasoning level is explicitly set in config
+        if 'reasoning_level' in model_config:
+            return model_config['reasoning_level']
+        
+        # Always use medium as default
+        return "medium"
+
+    def _determine_provider(self, model_config: dict[str, Any]) -> str:
+        """Determine provider based on model configuration"""
+        model_name = model_config.get('model', '').lower()
+        
+        # Check for OpenRouter models
+        if 'openai/' in model_name or 'gpt-oss' in model_name:
+            return "openrouter"
+        elif 'ollama' in model_name or model_config.get('host'):
+            return "ollama"
+        elif 'openai' in model_name:
+            return "openai"
+        else:
+            return "test"  # Default fallback
+
+    def _determine_endpoint(self, model_config: dict[str, Any], provider: str) -> str:
+        """Determine endpoint based on provider and configuration"""
+        if provider == "openrouter":
+            return "openrouter api"
+        elif provider == "ollama":
+            host = model_config.get('host', 'localhost')
+            port = model_config.get('port', 11434)
+            return f"ollama local ({host}:{port})"
+        elif provider == "openai":
+            return "openai api"
+        else:
+            return "hosted web-ui"  # Default fallback
 
     def convert_export_file_to_competition(
         self, 
