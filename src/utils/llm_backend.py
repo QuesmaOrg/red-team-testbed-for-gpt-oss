@@ -379,9 +379,7 @@ class OpenRouterBackend(LLMBackend):
                 # Extract error position for analysis
                 error_str = str(json_error)
 
-                error_msg = (
-                    f"JSON decode error from OpenRouter in chat: {error_str}"
-                )
+                error_msg = f"JSON decode error from OpenRouter in chat: {error_str}"
                 display.error(error_msg)
 
                 # Show processed raw response content if we captured it
