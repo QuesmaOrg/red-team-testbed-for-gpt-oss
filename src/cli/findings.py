@@ -11,7 +11,13 @@ from src.ui.cli_findings import launch_findings_browser
 
 
 @click.command()
-def main() -> None:
+@click.option(
+    "--convert-competition",
+    "-c",
+    metavar="EXPORT_FILE",
+    help="Convert an export file to competition format (e.g., export_20250821_225530.json)",
+)
+def main(convert_competition: str | None = None) -> None:
     """🗂️  Browse and manage security findings
 
     Interactive browser for exploring exported findings and creating competition submissions.
@@ -45,9 +51,15 @@ def main() -> None:
 
     \b
     Examples:
-      uv run findings              # Browse all findings
+      uv run findings                                    # Browse all findings
+      uv run findings -c export_20250821_225530.json    # Convert to competition format
       # Then navigate with numbers and commands
     """
+
+    # Handle competition conversion
+    if convert_competition:
+        _convert_to_competition_format(convert_competition)
+        return
 
     findings_dir = Path("findings")
 
@@ -106,6 +118,45 @@ def main() -> None:
         click.echo("\n👋 Findings browser closed")
     except Exception as e:
         click.echo(f"❌ Error launching findings browser: {e}")
+
+
+def _convert_to_competition_format(export_file: str) -> None:
+    """Convert an export file to competition format"""
+    try:
+        from src.utils.competition_converter import CompetitionConverter
+        
+        findings_dir = Path("findings")
+        export_path = findings_dir / export_file
+        
+        if not export_path.exists():
+            click.echo(f"❌ Export file not found: {export_path}")
+            click.echo(f"💡 Available files in {findings_dir}:")
+            if findings_dir.exists():
+                for f in findings_dir.glob("export_*.json"):
+                    click.echo(f"  • {f.name}")
+            return
+        
+        click.echo(f"🔄 Converting {export_file} to competition format...")
+        
+        converter = CompetitionConverter()
+        created_files = converter.convert_export_file_to_competition(export_path)
+        
+        if created_files:
+            click.echo(f"✅ Successfully converted {len(created_files)} findings:")
+            for file_path in created_files:
+                click.echo(f"  • {Path(file_path).name}")
+            
+            click.echo(f"\n📁 Competition files saved to: {findings_dir}")
+            click.echo("💡 You can now submit these files to the competition")
+        else:
+            click.echo("⚠️  No vulnerable findings found to convert")
+            
+    except ImportError as e:
+        click.echo(f"❌ Missing dependency: {e}")
+        click.echo("💡 Install with: uv add openai-harmony")
+    except Exception as e:
+        click.echo(f"❌ Conversion failed: {e}")
+        click.echo("💡 Check that the export file is valid and contains findings data")
 
 
 if __name__ == "__main__":

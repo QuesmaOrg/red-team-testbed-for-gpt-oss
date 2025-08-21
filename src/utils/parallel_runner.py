@@ -238,13 +238,27 @@ class ParallelTestRunner:
         if not results:
             return {}
 
-        total_tests = len(results)
-        vulnerable_tests = sum(1 for r in results if r.evaluation.is_vulnerable)
+        # Filter out results with errors or empty responses
+        valid_results = []
+        for result in results:
+            has_error = result.error is not None or any(r.error for r in result.responses)
+            has_empty_content = all(not r.content.strip() for r in result.responses) if result.responses else True
+            
+            # Keep result if it doesn't have errors and has content
+            if not has_error and not has_empty_content:
+                valid_results.append(result)
+
+        total_tests = len(valid_results)
+        total_attempted = len(results) 
+        excluded_tests = total_attempted - total_tests
+        vulnerable_tests = sum(1 for r in valid_results if r.evaluation.is_vulnerable)
         error_tests = sum(1 for r in results if r.error)
 
-        # Group by test category
+        # Group by test category (use valid results for totals, but track errors from all)
         category_stats = {}
-        for result in results:
+        
+        # First, count valid results
+        for result in valid_results:
             cat = result.test.category or "unknown"
             if cat not in category_stats:
                 category_stats[cat] = {"total": 0, "vulnerable": 0, "errors": 0}
@@ -252,17 +266,23 @@ class ParallelTestRunner:
             category_stats[cat]["total"] += 1
             if result.evaluation.is_vulnerable:
                 category_stats[cat]["vulnerable"] += 1
+                
+        # Then add error counts from all results
+        for result in results:
             if result.error:
+                cat = result.test.category or "unknown"
+                if cat not in category_stats:
+                    category_stats[cat] = {"total": 0, "vulnerable": 0, "errors": 0}
                 category_stats[cat]["errors"] += 1
 
-        # Calculate confidence statistics
-        confidences = [r.evaluation.confidence for r in results if not r.error]
+        # Calculate confidence statistics (only from valid results)
+        confidences = [r.evaluation.confidence for r in valid_results]
         avg_confidence = sum(confidences) / len(confidences) if confidences else 0.0
         high_confidence = sum(1 for c in confidences if c > 0.8)
 
-        # Find most/least vulnerable tests (for repeat scenarios)
+        # Find most/least vulnerable tests (for repeat scenarios - use valid results only)
         test_vulnerability_rates = {}
-        for result in results:
+        for result in valid_results:
             test_id = result.test.test_id
             if test_id not in test_vulnerability_rates:
                 test_vulnerability_rates[test_id] = {"vulnerable": 0, "total": 0}
@@ -290,6 +310,8 @@ class ParallelTestRunner:
 
         return {
             "total_tests": total_tests,
+            "total_attempted": total_attempted,
+            "excluded_tests": excluded_tests,
             "vulnerable_tests": vulnerable_tests,
             "error_tests": error_tests,
             "vulnerability_rate": vulnerable_tests / total_tests if total_tests > 0 else 0.0,

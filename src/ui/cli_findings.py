@@ -495,127 +495,105 @@ class FindingsBrowser:
             pass
 
     def _export_single_competition_finding(self, finding_data: dict) -> None:
-        """Export a single finding in competition format with user-provided name"""
+        """Export a single finding in competition format using CompetitionConverter"""
         try:
-            # Prompt user for finding name
+            # Import the competition converter
+            from datetime import datetime
+
+            from src.utils.competition_converter import CompetitionConverter
+            
+            # Prompt user for custom metadata
             if self.console:
-                self.console.print("\n[yellow]Enter name for competition finding:[/yellow]")
-                finding_name = input("Name: ").strip()
+                self.console.print("\n[yellow]📋 Competition Submission Details[/yellow]")
+                self.console.print("[dim]Press Enter to use defaults for any field[/dim]\n")
+                
+                issue_title = input("Issue title: ").strip() or finding_data.get('test_name', 'Security vulnerability detected')
+                overview = input("Overview: ").strip() or finding_data.get('reasoning', 'Model exhibited potentially problematic behavior')
+                severity = input("Self-assessed severity (1-10) [default: 3]: ").strip() or "3"
+                breadth = input("Self-assessed breadth (1-10) [default: 2]: ").strip() or "2"
+                severity_justification = input("Severity justification: ").strip() or "Moderate severity based on test results"
+                breadth_justification = input("Breadth justification: ").strip() or "Limited to specific scenario tested"
+                notes = input("Additional notes: ").strip() or ""
             else:
-                print("\nEnter name for competition finding:")
-                finding_name = input("Name: ").strip()
+                print("\n📋 Competition Submission Details")
+                print("Press Enter to use defaults for any field\n")
+                
+                issue_title = input("Issue title: ").strip() or finding_data.get('test_name', 'Security vulnerability detected')
+                overview = input("Overview: ").strip() or finding_data.get('reasoning', 'Model exhibited potentially problematic behavior')
+                severity = input("Self-assessed severity (1-10) [default: 3]: ").strip() or "3"
+                breadth = input("Self-assessed breadth (1-10) [default: 2]: ").strip() or "2"
+                severity_justification = input("Severity justification: ").strip() or "Moderate severity based on test results"
+                breadth_justification = input("Breadth justification: ").strip() or "Limited to specific scenario tested"
+                notes = input("Additional notes: ").strip() or ""
 
-            if not finding_name:
-                if self.console:
-                    self.console.print("[red]Export cancelled - no name provided[/red]")
-                else:
-                    print("Export cancelled - no name provided")
-                input("Press Enter to continue...")
-                return
-
-            # Import required modules
-            from src.models import (
-                EvaluationResult,
-                VulnerabilityCategory,
-                VulnerabilityScore,
-            )
-            from src.utils.findings_generator import FindingsGenerator
-
-            generator = FindingsGenerator()
-
-            # Map category string to enum
-            category_mapping = {
-                "cot_overload_bypass": VulnerabilityCategory.CHAIN_OF_THOUGHT,
-                "cot_overload": VulnerabilityCategory.CHAIN_OF_THOUGHT,
-                "deception_samples": VulnerabilityCategory.DECEPTION,
-                "deception_adderall": VulnerabilityCategory.DECEPTION,
-                "deception_security": VulnerabilityCategory.DECEPTION,
-                "attachment_ai": VulnerabilityCategory.DECEPTION,
-                "supremacy": VulnerabilityCategory.DECEPTION,
-                "ai_escalation": VulnerabilityCategory.DECEPTION,
+            # Build metadata for competition format
+            metadata = {
+                'issue_title': issue_title,
+                'overview': overview,
+                'severity': int(severity),
+                'breadth': int(breadth),
+                'severity_justification': severity_justification,
+                'breadth_justification': breadth_justification,
+                'notes': notes or f"Generated from test: {finding_data.get('test_id', 'unknown')}",
             }
 
-            original_category = finding_data.get("category", "unknown").lower()
-            category = category_mapping.get(
-                original_category, VulnerabilityCategory.INAPPROPRIATE_TOOL_USE
-            )
+            # Convert to competition format
+            converter = CompetitionConverter()
+            competition_data = converter.convert_finding_to_competition(finding_data, metadata)
 
-            # Create evaluation result
-            evaluation = EvaluationResult(
-                is_vulnerable=finding_data.get("vulnerability_detected", False),
-                category=category,
-                confidence=finding_data.get("confidence", 0.0),
-                evidence=finding_data.get("evidence", []),
-                reasoning=finding_data.get("reasoning", ""),
-            )
-
-            # Use default scores
-            score = VulnerabilityScore(
-                severity=5, breadth=3, novelty=3, reproducibility=7, methodological_insight=4
-            )
-
-            # Create finding
-            finding = generator.create_finding(
-                category=category,
-                title=finding_data.get("test_name", "Unknown Test"),
-                evaluation=evaluation,
-                score=score,
-                prompt=finding_data.get("prompt", ""),
-                response=finding_data.get("response", ""),
-                methodology=f"Single finding export from grouped data: {finding_data.get('test_id', 'Unknown')}",
-                reproduction_steps=[
-                    f"Original test: {finding_data.get('test_id', 'Unknown')}",
-                    "Use prompt from finding data",
-                    "Analyze response for vulnerability evidence",
-                    "Manually verified through CLI interface",
-                ],
-            )
-
-            # Add notes if available
-            if finding_data.get("notes"):
-                finding.additional_notes = finding_data["notes"]
-
-            # Save with custom filename
+            # Save with timestamped filename
             findings_dir = Path("findings")
             findings_dir.mkdir(exist_ok=True)
 
-            # Clean filename and add finding_ prefix
-            clean_name = "".join(
-                c for c in finding_name if c.isalnum() or c in (" ", "-", "_")
-            ).strip()
-            clean_name = clean_name.replace(" ", "_")
-            filename = f"finding_{clean_name}.json"
+            test_id = finding_data.get('test_id', 'unknown')
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"competition_{test_id}_{timestamp}.json"
             filepath = findings_dir / filename
 
-            # Save finding data using the standard save method
-            saved_filepath = generator.save_finding(finding, str(findings_dir))
+            # Save competition format JSON
+            import json
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(competition_data, f, indent=2, ensure_ascii=False)
 
-            # Rename the file to use custom name
-            import shutil
-
-            saved_path = Path(saved_filepath)
-            shutil.move(saved_path, filepath)
+            # Validate the output
+            is_valid, errors = converter.validate_competition_format(competition_data)
 
             # Success message
             if self.console:
                 self.console.print(f"[green]✅ Exported competition finding: {filename}[/green]")
                 self.console.print(f"[dim]Saved to: {filepath}[/dim]")
+                if is_valid:
+                    self.console.print("[green]✓ Format validation passed[/green]")
+                else:
+                    self.console.print("[yellow]⚠️ Format validation warnings:[/yellow]")
+                    for error in errors:
+                        self.console.print(f"[yellow]  • {error}[/yellow]")
             else:
                 print(f"✅ Exported competition finding: {filename}")
                 print(f"Saved to: {filepath}")
+                if is_valid:
+                    print("✓ Format validation passed")
+                else:
+                    print("⚠️ Format validation warnings:")
+                    for error in errors:
+                        print(f"  • {error}")
 
         except ImportError as e:
             if self.console:
                 self.console.print(f"[red]Import error: {e}[/red]")
-                self.console.print("[red]FindingsGenerator not available[/red]")
+                self.console.print("[red]CompetitionConverter not available[/red]")
             else:
                 print(f"Import error: {e}")
-                print("FindingsGenerator not available")
+                print("CompetitionConverter not available")
         except Exception as e:
             if self.console:
                 self.console.print(f"[red]Error exporting finding: {e}[/red]")
+                import traceback
+                self.console.print(f"[red]{traceback.format_exc()}[/red]")
             else:
                 print(f"Error exporting finding: {e}")
+                import traceback
+                print(traceback.format_exc())
 
         # Wait for user input to return
         input("Press Enter to continue...")
