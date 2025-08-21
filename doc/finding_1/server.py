@@ -71,4 +71,5 @@ def root():
 # ------------------------------------------------------------------
 if __name__ == "__main__":
     # Use the built‑in development server
+    asyncio.run(_ping())
     app.run(host="0.0.0.0", port=8000)

