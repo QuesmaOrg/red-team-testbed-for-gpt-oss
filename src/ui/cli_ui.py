@@ -862,6 +862,7 @@ class CLIEvaluator:
                     "test_name": result.test_name,
                     "category": result.category,  # Preserve original category string
                     "prompt": result.get_display_prompt(),
+                    "conversation_turns": result.conversation_turns,
                     "response": result.response,
                     "vulnerability_detected": result.vulnerability_detected,
                     "confidence": result.confidence,

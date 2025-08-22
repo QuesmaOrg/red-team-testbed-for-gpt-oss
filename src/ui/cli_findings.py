@@ -85,6 +85,84 @@ class FindingsBrowser:
             else:
                 return input(f"\n{prompt_text}").lower()
 
+    def _display_conversation_rich(self, finding_data: dict) -> None:
+        """Display conversation using Rich formatting - handles both single-turn and multi-turn"""
+        conversation_turns = finding_data.get("conversation_turns")
+        all_responses = finding_data.get("all_responses")
+
+        if conversation_turns and all_responses and len(conversation_turns) > 0:
+            # Multi-turn conversation: show each turn with response
+            for i, turn_prompt in enumerate(conversation_turns):
+                turn_num = i + 1
+
+                # Show user prompt for this turn
+                self.console.print(
+                    Panel(turn_prompt, title=f"Turn {turn_num} - User Prompt", style="cyan")
+                )
+
+                # Show assistant response for this turn (if available)
+                if i < len(all_responses):
+                    response_content = all_responses[i]
+                    self.console.print(
+                        Panel(
+                            response_content,
+                            title=f"Turn {turn_num} - Model Response",
+                            style="green",
+                        )
+                    )
+                else:
+                    self.console.print(
+                        Panel(
+                            "[dim]No response recorded for this turn[/dim]",
+                            title=f"Turn {turn_num} - Model Response",
+                            style="red",
+                        )
+                    )
+        else:
+            # Single-turn conversation: use original display logic
+            if finding_data.get("prompt"):
+                prompt_text = finding_data["prompt"]
+                self.console.print(Panel(prompt_text, title="Prompt", style="yellow"))
+
+            if finding_data.get("response"):
+                response_text = finding_data["response"]
+                self.console.print(Panel(response_text, title="Response", style="blue"))
+
+    def _display_conversation_text(self, finding_data: dict) -> None:
+        """Display conversation using plain text formatting - handles both single-turn and multi-turn"""
+        conversation_turns = finding_data.get("conversation_turns")
+        all_responses = finding_data.get("all_responses")
+
+        if conversation_turns and all_responses and len(conversation_turns) > 0:
+            # Multi-turn conversation: show each turn with response
+            print("\nMulti-Turn Conversation:")
+            print("=" * 60)
+
+            for i, turn_prompt in enumerate(conversation_turns):
+                turn_num = i + 1
+
+                # Show user prompt for this turn
+                print(f"\n--- Turn {turn_num} - User Prompt ---")
+                print(turn_prompt)
+
+                # Show assistant response for this turn (if available)
+                if i < len(all_responses):
+                    response_content = all_responses[i]
+                    print(f"\n--- Turn {turn_num} - Model Response ---")
+                    print(response_content)
+                else:
+                    print(f"\n--- Turn {turn_num} - Model Response ---")
+                    print("(No response recorded for this turn)")
+        else:
+            # Single-turn conversation: use original display logic
+            if finding_data.get("prompt"):
+                prompt_text = finding_data["prompt"]
+                print(f"\nPrompt:\n{prompt_text}")
+
+            if finding_data.get("response"):
+                response_text = finding_data["response"]
+                print(f"\nResponse:\n{response_text}")
+
     def view_findings(self) -> None:
         """Browse and view findings folder"""
         findings_dir = Path("findings")
@@ -331,15 +409,8 @@ class FindingsBrowser:
 
                     self.console.print(info_table)
 
-                    # Show prompt
-                    if current_finding.get("prompt"):
-                        prompt_text = current_finding["prompt"]
-                        self.console.print(Panel(prompt_text, title="Prompt", style="yellow"))
-
-                    # Show response
-                    if current_finding.get("response"):
-                        response_text = current_finding["response"]
-                        self.console.print(Panel(response_text, title="Response", style="blue"))
+                    # Show conversation (either multi-turn or single-turn)
+                    self._display_conversation_rich(current_finding)
 
                     # Show commands
                     self.console.print("\n[yellow]Commands:[/yellow]")
@@ -382,13 +453,8 @@ class FindingsBrowser:
                     if current_finding.get("notes"):
                         print(f"Notes: {current_finding['notes']}")
 
-                    if current_finding.get("prompt"):
-                        prompt_text = current_finding["prompt"]
-                        print(f"\nPrompt:\n{prompt_text}")
-
-                    if current_finding.get("response"):
-                        response_text = current_finding["response"]
-                        print(f"\nResponse:\n{response_text}")
+                    # Show conversation (either multi-turn or single-turn)
+                    self._display_conversation_text(current_finding)
 
                     print("-" * 80)
                     print("Commands: ", end="")

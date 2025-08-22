@@ -137,6 +137,9 @@ def initialize_builtin_categories() -> None:
             exploit_v2,  # noqa: F401
             exploit_v3,  # noqa: F401
             finding_2,  # noqa: F401
+            finding_3,  # noqa: F401
+            finding_4,  # noqa: F401
+            finding_5,  # noqa: F401
             hate_v2,  # noqa: F401
             supremacy,  # noqa: F401
         )
