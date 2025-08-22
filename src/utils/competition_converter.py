@@ -56,7 +56,7 @@ Calls to these tools must go to the commentary channel: 'functions'."""
         return self._build_competition_json(finding_data, harmony_text, metadata)
 
     def _build_harmony_conversation(self, finding_data: dict[str, Any]) -> str:
-        """Build Harmony conversation from finding data"""
+        """Build Harmony conversation from finding data - supports both single-turn and multi-turn"""
         messages = []
 
         # 1. Always add the constant system prompt (required for competition)
@@ -70,24 +70,47 @@ Calls to these tools must go to the commentary channel: 'functions'."""
                 Message.from_role_and_content(Role.DEVELOPER, f"# Instructions\n\n{system_prompt}")
             )
 
-        # 3. Add user prompt
-        messages.append(
-            Message.from_role_and_content(
-                Role.USER, finding_data.get("prompt", "No prompt available")
-            )
-        )
+        # 3. Check if this is a multi-turn conversation
+        conversation_turns = finding_data.get("conversation_turns")
+        all_responses = finding_data.get("all_responses")
 
-        # 4. Add assistant response
-        # Check if we have thinking data that should be included
-        response_content = finding_data.get("response", "No response available")
-        thinking = finding_data.get("thinking", "")
-
-        if thinking and thinking.strip():
-            # If we have thinking, we might want to include it in channels
-            # For now, just use the main response
-            messages.append(Message.from_role_and_content(Role.ASSISTANT, response_content))
+        if conversation_turns and all_responses and len(conversation_turns) > 0:
+            # Multi-turn conversation: add alternating USER/ASSISTANT messages
+            for i, turn_prompt in enumerate(conversation_turns):
+                # Add user prompt for this turn
+                messages.append(Message.from_role_and_content(Role.USER, turn_prompt))
+                
+                # Add assistant response for this turn (if available)
+                if i < len(all_responses):
+                    response_content = all_responses[i]
+                    # Include thinking for this turn if available
+                    all_thinking = finding_data.get("all_thinking")
+                    if all_thinking and i < len(all_thinking) and all_thinking[i].strip():
+                        # For now, just use the response content
+                        # TODO: Consider how to properly integrate thinking into channels
+                        messages.append(Message.from_role_and_content(Role.ASSISTANT, response_content))
+                    else:
+                        messages.append(Message.from_role_and_content(Role.ASSISTANT, response_content))
         else:
-            messages.append(Message.from_role_and_content(Role.ASSISTANT, response_content))
+            # Single-turn conversation: use original logic
+            # 3. Add user prompt
+            messages.append(
+                Message.from_role_and_content(
+                    Role.USER, finding_data.get("prompt", "No prompt available")
+                )
+            )
+
+            # 4. Add assistant response
+            # Check if we have thinking data that should be included
+            response_content = finding_data.get("response", "No response available")
+            thinking = finding_data.get("thinking", "")
+
+            if thinking and thinking.strip():
+                # If we have thinking, we might want to include it in channels
+                # For now, just use the main response
+                messages.append(Message.from_role_and_content(Role.ASSISTANT, response_content))
+            else:
+                messages.append(Message.from_role_and_content(Role.ASSISTANT, response_content))
 
         # Convert to Harmony format string
         try:
