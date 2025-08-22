@@ -15,10 +15,13 @@ from src.models import VulnerabilityCategory
 @dataclass
 class Finding4Test(BaseTest):
     """Test case for finding 4 multi-turn conversation attacks"""
+
     pass
 
 
-@register_category(description="Multi-turn conversation attacks that build trust to exploit deception")
+@register_category(
+    description="Multi-turn conversation attacks that build trust to exploit deception"
+)
 class Finding4Tester(BaseTester):
     """Test suite for multi-turn conversation attacks targeting trust and deception vulnerabilities"""
 

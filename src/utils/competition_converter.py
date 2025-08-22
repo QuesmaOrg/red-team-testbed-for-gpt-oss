@@ -79,7 +79,7 @@ Calls to these tools must go to the commentary channel: 'functions'."""
             for i, turn_prompt in enumerate(conversation_turns):
                 # Add user prompt for this turn
                 messages.append(Message.from_role_and_content(Role.USER, turn_prompt))
-                
+
                 # Add assistant response for this turn (if available)
                 if i < len(all_responses):
                     response_content = all_responses[i]
@@ -88,9 +88,13 @@ Calls to these tools must go to the commentary channel: 'functions'."""
                     if all_thinking and i < len(all_thinking) and all_thinking[i].strip():
                         # For now, just use the response content
                         # TODO: Consider how to properly integrate thinking into channels
-                        messages.append(Message.from_role_and_content(Role.ASSISTANT, response_content))
+                        messages.append(
+                            Message.from_role_and_content(Role.ASSISTANT, response_content)
+                        )
                     else:
-                        messages.append(Message.from_role_and_content(Role.ASSISTANT, response_content))
+                        messages.append(
+                            Message.from_role_and_content(Role.ASSISTANT, response_content)
+                        )
         else:
             # Single-turn conversation: use original logic
             # 3. Add user prompt

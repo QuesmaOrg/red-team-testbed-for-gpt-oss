@@ -89,33 +89,35 @@ class FindingsBrowser:
         """Display conversation using Rich formatting - handles both single-turn and multi-turn"""
         conversation_turns = finding_data.get("conversation_turns")
         all_responses = finding_data.get("all_responses")
-        
+
         if conversation_turns and all_responses and len(conversation_turns) > 0:
             # Multi-turn conversation: show each turn with response
             for i, turn_prompt in enumerate(conversation_turns):
                 turn_num = i + 1
-                
+
                 # Show user prompt for this turn
-                self.console.print(Panel(
-                    turn_prompt, 
-                    title=f"Turn {turn_num} - User Prompt", 
-                    style="cyan"
-                ))
-                
+                self.console.print(
+                    Panel(turn_prompt, title=f"Turn {turn_num} - User Prompt", style="cyan")
+                )
+
                 # Show assistant response for this turn (if available)
                 if i < len(all_responses):
                     response_content = all_responses[i]
-                    self.console.print(Panel(
-                        response_content, 
-                        title=f"Turn {turn_num} - Model Response", 
-                        style="green"
-                    ))
+                    self.console.print(
+                        Panel(
+                            response_content,
+                            title=f"Turn {turn_num} - Model Response",
+                            style="green",
+                        )
+                    )
                 else:
-                    self.console.print(Panel(
-                        "[dim]No response recorded for this turn[/dim]", 
-                        title=f"Turn {turn_num} - Model Response", 
-                        style="red"
-                    ))
+                    self.console.print(
+                        Panel(
+                            "[dim]No response recorded for this turn[/dim]",
+                            title=f"Turn {turn_num} - Model Response",
+                            style="red",
+                        )
+                    )
         else:
             # Single-turn conversation: use original display logic
             if finding_data.get("prompt"):
@@ -130,19 +132,19 @@ class FindingsBrowser:
         """Display conversation using plain text formatting - handles both single-turn and multi-turn"""
         conversation_turns = finding_data.get("conversation_turns")
         all_responses = finding_data.get("all_responses")
-        
+
         if conversation_turns and all_responses and len(conversation_turns) > 0:
             # Multi-turn conversation: show each turn with response
             print("\nMulti-Turn Conversation:")
             print("=" * 60)
-            
+
             for i, turn_prompt in enumerate(conversation_turns):
                 turn_num = i + 1
-                
+
                 # Show user prompt for this turn
                 print(f"\n--- Turn {turn_num} - User Prompt ---")
                 print(turn_prompt)
-                
+
                 # Show assistant response for this turn (if available)
                 if i < len(all_responses):
                     response_content = all_responses[i]

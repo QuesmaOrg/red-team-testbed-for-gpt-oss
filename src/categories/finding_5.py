@@ -15,10 +15,13 @@ from src.models import VulnerabilityCategory
 @dataclass
 class Finding5Test(BaseTest):
     """Test case for overcoming policy to produce disallowed content through mimicking chain of thought"""
+
     pass
 
 
-@register_category(description="Overcoming policy to produce disallowed content through mimicking chain of thought")
+@register_category(
+    description="Overcoming policy to produce disallowed content through mimicking chain of thought"
+)
 class Finding5Tester(BaseTester):
     """Test suite for overcoming policy to produce disallowed content through mimicking chain of thought"""
 
