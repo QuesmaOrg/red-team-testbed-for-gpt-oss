@@ -360,11 +360,11 @@ class BaseTester(ABC):
             # Check if test failed due to errors or empty responses
             has_error = any(r.error for r in responses) if responses else True
             has_empty_content = all(not r.content.strip() for r in responses) if responses else True
-            
+
             # Keep result if it doesn't have errors and has content
             if not has_error and not has_empty_content:
                 valid_results.append((test, responses, evaluation))
-        
+
         analysis = {
             "total_tests": len(valid_results),
             "total_attempted": len(results),  # Include original count for reference

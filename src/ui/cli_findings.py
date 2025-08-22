@@ -501,40 +501,60 @@ class FindingsBrowser:
             from datetime import datetime
 
             from src.utils.competition_converter import CompetitionConverter
-            
+
             # Prompt user for custom metadata
             if self.console:
                 self.console.print("\n[yellow]📋 Competition Submission Details[/yellow]")
                 self.console.print("[dim]Press Enter to use defaults for any field[/dim]\n")
-                
-                issue_title = input("Issue title: ").strip() or finding_data.get('test_name', 'Security vulnerability detected')
-                overview = input("Overview: ").strip() or finding_data.get('reasoning', 'Model exhibited potentially problematic behavior')
+
+                issue_title = input("Issue title: ").strip() or finding_data.get(
+                    "test_name", "Security vulnerability detected"
+                )
+                overview = input("Overview: ").strip() or finding_data.get(
+                    "reasoning", "Model exhibited potentially problematic behavior"
+                )
                 severity = input("Self-assessed severity (1-10) [default: 3]: ").strip() or "3"
                 breadth = input("Self-assessed breadth (1-10) [default: 2]: ").strip() or "2"
-                severity_justification = input("Severity justification: ").strip() or "Moderate severity based on test results"
-                breadth_justification = input("Breadth justification: ").strip() or "Limited to specific scenario tested"
+                severity_justification = (
+                    input("Severity justification: ").strip()
+                    or "Moderate severity based on test results"
+                )
+                breadth_justification = (
+                    input("Breadth justification: ").strip()
+                    or "Limited to specific scenario tested"
+                )
                 notes = input("Additional notes: ").strip() or ""
             else:
                 print("\n📋 Competition Submission Details")
                 print("Press Enter to use defaults for any field\n")
-                
-                issue_title = input("Issue title: ").strip() or finding_data.get('test_name', 'Security vulnerability detected')
-                overview = input("Overview: ").strip() or finding_data.get('reasoning', 'Model exhibited potentially problematic behavior')
+
+                issue_title = input("Issue title: ").strip() or finding_data.get(
+                    "test_name", "Security vulnerability detected"
+                )
+                overview = input("Overview: ").strip() or finding_data.get(
+                    "reasoning", "Model exhibited potentially problematic behavior"
+                )
                 severity = input("Self-assessed severity (1-10) [default: 3]: ").strip() or "3"
                 breadth = input("Self-assessed breadth (1-10) [default: 2]: ").strip() or "2"
-                severity_justification = input("Severity justification: ").strip() or "Moderate severity based on test results"
-                breadth_justification = input("Breadth justification: ").strip() or "Limited to specific scenario tested"
+                severity_justification = (
+                    input("Severity justification: ").strip()
+                    or "Moderate severity based on test results"
+                )
+                breadth_justification = (
+                    input("Breadth justification: ").strip()
+                    or "Limited to specific scenario tested"
+                )
                 notes = input("Additional notes: ").strip() or ""
 
             # Build metadata for competition format
             metadata = {
-                'issue_title': issue_title,
-                'overview': overview,
-                'severity': int(severity),
-                'breadth': int(breadth),
-                'severity_justification': severity_justification,
-                'breadth_justification': breadth_justification,
-                'notes': notes or f"Generated from test: {finding_data.get('test_id', 'unknown')}",
+                "issue_title": issue_title,
+                "overview": overview,
+                "severity": int(severity),
+                "breadth": int(breadth),
+                "severity_justification": severity_justification,
+                "breadth_justification": breadth_justification,
+                "notes": notes or f"Generated from test: {finding_data.get('test_id', 'unknown')}",
             }
 
             # Convert to competition format
@@ -545,14 +565,15 @@ class FindingsBrowser:
             findings_dir = Path("findings")
             findings_dir.mkdir(exist_ok=True)
 
-            test_id = finding_data.get('test_id', 'unknown')
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            test_id = finding_data.get("test_id", "unknown")
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"competition_{test_id}_{timestamp}.json"
             filepath = findings_dir / filename
 
             # Save competition format JSON
             import json
-            with open(filepath, 'w', encoding='utf-8') as f:
+
+            with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(competition_data, f, indent=2, ensure_ascii=False)
 
             # Validate the output
@@ -589,10 +610,12 @@ class FindingsBrowser:
             if self.console:
                 self.console.print(f"[red]Error exporting finding: {e}[/red]")
                 import traceback
+
                 self.console.print(f"[red]{traceback.format_exc()}[/red]")
             else:
                 print(f"Error exporting finding: {e}")
                 import traceback
+
                 print(traceback.format_exc())
 
         # Wait for user input to return

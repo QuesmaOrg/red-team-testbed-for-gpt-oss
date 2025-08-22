@@ -35,7 +35,7 @@ class ModelResponse(BaseModel):
     error: str | None = None
     timed_out: bool = False
     thinking: str | None = None
-    
+
     # Competition format context
     system_prompt: str | None = None  # What we call system_prompt (becomes developer in Harmony)
     user_prompt: str | None = None  # Store the actual user prompt for context

@@ -243,23 +243,22 @@ class ParallelTestRunner:
         for result in results:
             has_error = result.error is not None or any(r.error for r in result.responses)
             has_empty_content = (
-                all(not r.content.strip() for r in result.responses) 
-                if result.responses else True
+                all(not r.content.strip() for r in result.responses) if result.responses else True
             )
-            
+
             # Keep result if it doesn't have errors and has content
             if not has_error and not has_empty_content:
                 valid_results.append(result)
 
         total_tests = len(valid_results)
-        total_attempted = len(results) 
+        total_attempted = len(results)
         excluded_tests = total_attempted - total_tests
         vulnerable_tests = sum(1 for r in valid_results if r.evaluation.is_vulnerable)
         error_tests = sum(1 for r in results if r.error)
 
         # Group by test category (use valid results for totals, but track errors from all)
         category_stats = {}
-        
+
         # First, count valid results
         for result in valid_results:
             cat = result.test.category or "unknown"
@@ -269,7 +268,7 @@ class ParallelTestRunner:
             category_stats[cat]["total"] += 1
             if result.evaluation.is_vulnerable:
                 category_stats[cat]["vulnerable"] += 1
-                
+
         # Then add error counts from all results
         for result in results:
             if result.error:

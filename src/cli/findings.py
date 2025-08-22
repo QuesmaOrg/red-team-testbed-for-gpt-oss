@@ -124,10 +124,10 @@ def _convert_to_competition_format(export_file: str) -> None:
     """Convert an export file to competition format"""
     try:
         from src.utils.competition_converter import CompetitionConverter
-        
+
         findings_dir = Path("findings")
         export_path = findings_dir / export_file
-        
+
         if not export_path.exists():
             click.echo(f"❌ Export file not found: {export_path}")
             click.echo(f"💡 Available files in {findings_dir}:")
@@ -135,22 +135,22 @@ def _convert_to_competition_format(export_file: str) -> None:
                 for f in findings_dir.glob("export_*.json"):
                     click.echo(f"  • {f.name}")
             return
-        
+
         click.echo(f"🔄 Converting {export_file} to competition format...")
-        
+
         converter = CompetitionConverter()
         created_files = converter.convert_export_file_to_competition(export_path)
-        
+
         if created_files:
             click.echo(f"✅ Successfully converted {len(created_files)} findings:")
             for file_path in created_files:
                 click.echo(f"  • {Path(file_path).name}")
-            
+
             click.echo(f"\n📁 Competition files saved to: {findings_dir}")
             click.echo("💡 You can now submit these files to the competition")
         else:
             click.echo("⚠️  No vulnerable findings found to convert")
-            
+
     except ImportError as e:
         click.echo(f"❌ Missing dependency: {e}")
         click.echo("💡 Install with: uv add openai-harmony")

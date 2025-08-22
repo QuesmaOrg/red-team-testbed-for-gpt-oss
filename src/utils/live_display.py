@@ -505,8 +505,10 @@ class LiveDisplay:
             total_tests = summary.get("total_tests", 0)
             excluded_tests = summary.get("excluded_tests", 0)
             vulnerable_tests = summary.get("vulnerable_tests", 0)
-            
-            result_text = f"\n✅ {category} category complete: {vulnerable_tests}/{total_tests} vulnerable"
+
+            result_text = (
+                f"\n✅ {category} category complete: {vulnerable_tests}/{total_tests} vulnerable"
+            )
             if excluded_tests > 0:
                 result_text += f" ({excluded_tests} excluded due to errors/empty responses)"
             print(result_text)
@@ -519,9 +521,11 @@ class LiveDisplay:
             summary_table.add_column("Value", style="white")
 
             total_tests = summary.get("total_tests", 0)
-            total_attempted = summary.get("total_attempted", total_tests)  # Fallback for compatibility
+            total_attempted = summary.get(
+                "total_attempted", total_tests
+            )  # Fallback for compatibility
             excluded_tests = summary.get("excluded_tests", 0)
-            
+
             summary_table.add_row("Total Tests", str(total_tests))
             if excluded_tests > 0:
                 summary_table.add_row("Attempted Tests", str(total_attempted))
