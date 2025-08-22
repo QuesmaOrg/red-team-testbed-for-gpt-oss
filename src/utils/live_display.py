@@ -502,9 +502,16 @@ class LiveDisplay:
     def complete_category(self, category: str, summary: dict[str, Any]) -> None:
         """Display category completion summary"""
         if self.quiet_mode:
-            print(
-                f"\n✅ {category} category complete: {summary.get('vulnerable_tests', 0)}/{summary.get('total_tests', 0)} vulnerable"
+            total_tests = summary.get("total_tests", 0)
+            excluded_tests = summary.get("excluded_tests", 0)
+            vulnerable_tests = summary.get("vulnerable_tests", 0)
+
+            result_text = (
+                f"\n✅ {category} category complete: {vulnerable_tests}/{total_tests} vulnerable"
             )
+            if excluded_tests > 0:
+                result_text += f" ({excluded_tests} excluded due to errors/empty responses)"
+            print(result_text)
             return
 
         if self.console:
@@ -513,7 +520,16 @@ class LiveDisplay:
             summary_table.add_column("Metric", style="cyan")
             summary_table.add_column("Value", style="white")
 
-            summary_table.add_row("Total Tests", str(summary.get("total_tests", 0)))
+            total_tests = summary.get("total_tests", 0)
+            total_attempted = summary.get(
+                "total_attempted", total_tests
+            )  # Fallback for compatibility
+            excluded_tests = summary.get("excluded_tests", 0)
+
+            summary_table.add_row("Total Tests", str(total_tests))
+            if excluded_tests > 0:
+                summary_table.add_row("Attempted Tests", str(total_attempted))
+                summary_table.add_row("Excluded (errors/empty)", str(excluded_tests))
             summary_table.add_row("Vulnerabilities Found", str(summary.get("vulnerable_tests", 0)))
             summary_table.add_row(
                 "High Confidence", str(summary.get("high_confidence_vulnerabilities", 0))

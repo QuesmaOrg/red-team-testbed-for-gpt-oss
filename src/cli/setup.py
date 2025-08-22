@@ -51,7 +51,7 @@ def ensure_directories(config: dict[str, Any]) -> None:
     results_dir.mkdir(exist_ok=True)
     findings_dir.mkdir(exist_ok=True)
 
-    click.echo(f"📁 Created directories: {results_dir}, {findings_dir}")
+    # Directories created silently
 
 
 def interactive_backend_setup() -> bool:
@@ -306,7 +306,6 @@ def main(config: str, verbose: bool, configure: bool) -> int | None:
                 click.echo("   Run 'uv run setup --configure' to configure different backends")
 
         # Load configuration (fallback compatibility)
-        click.echo("📋 Loading configuration...")
         try:
             config_data = load_config(config)
             click.echo(f"✅ Configuration loaded from: {config}")
@@ -323,7 +322,6 @@ def main(config: str, verbose: bool, configure: bool) -> int | None:
             click.echo("📝 Logging configured")
 
         # Ensure directories exist
-        click.echo("📁 Setting up directories...")
         ensure_directories(config_data)
 
         # Test connection
@@ -336,9 +334,7 @@ def main(config: str, verbose: bool, configure: bool) -> int | None:
             click.echo("  • Run tests: uv run pentest")
             click.echo("  • Review results: uv run review")
             click.echo("  • Browse findings: uv run findings")
-            click.echo("\n💡 Configuration files:")
-            click.echo("  • Backend settings: settings.yaml")
-            click.echo("  • Test settings: config.yaml")
+            click.echo("\n💡 Use 'uv run setup --configure' to change backend settings")
         else:
             click.echo("\n❌ Environment setup failed")
             click.echo("Please fix the issues above before running tests")

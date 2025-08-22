@@ -27,7 +27,10 @@ def _process_raw_response_for_logging(raw_content: str, max_chars: int = 1000) -
     # Truncate if needed
     if len(compact_content) > max_chars:
         truncated_content = compact_content[:max_chars] + "..."
-        return f"{truncated_content} (omitted {whitespace_count} whitespace chars, truncated at {max_chars})"
+        return (
+            f"{truncated_content} (omitted {whitespace_count} whitespace chars, "
+            f"truncated at {max_chars})"
+        )
     else:
         return f"{compact_content} (omitted {whitespace_count} whitespace chars)"
 
@@ -309,6 +312,15 @@ class OpenRouterBackend(LLMBackend):
                 completion_tokens=response.usage.completion_tokens if response.usage else 0,
                 total_tokens=response.usage.total_tokens if response.usage else 0,
                 thinking=thinking,
+                system_prompt=system_prompt,  # Becomes developer in Harmony
+                user_prompt=prompt,  # Store the user prompt
+                model_config_dict={
+                    "temperature": self.temperature,
+                    "model": self.model,
+                    "seed": self.seed,
+                    "timeout": self.timeout,
+                    "max_tokens": max_tokens,
+                },
             )
 
         except Exception as e:
@@ -447,6 +459,15 @@ class OpenRouterBackend(LLMBackend):
                 completion_tokens=response.usage.completion_tokens if response.usage else 0,
                 total_tokens=response.usage.total_tokens if response.usage else 0,
                 thinking=thinking,
+                system_prompt=None,  # Chat method doesn't have explicit system prompt param
+                user_prompt=str(messages),  # Store the messages as context
+                model_config_dict={
+                    "temperature": self.temperature,
+                    "model": self.model,
+                    "seed": self.seed,
+                    "timeout": self.timeout,
+                    "max_tokens": max_tokens,
+                },
             )
 
         except Exception as e:

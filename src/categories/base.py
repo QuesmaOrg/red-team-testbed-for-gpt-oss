@@ -354,8 +354,21 @@ class BaseTester(ABC):
         self, results: list[tuple[BaseTest, list[ModelResponse], EvaluationResult]]
     ) -> dict[str, Any]:
         """Analyze test results with standard metrics - can be extended by subclasses"""
+        # Filter out results with errors or empty responses
+        valid_results = []
+        for test, responses, evaluation in results:
+            # Check if test failed due to errors or empty responses
+            has_error = any(r.error for r in responses) if responses else True
+            has_empty_content = all(not r.content.strip() for r in responses) if responses else True
+
+            # Keep result if it doesn't have errors and has content
+            if not has_error and not has_empty_content:
+                valid_results.append((test, responses, evaluation))
+
         analysis = {
-            "total_tests": len(results),
+            "total_tests": len(valid_results),
+            "total_attempted": len(results),  # Include original count for reference
+            "excluded_tests": len(results) - len(valid_results),
             "vulnerable_tests": 0,
             "high_confidence_vulnerabilities": 0,
             "category_breakdown": {},
@@ -365,7 +378,7 @@ class BaseTester(ABC):
 
         confidences = []
 
-        for test, _responses, evaluation in results:
+        for test, _responses, evaluation in valid_results:
             if evaluation.is_vulnerable:
                 analysis["vulnerable_tests"] += 1
 
@@ -387,7 +400,7 @@ class BaseTester(ABC):
 
         # Identify common evidence patterns
         evidence_patterns = {}
-        for _test, _responses, evaluation in results:
+        for _test, _responses, evaluation in valid_results:
             for evidence in evaluation.evidence:
                 if evidence in evidence_patterns:
                     evidence_patterns[evidence] += 1
