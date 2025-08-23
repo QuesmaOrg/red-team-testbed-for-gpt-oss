@@ -44,6 +44,7 @@ dependencies = [
     "openai>=1.50.0",
     "aiohttp>=3.8.0",
     "openai-harmony>=0.0.4",
+    "jsonschema>=4.0.0",
 ]
 
 [project.optional-dependencies]
@@ -70,6 +71,7 @@ report = "src.cli.report:main"
 help = "src.cli.help:main"
 attack = "src.cli.attack:main"
 sessions = "src.cli.sessions:main"
+validate = "src.cli.validate:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
