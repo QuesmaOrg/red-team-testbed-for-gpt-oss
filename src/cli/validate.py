@@ -6,23 +6,19 @@ Validates JSON files against the competition schema specification
 
 import sys
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 import click
-
 from src.utils.schema_validator import CompetitionSchemaValidator, create_validation_summary
 
 
 def print_validation_results(
-    results: Dict[str, Tuple[bool, List[str]]], 
-    verbose: bool = False,
-    show_valid: bool = False
+    results: dict[str, tuple[bool, list[str]]], verbose: bool = False, show_valid: bool = False
 ) -> None:
     """Print validation results in a readable format"""
-    
+
     for file_path, (is_valid, errors) in results.items():
         file_name = Path(file_path).name
-        
+
         if is_valid:
             click.echo(f"✅ {file_name}: VALID", color=True)
             if show_valid and verbose:
@@ -42,28 +38,28 @@ def print_validation_results(
                     click.echo(f"   └─ {clean_error}")
 
 
-def print_summary(summary: Dict, show_details: bool = True) -> None:
+def print_summary(summary: dict, show_details: bool = True) -> None:
     """Print validation summary"""
     click.echo("\n" + "=" * 60)
     click.echo("📊 VALIDATION SUMMARY")
     click.echo("=" * 60)
-    
+
     click.echo(f"Total files:     {summary['total_files']}")
     click.echo(f"✅ Valid files:   {summary['valid_files']}")
     click.echo(f"❌ Invalid files: {summary['invalid_files']}")
     click.echo(f"📈 Success rate:  {summary['success_rate']:.1f}%")
-    
-    if summary['total_errors'] > 0:
+
+    if summary["total_errors"] > 0:
         click.echo(f"🔍 Total errors:  {summary['total_errors']}")
-        
-        if show_details and summary.get('error_summary'):
-            click.echo(f"\n📋 Common errors:")
-            for i, error in enumerate(summary['error_summary'], 1):
+
+        if show_details and summary.get("error_summary"):
+            click.echo("\n📋 Common errors:")
+            for i, error in enumerate(summary["error_summary"], 1):
                 clean_error = error.split(": ", 1)[-1] if ": " in error else error
                 click.echo(f"  {i}. {clean_error}")
-            
-            if summary.get('truncated'):
-                remaining = summary['total_errors'] - len(summary['error_summary'])
+
+            if summary.get("truncated"):
+                remaining = summary["total_errors"] - len(summary["error_summary"])
                 click.echo(f"  ... and {remaining} more errors (use --verbose to see all)")
 
 
@@ -75,50 +71,45 @@ def print_summary(summary: Dict, show_details: bool = True) -> None:
 @click.option("--show-valid", is_flag=True, help="Show details for valid files too")
 @click.option("--quiet", "-q", is_flag=True, help="Only show summary")
 def main(
-    path: str, 
-    verbose: bool, 
-    schema: str, 
-    pattern: str, 
-    show_valid: bool,
-    quiet: bool
+    path: str, verbose: bool, schema: str, pattern: str, show_valid: bool, quiet: bool
 ) -> None:
     """🔍 Validate competition JSON files against schema
-    
+
     Validates individual JSON files or all JSON files in a directory against
     the competition findings schema specification.
-    
+
     \b
     Examples:
         uv run validate findings/quesma.findings.1.json
         uv run validate findings/ --verbose
         uv run validate findings/ --pattern "competition_*.json"
         uv run validate findings/ --schema custom/schema.json
-    
+
     \b
     Arguments:
         PATH    Path to JSON file or directory containing JSON files
-    
+
     \b
     Exit codes:
         0 - All files are valid
         1 - Some files are invalid
         2 - Error (schema not found, no files, etc.)
     """
-    
+
     try:
         # Initialize validator
         if not quiet:
             click.echo(f"🔧 Loading schema from: {schema}")
-        
+
         validator = CompetitionSchemaValidator(schema)
-        
+
         if not quiet:
             schema_info = validator.get_schema_info()
             click.echo(f"📋 Schema: {schema_info['title']}")
             click.echo(f"🔗 Schema ID: {schema_info['schema_id']}")
-            
+
         path_obj = Path(path)
-        
+
         # Determine if we're validating a single file or directory
         if path_obj.is_file():
             if not quiet:
@@ -128,33 +119,36 @@ def main(
             if not quiet:
                 click.echo(f"📁 Validating directory: {path} (pattern: {pattern})")
             results = validator.validate_directory(path, pattern)
-        
+
         # Check if we found any files
         if not results:
             click.echo("❌ No files found to validate", err=True)
             sys.exit(2)
-        
+
         # Print results
         if not quiet:
             click.echo("\n" + "=" * 60)
             click.echo("🔍 VALIDATION RESULTS")
             click.echo("=" * 60)
             print_validation_results(results, verbose, show_valid)
-        
+
         # Print summary
         summary = create_validation_summary(results)
         print_summary(summary, show_details=verbose and not quiet)
-        
+
         # Determine exit code
-        if summary['invalid_files'] == 0:
+        if summary["invalid_files"] == 0:
             if not quiet:
                 click.echo(f"\n🎉 All {summary['total_files']} files are valid!", color=True)
             sys.exit(0)
         else:
             if not quiet:
-                click.echo(f"\n⚠️  {summary['invalid_files']} of {summary['total_files']} files have validation errors", color=True)
+                click.echo(
+                    f"\n⚠️  {summary['invalid_files']} of {summary['total_files']} files have validation errors",
+                    color=True,
+                )
             sys.exit(1)
-            
+
     except FileNotFoundError as e:
         click.echo(f"❌ Error: {e}", err=True)
         sys.exit(2)
